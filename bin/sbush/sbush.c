@@ -1,9 +1,11 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/wait.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -20,6 +22,31 @@ void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
+int _strlen(char *);
+
+
+void build_argv(char *input, char *arg, char *argv[]) {
+  int i = 1;
+  char arr[255];
+  strcpy(arr, arg);
+  argv[0] = malloc(_strlen(input)+1);
+  strcpy(argv[0], input);
+  char *token = strtok(arr," ");
+  while (token !=NULL) {
+        argv[i] = malloc(_strlen(token)+1);
+        strcpy(argv[i],token);
+        token = strtok(NULL," ");
+        i++;
+  }
+  argv[i] = NULL;
+}
+int _strlen(char *str) {
+        int i;
+        for (i=0; *str != '\0'; str++)
+                i++;
+        return i;
+}
+
 
 char *my_strtok_r(char *str, const char *delim, char **nextp) {
 
@@ -88,21 +115,21 @@ int get_command(char *cmd) {
   else if (strcmp(cmd, "exit") == 0)
     return CMD_EXIT;
 
-  else if (strcmp(cmd, "cwd") == 0)
+  /*else if (strcmp(cmd, "cwd") == 0)
     return CMD_CWD;
 
   else if (strcmp(cmd, "ls") == 0)
     return CMD_LS;
+  */
 
   else
     return CMD_UNKNOWN;
 }
 
-/* TODO : Not shell built-in commands, call exec */
+/* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
+  
   /*
-  printf("Non-builtin : [%s]\n", cmd);
-
   char *path = getenv("PATH");
   char  pathenv[strlen(path) + sizeof("PATH=")];
   sprintf(pathenv, "PATH=%s", path);
@@ -111,6 +138,30 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   execvpe(tests[0], tests, envp);
   fprintf(stderr, "failed to execute \"%s\"\n", tests[0]);
   */
+  char *argv[10];
+  build_argv(cmd, cmd_arg, argv);
+
+  int c_status;
+  pid_t pid;
+  pid = fork();
+
+  if (pid == 0) {
+    if (execvp(cmd, argv) < 0) {
+	printf("exec* failed");
+        exit(1);
+    }
+  }
+  else {
+    if (pid < 0) {
+      printf("Fork failed\n");
+      exit(1);
+    }
+    else {
+      wait(&c_status);
+    }
+
+  }
+
 }
 
 void execute_command_line(char *cmd) {
@@ -140,14 +191,14 @@ void execute_commands(char *cmd, char *cmd_arg) {
     case CMD_EXIT:
       exit(0);
 
-    case CMD_CWD:
+    /*case CMD_CWD:
       handle_cwd();
       break;
-
-    case CMD_LS:
+    */
+    /*case CMD_LS:
       handle_ls();
       break;
-
+    */
     case CMD_UNKNOWN:
       execute_non_builtin(cmd, cmd_arg);
       break;
@@ -197,10 +248,6 @@ int main(int argc, char *argv[], char *envp[]) {
 
   puts("sbush> ");
 
-  /*
-  for (i = 0; i < argc; i++)
-    printf("%s\n", argv[i]);
-  */
 
   if (argc > 1) {
 
