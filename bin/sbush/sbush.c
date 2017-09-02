@@ -11,16 +11,17 @@
 #define CMD_LS           3
 #define CMD_EXIT         4
 
-char* my_strtok_r(char *str, const char *delim, char **nextp);
+char *my_strtok_r(char *str, const char *delim, char **nextp);
 void handle_cd(char *path);
 void handle_cwd();
 void handle_ls();
 int get_command(char *cmd);
 void execute_non_builtin(char *cmd, char *cmd_arg);
+void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
 
-char* my_strtok_r(char *str, const char *delim, char **nextp) {
+char *my_strtok_r(char *str, const char *delim, char **nextp) {
 
   char *ret;
   if (str == NULL)
@@ -87,18 +88,17 @@ int get_command(char *cmd) {
   else if (strcmp(cmd, "exit") == 0)
     return CMD_EXIT;
 
-  /*
   else if (strcmp(cmd, "cwd") == 0)
     return CMD_CWD;
 
   else if (strcmp(cmd, "ls") == 0)
     return CMD_LS;
-  */
 
   else
     return CMD_UNKNOWN;
 }
 
+/* TODO : Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
   /*
   printf("Non-builtin : [%s]\n", cmd);
@@ -113,6 +113,21 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   */
 }
 
+void execute_command_line(char *cmd) {
+ 
+  int i;
+  char *str, *token, *saveptr;
+  for (i = 1, str = cmd; ; i++, str = NULL) {
+
+    token = my_strtok_r(str, " ", &saveptr);
+    if (token == NULL)
+      break;
+
+    if (i == 1 && token[0] != '#')
+      execute_commands(token, saveptr);
+  }
+}
+
 void execute_commands(char *cmd, char *cmd_arg) {
 
   int cmd_id = get_command(cmd);
@@ -125,7 +140,6 @@ void execute_commands(char *cmd, char *cmd_arg) {
     case CMD_EXIT:
       exit(0);
 
-    /*
     case CMD_CWD:
       handle_cwd();
       break;
@@ -133,10 +147,8 @@ void execute_commands(char *cmd, char *cmd_arg) {
     case CMD_LS:
       handle_ls();
       break;
-    */
 
     case CMD_UNKNOWN:
-      /* TODO : Not shell built-in commands, call exec */
       execute_non_builtin(cmd, cmd_arg);
       break;
 
@@ -146,13 +158,28 @@ void execute_commands(char *cmd, char *cmd_arg) {
   }
 }
 
+/* Read from the file one line at a time and execute */
 void read_from_file(int num_tokens, char *cmd_tokens[]) {
- 
-  printf("File : [%s]\n", cmd_tokens[1]);
 
-  //gets
-  //ssize_t ret = read(int fildes, void *buf, size_t nbyte)
+  FILE *file = fopen(cmd_tokens[1], "r");
+  char code[1024] = {0};
+  size_t n = 0;
+  int c;
 
+  if (file == NULL)
+    return;
+
+  while ((c = fgetc(file)) != EOF)
+  {
+    code[n++] = (char) c;
+    if (c == '\n') {
+      code[n - 1] = '\0';
+      execute_command_line(code);    
+      n = 0;
+    }
+  }
+
+  code[n] = '\0'; 
 }
 
 int main(int argc, char *argv[], char *envp[]) {
@@ -171,14 +198,13 @@ int main(int argc, char *argv[], char *envp[]) {
   puts("sbush> ");
 
   /*
-  */
   for (i = 0; i < argc; i++)
     printf("%s\n", argv[i]);
+  */
 
   if (argc > 1) {
 
     /* Case 1 : Non-interactive mode */
-    /* Read from the file one line at a time and execute */
     read_from_file(argc, argv);
 
   } else {
