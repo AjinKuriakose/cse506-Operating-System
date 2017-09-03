@@ -18,21 +18,21 @@ struct command
   char *argv[50];
 };
 
+char *m_strcpy(char *dest, char *src);
+char *m_strncpy(char *dest, char *src, int num_bytes);
 char *my_strtok_r(char *str, const char *delim, char **nextp);
+char *my_strstr(char *str1, char *str2);
 void *my_memset(void *dest, int ch, size_t num_bytes);
 void my_strcpy(char *dst, const char *src);
-char *my_strstr(char *str1, char *str2);
+int  my_strlen(char *str);
+int  get_command(char *cmd);
 void handle_cd(char *path);
 void handle_cwd();
 void handle_ls();
-int get_command(char *cmd);
 void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
-int _strlen(char *);
-char *m_strcpy(char *, char *);
-char *m_strncpy(char *, char *, int);
 
 char ps1_variable[256] = "sbush>";
 
@@ -41,11 +41,11 @@ int fork_pipes (int n, struct command *cmd);
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   int i = 0;
   char *saveptr;
-  char arr[255];
+  char arr[255] = {0};
   my_strcpy(arr, arg);
   char *token = my_strtok_r(arr, sep, &saveptr);
   while (token != NULL && i < max_tokens - 1) {
-    argv[i] = malloc(_strlen(token) + 1);
+    argv[i] = malloc(my_strlen(token) + 1);
     my_strcpy(argv[i], token);
     token = my_strtok_r(NULL, sep, &saveptr);
     i++;
@@ -56,14 +56,14 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
 }
 
 void build_argv(char *input, char *arg, char *argv[]) {
-  argv[0] = malloc(_strlen(input) + 1);
+  argv[0] = malloc(my_strlen(input) + 1);
   my_strcpy(argv[0], input);
   tokenize(arg, &argv[1], 49, " ");
 }
 
-int _strlen(char *str) {
+int my_strlen(char *str) {
   int i;
-  for (i=0; *str != '\0'; str++)
+  for (i = 0; *str != '\0'; str++)
     i++;
   return i;
 }
@@ -77,21 +77,10 @@ void *my_memset(void *dest, int ch, size_t num_bytes) {
     *tmp++ = ch;
     num_bytes--;
   }
-  /*
-  if (num_bytes) {
-    tmp = dest;
-    do {
-      *tmp++ = ch;
-    } while (--num_bytes);
-  }
-  */
-
   return dest;
 }
 
-
 char *my_strtok_r(char *str, const char *delim, char **nextp) {
-
   char *ret;
   if (str == NULL)
     str = *nextp;
@@ -106,7 +95,6 @@ char *my_strtok_r(char *str, const char *delim, char **nextp) {
     *str++ = '\0';
 
   *nextp = str;
-
   return ret;
 }
 
@@ -125,7 +113,7 @@ char *my_strstr(char *str1, char *str2) {
     return ret;
 
   while (*s1 && *s2) {
-    if (_strlen(s1) < _strlen(s2))
+    if (my_strlen(s1) < my_strlen(s2))
       break;
 
     if (*s1 == *s2) {
@@ -141,7 +129,7 @@ char *my_strstr(char *str1, char *str2) {
     s1++;
   }
 
-  if (match_len != _strlen(str2))
+  if (match_len != my_strlen(str2))
     ret = NULL;
 
   return ret;
@@ -194,59 +182,44 @@ int get_command(char *cmd) {
   else if (strcmp(cmd, "exit") == 0)
     return CMD_EXIT;
 
-  /*else if (strcmp(cmd, "cwd") == 0)
-    return CMD_CWD;
-
-  else if (strcmp(cmd, "ls") == 0)
-    return CMD_LS;
-  */
-
   else
     return CMD_UNKNOWN;
 }
+
 void get_path_string(char *cmd, char *path_value) {
 
   char *ptr = NULL;
-
-  if ((strstr(cmd,"$PATH")) != NULL) {
-
+  if ((strstr(cmd, "$PATH")) != NULL) {
     /*
      * 2 cases. eg: PATH=$PATH:/bin:/usr/bin 
      * $PATH anywhere else. beginning or somewhere else
      */ 
+    char *path = strstr(cmd, "=");
+    path++; 
+    char *temp = path;
+    int len = my_strlen(path);
 
-     char *path = strstr(cmd, "=");
-     path++; 
-     char *temp = path;
-     int len = _strlen(path);
+    ptr = strstr(path, "$PATH");
 
-     ptr = strstr(path, "$PATH");
+    char *sys_env = getenv("PATH");
 
-     char *sys_env = getenv("PATH");
+    /* $PATH in the beginning */
+    if (temp == ptr) {
+      m_strncpy(path_value, sys_env, my_strlen(sys_env));
+      if (len - 6 > 0) { //6 len of $PATH:
+        m_strcpy(path_value+my_strlen(sys_env), ptr+5);
+      } 
+    } else {
+      /* $PATH anywhere else */
+      m_strncpy(path_value, temp, ptr-temp); 
+      m_strncpy(path_value + (ptr - temp), sys_env, my_strlen(sys_env));
+      m_strcpy(path_value + (ptr - temp) + my_strlen(sys_env), ptr + 5);
+    }
 
-     /* $PATH in the beginning */
-
-     if (temp == ptr) {
-
-       m_strncpy(path_value, sys_env, _strlen(sys_env));
-       if (len - 6 > 0) { //6 len of $PATH:
-	 m_strcpy(path_value+_strlen(sys_env), ptr+5);
-       } 
-
-     }
-     else {
-     /* $PATH anywhere else */
-       m_strncpy(path_value, temp, ptr-temp); 
-       m_strncpy(path_value+(ptr-temp), sys_env, _strlen(sys_env));
-       m_strcpy(path_value+(ptr-temp)+_strlen(sys_env), ptr+5);
-     }
-
-//    printf("pathvalue :  [%s]\n",path_value); 
-  }
-  else {
-    //eg: PATH=/usr/bin 
+  } else {
+    /* eg: PATH=/usr/bin */ 
     ptr = strstr(cmd, "=");
-    m_strcpy(path_value, ptr+1); 
+    m_strcpy(path_value, ptr + 1); 
   }
 }
 
@@ -261,47 +234,45 @@ char *m_strcpy(char *dest, char *src) {
 
 char *m_strncpy(char *dest, char *src, int len) {
   int i;
-  for (i=0; i<len && src[i] != '\0'; i++)  {
+  for (i = 0; i < len && src[i] != '\0'; i++)  {
     dest[i] = src[i];
   }
   return dest;
 }
 
 int check_if_path_cmd(char *cmd) {
-  return strncmp(cmd,"PATH=",5) == 0 ? 1 : 0; 
+  return strncmp(cmd, "PATH=", 5) == 0 ? 1 : 0; 
 }
 
 int check_if_ps1_cmd(char *cmd) {
-  return strncmp(cmd,"PS1=",4) == 0 ? 1 : 0; 
+  return strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
 }
 
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
-  char *envp[] = {"TERM=xterm",0};
+  int i;
+  int c_status;
+  pid_t pid;
+  char *argv[50] = {0};
+  char *envp[] = {"TERM=xterm", 0};
   char path_value[1024] = {0} ; 
   if (check_if_path_cmd(cmd)) {
-     get_path_string(cmd, path_value); 
-//     printf("setting env var : [%s]\n",path_value);
-     setenv("PATH", path_value ,1);
-     return;
+    get_path_string(cmd, path_value); 
+    setenv("PATH", path_value, 1);
+    return;
   }
   else if(check_if_ps1_cmd(cmd)) {
     m_strcpy(ps1_variable, strstr(cmd, "=") + 1);
     return;
   }
-  
-  int i;
-  char *argv[50] = {0};
+
   build_argv(cmd, cmd_arg, argv);
 
-  int c_status;
-  pid_t pid;
   pid = fork();
-
   if (pid == 0) {
     if (execvpe(cmd, argv,envp) < 0) {
-	printf("exec* failed");
-        exit(1);
+      printf("%s: command not found\n", cmd);
+      exit(1);
     }
   } else {
     if (pid < 0) {
@@ -323,7 +294,6 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
 }
 
 void execute_command_line(char *cmd) {
- 
   int i;
   char *str, *token, *saveptr;
   for (i = 1, str = cmd; ; i++, str = NULL) {
@@ -349,20 +319,12 @@ void execute_commands(char *cmd, char *cmd_arg) {
     case CMD_EXIT:
       exit(0);
 
-    /*case CMD_CWD:
-      handle_cwd();
-      break;
-    */
-    /*case CMD_LS:
-      handle_ls();
-      break;
-    */
     case CMD_UNKNOWN:
       execute_non_builtin(cmd, cmd_arg);
       break;
 
     default:
-      printf("%s : command not found\n", cmd);
+      printf("%s: command not found\n", cmd);
       break;
   }
 }
@@ -396,24 +358,6 @@ void handle_piped_commands(char *arg) {
   char *argv[50] = {0};
   int i;
   int num_tokens = tokenize(arg, &argv[0], 50, "|");
-
-  /*
-  printf("[%s]\n", argv[0]);
-  printf("[%s]\n", argv[1]);
-  printf("%d\n", num_tokens);
-  */
-
-  /*
-  const char *ls[] = { "ls", "-l", 0 };
-  const char *awk[] = { "awk", "{print $1}", 0 };
-  const char *sort[] = { "sort", 0 };
-  const char *uniq[] = { "uniq", 0 };
-
-  struct command cmd [] = { {ls}, {awk}, {sort}, {uniq} };
-
-  fork_pipes (4, cmd);
-  */
-
   struct command cmd[num_tokens];
   my_memset(cmd, 0, sizeof(cmd));
 
@@ -436,7 +380,6 @@ void handle_piped_commands(char *arg) {
     argv[i] = NULL;
     i++;
   }
-
 }
 
 void read_from_stdin() {
@@ -446,7 +389,7 @@ void read_from_stdin() {
   while (fgets(buff, sizeof(buff), stdin) != NULL) {
 
     cnt = 1;
-    size_t buff_length = _strlen(buff);
+    size_t buff_length = my_strlen(buff);
     if (buff_length != 0 && buff[buff_length - 1] == '\n') {
 
       buff_length--;
@@ -469,6 +412,7 @@ void read_from_stdin() {
         str = NULL;
       }
     }
+
     puts(ps1_variable);
     /*
     printf("sbush> ");
@@ -479,7 +423,7 @@ void read_from_stdin() {
   }
 }
 
-int spawn_proc (int in, int out, struct command *cmd)
+int spawn_proc(int in, int out, struct command *cmd)
 {
   pid_t pid;
   if ((pid = fork ()) == 0)
@@ -509,10 +453,10 @@ int fork_pipes (int n, struct command *cmd) {
   in = 0;
   for (i = 0; i < n - 1; ++i)
   {
-    if (pipe (fd) != 0)
+    if (pipe(fd) != 0)
       return 1;
 
-    spawn_proc (in, fd [1], cmd + i);
+    spawn_proc(in, fd [1], cmd + i);
     close (fd [1]);
 
     in = fd [0];
@@ -584,3 +528,4 @@ int main(int argc, char *argv[], char *envp[]) {
 
   return 0;
 }
+
