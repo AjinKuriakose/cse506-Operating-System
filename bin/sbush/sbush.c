@@ -64,13 +64,19 @@ int _strlen(char *str) {
 }
 
 void *my_memset(void *dest, int ch, size_t num_bytes) {
-  char *tmp;
+  char *tmp = dest;
+  while (num_bytes) {
+    *tmp++ = ch;
+    num_bytes--;
+  }
+  /*
   if (num_bytes) {
     tmp = dest;
     do {
       *tmp++ = ch;
     } while (--num_bytes);
   }
+  */
 
   return dest;
 }
@@ -110,7 +116,6 @@ char *my_strstr(char *str1, char *str2) {
     return ret;
 
   while (*s1 && *s2) {
-    //printf("s1 = [%s], s2 = [%s]\n", s1, s2);
     if (_strlen(s1) < _strlen(s2))
       break;
 
