@@ -31,6 +31,11 @@ void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
 int _strlen(char *);
+char *m_strcpy(char *, char *);
+char *m_strncpy(char *, char *, int);
+
+char ps1_variable[256] = "sbush>";
+
 int fork_pipes (int n, struct command *cmd);
 
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
@@ -62,7 +67,10 @@ int _strlen(char *str) {
     i++;
   return i;
 }
-
+/*
+int _strncmp (char *f_str, char *s_str, int n) {
+  if (*f_str == 
+*/
 void *my_memset(void *dest, int ch, size_t num_bytes) {
   char *tmp = dest;
   while (num_bytes) {
@@ -80,6 +88,7 @@ void *my_memset(void *dest, int ch, size_t num_bytes) {
 
   return dest;
 }
+
 
 char *my_strtok_r(char *str, const char *delim, char **nextp) {
 
@@ -195,19 +204,92 @@ int get_command(char *cmd) {
   else
     return CMD_UNKNOWN;
 }
+void get_path_string(char *cmd, char *path_value) {
+
+  char *ptr = NULL;
+
+  if ((strstr(cmd,"$PATH")) != NULL) {
+
+    /*
+     * 2 cases. eg: PATH=$PATH:/bin:/usr/bin 
+     * $PATH anywhere else. beginning or somewhere else
+     */ 
+
+     char *path = strstr(cmd, "=");
+     path++; 
+     char *temp = path;
+     int len = _strlen(path);
+
+     ptr = strstr(path, "$PATH");
+
+     char *sys_env = getenv("PATH");
+
+     /* $PATH in the beginning */
+
+     if (temp == ptr) {
+
+       m_strncpy(path_value, sys_env, _strlen(sys_env));
+       if (len - 6 > 0) { //6 len of $PATH:
+	 m_strcpy(path_value+_strlen(sys_env), ptr+5);
+       } 
+
+     }
+     else {
+     /* $PATH anywhere else */
+       m_strncpy(path_value, temp, ptr-temp); 
+       m_strncpy(path_value+(ptr-temp), sys_env, _strlen(sys_env));
+       m_strcpy(path_value+(ptr-temp)+_strlen(sys_env), ptr+5);
+     }
+
+//    printf("pathvalue :  [%s]\n",path_value); 
+  }
+  else {
+    //eg: PATH=/usr/bin 
+    ptr = strstr(cmd, "=");
+    m_strcpy(path_value, ptr+1); 
+  }
+}
+
+char *m_strcpy(char *dest, char *src) {
+  int i;
+  for (i=0; src[i] != '\0'; i++) {
+    dest[i] = src[i];
+  }
+  dest[i] = '\0';
+  return dest;
+}
+
+char *m_strncpy(char *dest, char *src, int len) {
+  int i;
+  for (i=0; i<len && src[i] != '\0'; i++)  {
+    dest[i] = src[i];
+  }
+  return dest;
+}
+
+int check_if_path_cmd(char *cmd) {
+  return strncmp(cmd,"PATH=",5) == 0 ? 1 : 0; 
+}
+
+int check_if_ps1_cmd(char *cmd) {
+  return strncmp(cmd,"PS1=",4) == 0 ? 1 : 0; 
+}
 
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
+  char *envp[] = {"TERM=xterm",0};
+  char path_value[1024] = {0} ; 
+  if (check_if_path_cmd(cmd)) {
+     get_path_string(cmd, path_value); 
+//     printf("setting env var : [%s]\n",path_value);
+     setenv("PATH", path_value ,1);
+     return;
+  }
+  else if(check_if_ps1_cmd(cmd)) {
+    m_strcpy(ps1_variable, strstr(cmd, "=") + 1);
+    return;
+  }
   
-  /*
-  char *path = getenv("PATH");
-  char  pathenv[strlen(path) + sizeof("PATH=")];
-  sprintf(pathenv, "PATH=%s", path);
-  char *envp[] = {pathenv, NULL};
-  char *tests[] = {"ls", "-lR", NULL};
-  execvpe(tests[0], tests, envp);
-  fprintf(stderr, "failed to execute \"%s\"\n", tests[0]);
-  */
   int i;
   char *argv[50] = {0};
   build_argv(cmd, cmd_arg, argv);
@@ -217,9 +299,9 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   pid = fork();
 
   if (pid == 0) {
-    if (execvp(cmd, argv) < 0) {
-	    printf("exec* failed");
-      exit(1);
+    if (execvpe(cmd, argv,envp) < 0) {
+	printf("exec* failed");
+        exit(1);
     }
   } else {
     if (pid < 0) {
@@ -387,7 +469,7 @@ void read_from_stdin() {
         str = NULL;
       }
     }
-    puts("sbush> ");
+    puts(ps1_variable);
     /*
     printf("sbush> ");
     fflush(stdout);
