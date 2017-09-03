@@ -21,6 +21,7 @@ struct command
 char *my_strtok_r(char *str, const char *delim, char **nextp);
 void *my_memset(void *dest, int ch, size_t num_bytes);
 void my_strcpy(char *dst, const char *src);
+char *my_strstr(char *str1, char *str2);
 void handle_cd(char *path);
 void handle_cwd();
 void handle_ls();
@@ -95,10 +96,41 @@ char *my_strtok_r(char *str, const char *delim, char **nextp) {
 }
 
 void my_strcpy(char *dst, const char *src) {
-  while (*src != '\0') {
+  while (*src) {
     *dst++ = *src++; 
   }
   *dst = '\0';
+}
+
+char *my_strstr(char *str1, char *str2) {
+  char *s1 = str1, *s2 = str2, *ret = NULL;
+  int match_len = 0;
+
+  if (!str1 || !str2 || !*str1 || !*str2)
+    return ret;
+
+  while (*s1 && *s2) {
+    //printf("s1 = [%s], s2 = [%s]\n", s1, s2);
+    if (_strlen(s1) < _strlen(s2))
+      break;
+
+    if (*s1 == *s2) {
+      match_len++;
+      if (!ret)
+        ret = s1;
+      s2++;
+    } else {
+      match_len = 0;
+      s2 = str2;
+      ret = NULL;
+    }
+    s1++;
+  }
+
+  if (match_len != _strlen(str2))
+    ret = NULL;
+
+  return ret;
 }
 
 void handle_cd(char *path) {
@@ -334,7 +366,7 @@ void read_from_stdin() {
       buff[buff_length] = '\0';
     }
 
-    if (strstr(buff, "|")) {
+    if (my_strstr(buff, "|")) {
       handle_piped_commands(buff);
     }  else {
       str = buff;
@@ -433,6 +465,23 @@ int main(int argc, char *argv[], char *envp[]) {
   /*
   printf("sbush> ");
   fflush(stdout);
+  */
+
+  /*
+  printf("[%s]\n", my_strstr(NULL, NULL));
+  printf("[%s]\n", my_strstr("aa", NULL));
+  printf("[%s]\n", my_strstr(NULL, "bb"));
+  printf("[%s]\n", my_strstr("aa", ""));
+  printf("[%s]\n", my_strstr("", "bb"));
+  printf("[%s]\n", my_strstr("", ""));
+  printf("[%s]\n", my_strstr("this is a string", "this"));
+  printf("[%s]\n", my_strstr("this is a string", "is"));
+  printf("[%s]\n", my_strstr("this is a string", "a"));
+  printf("[%s]\n", my_strstr("this is a string", "string"));
+  printf("[%s]\n", my_strstr("this is a string", "t"));
+  printf("[%s]\n", my_strstr("this is a string", "s"));
+  printf("[%s]\n", my_strstr("this is a string", "g"));
+  exit (1);
   */
 
   if (argc > 1) {
