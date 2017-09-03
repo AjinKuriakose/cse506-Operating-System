@@ -247,25 +247,45 @@ int check_if_path_cmd(char *cmd) {
 int check_if_ps1_cmd(char *cmd) {
   return strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
 }
+/*
+ * if & is found, replace with '\0' and return true
+ */ 
+
+int update_if_bg_cmdarg(char *cmd_arg) {
+  char *amp;
+  int ret = 0;
+  if ((amp = my_strstr(cmd_arg, "&")) != NULL) {
+    *amp = '\0'; 
+    ret = 1;
+  }
+  return ret; 
+}
 
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
-  int i;
-  int c_status;
+
   pid_t pid;
+  int i, c_status, bg_process = 0;
   char *argv[50] = {0};
   char *envp[] = {"TERM=xterm", 0};
   char path_value[1024] = {0} ; 
+  
+  /* PATH variable set */
   if (check_if_path_cmd(cmd)) {
     get_path_string(cmd, path_value); 
     setenv("PATH", path_value, 1);
     return;
   }
-  else if(check_if_ps1_cmd(cmd)) {
+  /* PS1 variable set */ 
+  else if (check_if_ps1_cmd(cmd)) {
     m_strcpy(ps1_variable, strstr(cmd, "=") + 1);
     return;
   }
-
+  /* command & handling, true if & is found in the command */
+  else if (update_if_bg_cmdarg(cmd_arg)) {
+    bg_process = 1;
+  }
+ 
   build_argv(cmd, cmd_arg, argv);
 
   pid = fork();
@@ -280,7 +300,8 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
       exit(1);
     }
     else {
-      wait(&c_status);
+      if (!bg_process)
+        wait(&c_status);
     }
   }
 
