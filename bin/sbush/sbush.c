@@ -13,7 +13,14 @@
 #define CMD_LS           3
 #define CMD_EXIT         4
 
+struct command
+{
+  char *argv[50];
+};
+
 char *my_strtok_r(char *str, const char *delim, char **nextp);
+void *my_memset(void *dest, int ch, size_t num_bytes);
+void my_strcpy(char *dst, const char *src);
 void handle_cd(char *path);
 void handle_cwd();
 void handle_ls();
@@ -23,30 +30,49 @@ void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
 int _strlen(char *);
+int fork_pipes (int n, struct command *cmd);
 
+int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
+  int i = 0;
+  char *saveptr;
+  char arr[255];
+  my_strcpy(arr, arg);
+  char *token = my_strtok_r(arr, sep, &saveptr);
+  while (token != NULL && i < max_tokens - 1) {
+    argv[i] = malloc(_strlen(token) + 1);
+    my_strcpy(argv[i], token);
+    token = my_strtok_r(NULL, sep, &saveptr);
+    i++;
+  }
+
+  argv[i] = NULL;
+  return i;
+}
 
 void build_argv(char *input, char *arg, char *argv[]) {
-  int i = 1;
-  char arr[255];
-  strcpy(arr, arg);
-  argv[0] = malloc(_strlen(input)+1);
-  strcpy(argv[0], input);
-  char *token = strtok(arr," ");
-  while (token !=NULL) {
-        argv[i] = malloc(_strlen(token)+1);
-        strcpy(argv[i],token);
-        token = strtok(NULL," ");
-        i++;
-  }
-  argv[i] = NULL;
-}
-int _strlen(char *str) {
-        int i;
-        for (i=0; *str != '\0'; str++)
-                i++;
-        return i;
+  argv[0] = malloc(_strlen(input) + 1);
+  my_strcpy(argv[0], input);
+  tokenize(arg, &argv[1], 49, " ");
 }
 
+int _strlen(char *str) {
+  int i;
+  for (i=0; *str != '\0'; str++)
+    i++;
+  return i;
+}
+
+void *my_memset(void *dest, int ch, size_t num_bytes) {
+  char *tmp;
+  if (num_bytes) {
+    tmp = dest;
+    do {
+      *tmp++ = ch;
+    } while (--num_bytes);
+  }
+
+  return dest;
+}
 
 char *my_strtok_r(char *str, const char *delim, char **nextp) {
 
@@ -66,6 +92,13 @@ char *my_strtok_r(char *str, const char *delim, char **nextp) {
   *nextp = str;
 
   return ret;
+}
+
+void my_strcpy(char *dst, const char *src) {
+  while (*src != '\0') {
+    *dst++ = *src++; 
+  }
+  *dst = '\0';
 }
 
 void handle_cd(char *path) {
@@ -138,7 +171,8 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   execvpe(tests[0], tests, envp);
   fprintf(stderr, "failed to execute \"%s\"\n", tests[0]);
   */
-  char *argv[10];
+  int i;
+  char *argv[50] = {0};
   build_argv(cmd, cmd_arg, argv);
 
   int c_status;
@@ -147,11 +181,10 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
 
   if (pid == 0) {
     if (execvp(cmd, argv) < 0) {
-	printf("exec* failed");
-        exit(1);
+	    printf("exec* failed");
+      exit(1);
     }
-  }
-  else {
+  } else {
     if (pid < 0) {
       printf("Fork failed\n");
       exit(1);
@@ -159,9 +192,15 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
     else {
       wait(&c_status);
     }
-
   }
 
+  /* Freeing */
+  i = 0;
+  while (argv[i]) {
+    free(argv[i]);
+    argv[i] = NULL;
+    i++;
+  }
 }
 
 void execute_command_line(char *cmd) {
@@ -231,23 +270,170 @@ void read_from_file(int num_tokens, char *cmd_tokens[]) {
   }
 
   code[n] = '\0'; 
+  execute_command_line(code);    
+}
+
+void handle_piped_commands(char *arg) {
+  char *argv[50] = {0};
+  int i;
+  int num_tokens = tokenize(arg, &argv[0], 50, "|");
+
+  /*
+  printf("[%s]\n", argv[0]);
+  printf("[%s]\n", argv[1]);
+  printf("%d\n", num_tokens);
+  */
+
+  /*
+  const char *ls[] = { "ls", "-l", 0 };
+  const char *awk[] = { "awk", "{print $1}", 0 };
+  const char *sort[] = { "sort", 0 };
+  const char *uniq[] = { "uniq", 0 };
+
+  struct command cmd [] = { {ls}, {awk}, {sort}, {uniq} };
+
+  fork_pipes (4, cmd);
+  */
+
+  struct command cmd[num_tokens];
+  my_memset(cmd, 0, sizeof(cmd));
+
+  for (i = 0; i < num_tokens; i++) {
+    tokenize(argv[i], cmd[i].argv, 50, " ");
+  }
+ 
+  fork_pipes (num_tokens, cmd);
+
+  /* Freeing */
+  i = 0;
+  while (*(cmd[i].argv)) {
+    free(*(cmd[i].argv));
+    *(cmd[i].argv) = NULL;
+    i++;
+  }
+  i = 0;
+  while(argv[i]) {
+    free(argv[i]);
+    argv[i] = NULL;
+    i++;
+  }
+
+}
+
+void read_from_stdin() {
+  int cnt;
+  char *str, *saveptr, *token;
+  char buff[1024] = {0};
+  while (fgets(buff, sizeof(buff), stdin) != NULL) {
+
+    cnt = 1;
+    size_t buff_length = _strlen(buff);
+    if (buff_length != 0 && buff[buff_length - 1] == '\n') {
+
+      buff_length--;
+      buff[buff_length] = '\0';
+    }
+
+    if (strstr(buff, "|")) {
+      handle_piped_commands(buff);
+    }  else {
+      str = buff;
+      while (1) {
+        token = my_strtok_r(str, " ", &saveptr);
+        if (token == NULL)
+          break;
+
+        if (cnt == 1)
+          execute_commands(token, saveptr);
+
+        cnt++;
+        str = NULL;
+      }
+    }
+    puts("sbush> ");
+    /*
+    printf("sbush> ");
+    fflush(stdout);
+    */
+
+    //exit(1); /* TODO : REMOVE, JUST A TEST (VALGRIND) */
+  }
+}
+
+int spawn_proc (int in, int out, struct command *cmd)
+{
+  pid_t pid;
+  if ((pid = fork ()) == 0)
+  {
+    if (in != 0)
+    {
+      dup2 (in, 0);
+      close (in);
+    }
+
+    if (out != 1)
+    {
+      dup2 (out, 1);
+      close (out);
+    }
+
+    return execvp (cmd->argv [0], (char * const *)cmd->argv);
+  }
+
+  return pid;
+}
+
+int fork_pipes (int n, struct command *cmd) {
+  int i;
+  int in, fd [2];
+
+  in = 0;
+  for (i = 0; i < n - 1; ++i)
+  {
+    if (pipe (fd) != 0)
+      return 1;
+
+    spawn_proc (in, fd [1], cmd + i);
+    close (fd [1]);
+
+    in = fd [0];
+  }
+
+  if (in != 0)
+    dup2 (in, 0);
+
+  return execvp(cmd[i].argv[0], (char * const *)cmd[i].argv);
+ 
+  /*
+  int c_status;
+  pid_t pid;
+  pid = fork();
+
+  if (pid == 0) {
+    if (execvp(cmd[i].argv[0], (char * const *)cmd[i].argv) < 0) {
+	    printf("exec* failed");
+      exit(1);
+    }
+  }
+  else {
+    if (pid < 0) {
+      printf("Fork failed\n");
+      exit(1);
+    }
+    else {
+     wait(&c_status);
+    }
+  }
+  */
 }
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  int i;
-  char *str, *saveptr, *token;
-  char buff[1024] = {0};
-
-  /*
-  printf("test\n");
-  const char* s = getenv("PATH");
-  printf("PATH :%s\n",(s!=NULL)? s : "getenv returned NULL");
-  printf("end test\n");
-  */
-
   puts("sbush> ");
-
+  /*
+  printf("sbush> ");
+  fflush(stdout);
+  */
 
   if (argc > 1) {
 
@@ -257,27 +443,7 @@ int main(int argc, char *argv[], char *envp[]) {
   } else {
 
     /* Case 2 : Interactive mode */
-	  while (fgets(buff, sizeof(buff), stdin) != NULL) {
-
-		  size_t buff_length = strlen(buff);
-		  if (buff_length != 0 && buff[buff_length - 1] == '\n') {
-
-			  buff_length--;
-			  buff[buff_length] = '\0';
-		  }
-
-		  for (i = 1, str = buff; ; i++, str = NULL) {
-
-			  token = my_strtok_r(str, " ", &saveptr);
-			  if (token == NULL)
-				  break;
-
-			  if (i == 1)
-          execute_commands(token, saveptr);
-		  }
-		  puts("sbush> ");
-
-	  }
+    read_from_stdin();
   }
 
   return 0;
