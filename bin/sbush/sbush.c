@@ -67,10 +67,29 @@ int my_strlen(char *str) {
     i++;
   return i;
 }
-/*
-int _strncmp (char *f_str, char *s_str, int n) {
-  if (*f_str == 
-*/
+
+int my_strncmp (const char *f_str, const char *s_str, size_t n) {
+  for ( ; n > 0; f_str++, s_str++, n--) { 
+    if (*f_str != *s_str) { 
+      return (*(unsigned char *)f_str < *(unsigned char *)s_str) ? -1 : 1;
+    }
+    else if(*f_str == '\0') {
+      return 0;
+    } 
+  }
+  return 0;
+}
+
+int my_strcmp (const char *f_str, const char *s_str) {
+
+  while (*f_str && (*f_str == *s_str)) {
+    f_str++; s_str++;
+  }
+  return (*(unsigned char *)f_str - *(unsigned char *)s_str);
+  
+ }
+
+
 void *my_memset(void *dest, int ch, size_t num_bytes) {
   char *tmp = dest;
   while (num_bytes) {
@@ -175,11 +194,11 @@ void handle_ls() {
 int get_command(char *cmd) {
 
   /* built-in */
-  if (strcmp(cmd, "cd") == 0)
+  if (my_strcmp(cmd, "cd") == 0)
     return CMD_CD;
 
   /* built-in */
-  else if (strcmp(cmd, "exit") == 0)
+  else if (my_strcmp(cmd, "exit") == 0)
     return CMD_EXIT;
 
   else
@@ -189,17 +208,17 @@ int get_command(char *cmd) {
 void get_path_string(char *cmd, char *path_value) {
 
   char *ptr = NULL;
-  if ((strstr(cmd, "$PATH")) != NULL) {
+  if ((my_strstr(cmd, "$PATH")) != NULL) {
     /*
      * 2 cases. eg: PATH=$PATH:/bin:/usr/bin 
      * $PATH anywhere else. beginning or somewhere else
      */ 
-    char *path = strstr(cmd, "=");
+    char *path = my_strstr(cmd, "=");
     path++; 
     char *temp = path;
     int len = my_strlen(path);
 
-    ptr = strstr(path, "$PATH");
+    ptr = my_strstr(path, "$PATH");
 
     char *sys_env = getenv("PATH");
 
@@ -218,7 +237,7 @@ void get_path_string(char *cmd, char *path_value) {
 
   } else {
     /* eg: PATH=/usr/bin */ 
-    ptr = strstr(cmd, "=");
+    ptr = my_strstr(cmd, "=");
     m_strcpy(path_value, ptr + 1); 
   }
 }
@@ -241,11 +260,11 @@ char *m_strncpy(char *dest, char *src, int len) {
 }
 
 int check_if_path_cmd(char *cmd) {
-  return strncmp(cmd, "PATH=", 5) == 0 ? 1 : 0; 
+  return my_strncmp(cmd, "PATH=", 5) == 0 ? 1 : 0; 
 }
 
 int check_if_ps1_cmd(char *cmd) {
-  return strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
+  return my_strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
 }
 /*
  * if & is found, replace with '\0' and return true
@@ -267,7 +286,6 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   pid_t pid;
   int i, c_status, bg_process = 0;
   char *argv[50] = {0};
-  char *envp[] = {"TERM=xterm", 0};
   char path_value[1024] = {0} ; 
   
   /* PATH variable set */
@@ -278,7 +296,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   }
   /* PS1 variable set */ 
   else if (check_if_ps1_cmd(cmd)) {
-    m_strcpy(ps1_variable, strstr(cmd, "=") + 1);
+    m_strcpy(ps1_variable, my_strstr(cmd, "=") + 1);
     return;
   }
   /* command & handling, true if & is found in the command */
@@ -290,7 +308,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
 
   pid = fork();
   if (pid == 0) {
-    if (execvpe(cmd, argv,envp) < 0) {
+    if (execvp(cmd, argv) < 0) {
       printf("%s: command not found\n", cmd);
       exit(1);
     }
