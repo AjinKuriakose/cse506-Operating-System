@@ -86,9 +86,7 @@ int my_strcmp (const char *f_str, const char *s_str) {
     f_str++; s_str++;
   }
   return (*(unsigned char *)f_str - *(unsigned char *)s_str);
-  
- }
-
+}
 
 void *my_memset(void *dest, int ch, size_t num_bytes) {
   char *tmp = dest;
@@ -266,10 +264,10 @@ int check_if_path_cmd(char *cmd) {
 int check_if_ps1_cmd(char *cmd) {
   return my_strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
 }
+
 /*
  * if & is found, replace with '\0' and return true
  */ 
-
 int update_if_bg_cmdarg(char *cmd_arg) {
   char *amp;
   int ret = 0;
@@ -277,12 +275,12 @@ int update_if_bg_cmdarg(char *cmd_arg) {
     *amp = '\0'; 
     ret = 1;
   }
+
   return ret; 
 }
 
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
-
   pid_t pid;
   int i, c_status, bg_process = 0;
   char *argv[50] = {0};
@@ -464,6 +462,7 @@ void read_from_stdin() {
 
 int spawn_proc(int in, int out, struct command *cmd)
 {
+  int c_status;
   pid_t pid;
   if ((pid = fork ()) == 0)
   {
@@ -480,6 +479,8 @@ int spawn_proc(int in, int out, struct command *cmd)
     }
 
     return execvp (cmd->argv [0], (char * const *)cmd->argv);
+  } else {
+    wait(&c_status);
   }
 
   return pid;
@@ -489,7 +490,7 @@ int fork_pipes (int n, struct command *cmd) {
   int i;
   int in, fd [2];
 
-  in = 0;
+  in = 0; //stdin
   for (i = 0; i < n - 1; ++i)
   {
     if (pipe(fd) != 0)
@@ -501,32 +502,21 @@ int fork_pipes (int n, struct command *cmd) {
     in = fd [0];
   }
 
-  if (in != 0)
-    dup2 (in, 0);
-
-  return execvp(cmd[i].argv[0], (char * const *)cmd[i].argv);
- 
-  /*
   int c_status;
   pid_t pid;
   pid = fork();
+  if(pid == 0) {
+    dup2 (in, 0);
+    close(in);
+    if(execvp(cmd[i].argv[0], (char * const *)cmd[i].argv) <0) {
+      printf("failed");
+      exit(1);
+    }
+  } else {
+    wait(&c_status);
+  }
 
-  if (pid == 0) {
-    if (execvp(cmd[i].argv[0], (char * const *)cmd[i].argv) < 0) {
-	    printf("exec* failed");
-      exit(1);
-    }
-  }
-  else {
-    if (pid < 0) {
-      printf("Fork failed\n");
-      exit(1);
-    }
-    else {
-     wait(&c_status);
-    }
-  }
-  */
+  return 0;
 }
 
 int main(int argc, char *argv[], char *envp[]) {
