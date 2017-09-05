@@ -25,6 +25,31 @@ char *my_strstr(char *str1, char *str2);
 void *my_memset(void *dest, int ch, size_t num_bytes);
 void my_strcpy(char *dst, const char *src);
 int  my_strlen(char *str);
+
+long sys_call(int syscall_number, ...);
+void *my_malloc(size_t size);   /* TODO */
+void my_free(void *ptr);  /* TODO */
+DIR *my_opendir(const char *name); /* TODO */
+struct dirent *my_readdir(DIR *dirp); /* TODO */
+int my_closedir(DIR *dirp); /* TODO */
+int my_setenv(const char *name, const char *value, int overwrite); /* TODO */
+char *my_getenv(const char *name); /* TODO */
+int my_execvp(const char *file, char *const argv[]); /* TODO */
+pid_t my_wait(int *status); /* TODO */
+FILE *my_fopen(const char *path, const char *mode); /* TODO */
+int my_fgetc(FILE *stream); /* TODO */
+char *my_fgets(char *s, int size, FILE *stream); /* TODO */
+
+
+int my_chdir(const char *path);
+char *my_getcwd(char *buf, size_t size);
+int my_dup2(int oldfd, int newfd);
+int my_pipe(int pipefd[2]);
+int my_close(int fd);
+
+
+
+
 int  get_command(char *cmd);
 void handle_cd(char *path);
 void handle_cwd();
@@ -46,6 +71,33 @@ int my_fork() {
       ::: "rdi", "rax");
 }
 */
+
+#define __NR_close    3
+#define __NR_pipe     22
+#define __NR_dup2     33
+#define __NR_fork     57
+#define __NR_getcwd   79
+#define __NR_chdir    80
+
+int my_chdir(const char *path) {
+  return sys_call(__NR_chdir, path);
+}
+
+char *my_getcwd(char *buf, size_t size) {
+  return (char *)sys_call(__NR_getcwd, buf, size);
+}
+
+int my_dup2(int oldfd, int newfd) {
+  return sys_call(__NR_dup2, oldfd, newfd);
+}
+
+int my_pipe(int pipefd[2]) {
+  return sys_call(__NR_pipe, pipefd);
+}
+
+int my_close(int fd) {
+  return sys_call(__NR_close, fd);
+}
 
 long sys_call(int syscall_number, ...) {
   int ret;
@@ -83,7 +135,7 @@ int my_fork() {
 
   return ret;
   */
-  return sys_call(57);
+  return sys_call(__NR_fork);
 }
 
 int my_putchar2(int c) {
@@ -240,7 +292,7 @@ char *my_strstr(char *str1, char *str2) {
 void handle_cd(char *path) {
   
   int ret;
-  ret = chdir(path);
+  ret = my_chdir(path);
   if (ret == -1)
     printf("sbush: cd: %s: No such file or directory\n", path); 
 }
@@ -248,14 +300,14 @@ void handle_cd(char *path) {
 void handle_cwd() {
 
   char buff[1024] = {0};
-  if (getcwd(buff, sizeof(buff)) != NULL)
+  if (my_getcwd(buff, sizeof(buff)) != NULL)
     printf ("%s\n", buff);
 }
 
 void handle_ls() {
 
   char buff[1024] = {0};
-  if (getcwd(buff, sizeof(buff)) != NULL) {
+  if (my_getcwd(buff, sizeof(buff)) != NULL) {
 
     DIR *dir;
     dir = opendir(buff);
@@ -553,14 +605,14 @@ int spawn_proc(int in, int out, struct command *cmd)
   {
     if (in != 0)
     {
-      dup2 (in, 0);
-      close (in);
+      my_dup2 (in, 0);
+      my_close (in);
     }
 
     if (out != 1)
     {
-      dup2 (out, 1);
-      close (out);
+      my_dup2 (out, 1);
+      my_close (out);
     }
 
     return execvp (cmd->argv [0], (char * const *)cmd->argv);
@@ -578,11 +630,11 @@ int fork_pipes (int n, struct command *cmd) {
   in = 0; //stdin
   for (i = 0; i < n - 1; ++i)
   {
-    if (pipe(fd) != 0)
+    if (my_pipe(fd) != 0)
       return 1;
 
     spawn_proc(in, fd [1], cmd + i);
-    close (fd [1]);
+    my_close (fd [1]);
 
     in = fd [0];
   }
@@ -591,8 +643,8 @@ int fork_pipes (int n, struct command *cmd) {
   pid_t pid;
   pid = my_fork();
   if(pid == 0) {
-    dup2 (in, 0);
-    close(in);
+    my_dup2 (in, 0);
+    my_close(in);
     if(execvp(cmd[i].argv[0], (char * const *)cmd[i].argv) <0) {
       printf("failed");
       exit(1);
