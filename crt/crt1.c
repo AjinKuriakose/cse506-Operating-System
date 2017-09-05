@@ -1,12 +1,25 @@
 #include <stdlib.h>
 
 void _start(void) {
-  main(1, 0,0 );
   // call main() and exit() here
-/*asm("movl $1,%eax;"
-        "xorl %ebx,%ebx;"
-        "int  $0x80"
-    );*/
-//exit (ret);
+  __asm__(
+    "xorl %ebp, %ebp;"
 
+    "movq %rdx, %r9;"
+    "popq %rsi;"
+    "movq %rsp, %rdx;"
+
+    "andq $~15, %rsp;"
+    "pushq %rax;"
+    "pushq %rsp;"
+
+    "movq (main), %rdi;"
+    "call main;"
+
+    /*exit*/
+
+    "movl $1, %eax;"
+    "xorl %ebx, %ebx;"
+    "int $0x80"
+  );
 }
