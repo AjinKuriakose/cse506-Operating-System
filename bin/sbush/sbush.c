@@ -38,6 +38,91 @@ char ps1_variable[256] = "sbush>";
 
 int fork_pipes (int n, struct command *cmd);
 
+/*
+int my_fork() {
+  __asm__ ("xorq %%rdi, %%rdi;"
+      "movq $57, %%rax;"
+      "syscall;"
+      ::: "rdi", "rax");
+}
+*/
+
+long sys_call(int syscall_number, ...) {
+  int ret;
+  __asm__(
+  "mov    %%rdi,%%rax;"
+  "mov    %%rsi,%%rdi;"
+  "mov    %%rdx,%%rsi;"
+  "mov    %%rcx,%%rdx;"
+  "mov    %%r8,%%r10;"
+  "mov    %%r9,%%r8;"
+  "mov    0x8(%%rsp),%%r9;"
+  "syscall;"
+  "cmp    $0xfffffffffffff001,%%rax;"
+  //"jae    0x7ffff7b0e4a2 <syscall+34>;"
+  //"retq;"
+  //"mov    0x2c29cf(%rip),%rcx;"
+  //"neg    %eax;"
+  //"mov    %eax,%fs:(%rcx);"
+  //"or     $0xffffffffffffffff,%rax;"
+  //"retq"
+  :"=r"(ret)
+  );
+
+  return ret;
+}
+
+int my_fork() {
+  /*
+  int ret;
+  __asm__(
+    "movq $57, %%rax;"
+    "syscall;"
+    :"=r"(ret)
+  );
+
+  return ret;
+  */
+  return sys_call(57);
+}
+
+int my_putchar2(int c) {
+  int ret;
+  char *a = (char *)&c;
+  __asm__("movq $1, %%rax;"
+      "movq $1, %%rdi;"
+      "movq $1, %%rdx;"
+      "syscall;"
+      :"=r"(ret)
+      :"r"(a)
+      );
+  printf("inside c=%c ret=[%c]", c,ret);
+  return ret;
+}
+
+int my_putchar(int c)
+{
+  char ch = c;
+  if (write(1, &ch, 1) == 1)
+    return c;
+
+  return 0;
+}
+
+int my_puts(const char *s)
+{
+  int ret;
+  for( ; *s; ++s) 
+  {
+    if ((ret = my_putchar2(*s)) != *s)
+    {
+      printf("Pass : [%c], [%c]\n", *s, ret);
+      return EOF;
+    }
+  } 
+  return (my_putchar2('\n') == '\n') ? 0 : EOF;
+}
+
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   int i = 0;
   char *saveptr;
@@ -304,7 +389,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
  
   build_argv(cmd, cmd_arg, argv);
 
-  pid = fork();
+  pid = my_fork();
   if (pid == 0) {
     if (execvp(cmd, argv) < 0) {
       printf("%s: command not found\n", cmd);
@@ -464,7 +549,7 @@ int spawn_proc(int in, int out, struct command *cmd)
 {
   int c_status;
   pid_t pid;
-  if ((pid = fork ()) == 0)
+  if ((pid = my_fork ()) == 0)
   {
     if (in != 0)
     {
@@ -504,7 +589,7 @@ int fork_pipes (int n, struct command *cmd) {
 
   int c_status;
   pid_t pid;
-  pid = fork();
+  pid = my_fork();
   if(pid == 0) {
     dup2 (in, 0);
     close(in);
