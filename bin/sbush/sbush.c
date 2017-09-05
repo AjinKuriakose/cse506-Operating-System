@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -18,9 +17,10 @@ struct command
   char *argv[50];
 };
 
+
 char *m_strcpy(char *dest, char *src);
 char *m_strncpy(char *dest, char *src, int num_bytes);
-char *my_strtok_r(char *str, const char *delim, char **nextp);
+char *my_strtok_r(char *str, char *delim, char **nextp);
 char *my_strstr(char *str1, char *str2);
 void *my_memset(void *dest, int ch, size_t num_bytes);
 void my_strcpy(char *dst, const char *src);
@@ -33,6 +33,8 @@ void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
+
+char *my_strchr(char *, int);
 
 char ps1_variable[256] = "sbush>";
 
@@ -53,6 +55,35 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
 
   argv[i] = NULL;
   return i;
+}
+/* 3 functions */
+size_t my_strspn(char *s1, char *s2)
+{
+    size_t ret=0;
+    while(*s1 && my_strchr(s2,*s1++))
+        ret++;
+    return ret;    
+}
+
+size_t my_strcspn(char *s1, char *s2)
+{
+    size_t ret=0;
+    while(*s1)
+        if(my_strchr(s2,*s1))
+            return ret;
+        else
+            s1++,ret++;
+    return ret;
+}
+
+char *my_strchr(char *s, int c)
+{
+    char* ret=0;
+    do {
+        if( *s == (char)c )
+            ret=s;
+    } while(*s++);
+    return ret;
 }
 
 void build_argv(char *input, char *arg, char *argv[]) {
@@ -97,17 +128,17 @@ void *my_memset(void *dest, int ch, size_t num_bytes) {
   return dest;
 }
 
-char *my_strtok_r(char *str, const char *delim, char **nextp) {
+char *my_strtok_r(char *str, char *delim, char **nextp) {
   char *ret;
   if (str == NULL)
     str = *nextp;
 
-  str += strspn(str, delim);
+  str += my_strspn(str, delim);
   if (*str == '\0')
     return NULL;
 
   ret = str;
-  str += strcspn(str, delim);
+  str += my_strcspn(str, delim);
   if (*str)
     *str++ = '\0';
 
