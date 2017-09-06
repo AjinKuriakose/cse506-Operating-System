@@ -1,9 +1,7 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <dirent.h>
+//#include <dirent.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -27,15 +25,12 @@ int  my_strncmp(const char *f_str, const char *s_str, size_t n);
 int  my_strcmp(const char *f_str, const char *s_str);
 
 long sys_call(int syscall_number, ...);
-DIR *my_opendir(const char *name); /* TODO */
-struct dirent *my_readdir(DIR *dirp); /* TODO */
-int my_closedir(DIR *dirp); /* TODO */
+//DIR *my_opendir(const char *name); /* TODO */
+//struct dirent *my_readdir(DIR *dirp); /* TODO */
+//int my_closedir(DIR *dirp); /* TODO */
 int my_setenv(const char *name, const char *value, int overwrite); /* TODO */
 char *my_getenv(const char *name); /* TODO */
 int my_execvp(const char *file, char *const argv[]); /* TODO */
-FILE *my_fopen(const char *path, const char *mode); /* TODO */
-int my_fgetc(FILE *stream); /* TODO */
-char *my_fgets(char *s, int size, FILE *stream); /* TODO */
 
 
 char *my_getcwd(char *buf, size_t size);
@@ -47,8 +42,10 @@ int  my_waitpid(int pid, int *st_ptr, int options);
 int  my_chdir(const char *path);
 int  my_dup2(int oldfd, int newfd);
 int  my_pipe(int pipefd[2]);
+int  my_open(const char *pathname, int flags);
 int  my_close(int fd);
 int  my_fork();
+int  my_read(int fd, char *c, int size);
 int  my_write(int fd, char *c, int size);
 int  my_putchar(int c);
 int  my_puts(const char *s);
@@ -78,8 +75,16 @@ int fork_pipes (int n, struct command *cmd);
 #define MAP_ANONYMOUS 0x20
 #define MAP_FAILED    ((void *)-1)
 
+#define O_RDONLY      0x0000
+#define O_WRONLY      0x0001
+#define O_RDWR        0x0002
+
+#define S_IREAD       0000400
+#define S_IWRITE      0000200
+
 #define __NR_read     0
 #define __NR_write    1
+#define __NR_open     2
 #define __NR_close    3
 #define __NR_mmap     9
 #define __NR_munmap   11
@@ -142,6 +147,10 @@ int my_pipe(int pipefd[2]) {
   return sys_call(__NR_pipe, pipefd);
 }
 
+int my_open(const char *pathname, int flags) {
+  return sys_call(__NR_open, pathname, flags);
+}
+
 int my_close(int fd) {
   return sys_call(__NR_close, fd);
 }
@@ -166,6 +175,10 @@ long sys_call(int syscall_number, ...) {
 
 int my_fork() {
   return sys_call(__NR_fork);
+}
+
+int my_read(int fd, char *c, int size) {
+  return sys_call(__NR_read, fd, c, size);
 }
 
 int my_write(int fd, char *c, int size) {
@@ -349,7 +362,7 @@ void handle_cwd() {
 }
 
 void handle_ls() {
-
+#if 0
   char buff[1024] = {0};
   if (my_getcwd(buff, sizeof(buff)) != NULL) {
 
@@ -368,6 +381,7 @@ void handle_ls() {
       closedir(dir);
     }
   }
+#endif
 }
 
 int get_command(char *cmd) {
@@ -550,15 +564,15 @@ void execute_commands(char *cmd, char *cmd_arg) {
 /* Read from the file one line at a time and execute */
 void read_from_file(int num_tokens, char *cmd_tokens[]) {
 
-  FILE *file = fopen(cmd_tokens[1], "r");
+  int file = my_open(cmd_tokens[1], O_RDONLY);
   char code[1024] = {0};
   size_t n = 0;
-  int c;
+  char c;
 
-  if (file == NULL)
+  if (file == -1)
     return;
 
-  while ((c = fgetc(file)) != EOF)
+  while (read(file, &c, 1) > 0)
   {
     code[n++] = (char) c;
     if (c == '\n') {
@@ -604,7 +618,7 @@ void read_from_stdin() {
   int cnt;
   char *str, *saveptr, *token;
   char buff[1024] = {0};
-  while (fgets(buff, sizeof(buff), stdin) != NULL) {
+  while (my_read(0, buff, sizeof(buff)) > 0) {
 
     cnt = 1;
     size_t buff_length = my_strlen(buff);
@@ -638,6 +652,7 @@ void read_from_stdin() {
     */
 
     //exit(1); /* TODO : REMOVE, JUST A TEST (VALGRIND) */
+    my_memset(buff, 0, sizeof(buff));
   }
 }
 
