@@ -13,6 +13,9 @@ typedef struct piped_commands {
   char *commands[50];
 } piped_commands;
 
+char **m_environ;
+
+
 char *m_strcpy(char *dest, char *src);
 char *m_strncpy(char *dest, char *src, int num_bytes);
 char *my_strtok_r(char *str, char *delim, char **nextp);
@@ -27,11 +30,11 @@ long sys_call(int syscall_number, ...);
 //DIR *my_opendir(const char *name); /* TODO */
 //struct dirent *my_readdir(DIR *dirp); /* TODO */
 //int my_closedir(DIR *dirp); /* TODO */
-int my_setenv(const char *name, const char *value, int overwrite); /* TODO */
-char *my_getenv(const char *name); /* TODO */
 int my_execvp(const char *file, char *const argv[]); /* TODO */
 
 
+char *my_getenv(const char *name);
+int my_setenv(char *name, char *value, int overwrite);
 char *my_getcwd(char *buf, size_t size);
 void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 void *my_malloc(size_t size);
@@ -434,6 +437,7 @@ void get_path_string(char *cmd, char *path_value) {
   }
 }
 
+
 char *m_strcpy(char *dest, char *src) {
   int i;
   for (i=0; src[i] != '\0'; i++) {
@@ -483,7 +487,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   /* PATH variable set */
   if (check_if_path_cmd(cmd)) {
     get_path_string(cmd, path_value); 
-    setenv("PATH", path_value, 1);
+    my_setenv("PATH", path_value, 1);
     return;
   }
   /* PS1 variable set */ 
@@ -716,8 +720,50 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds) {
   return 0;
 }
 
+char *my_getenv(const char *arg) {
+  int i;
+  for (i = 0; m_environ[i] !=0 ; i++) {
+    if (my_strncmp(m_environ[i], "PATH=", 5) == 0) { 
+      return m_environ[i];
+    } 
+  }
+ return NULL;
+}
+
+int my_setenv(char *path_variable, char *value, int overwrite) {
+   //setenv("PATH", path_value, 1);
+   //overwrite variable is not used now.
+  int i;
+  int var_len = my_strlen(path_variable);
+  int value_len = my_strlen(value);
+
+  for (i = 0; m_environ[i] !=0 ; i++) {
+
+    if (my_strncmp(m_environ[i], "PATH=", 5) == 0) { 
+       /*
+	* first free the value. Then allocate for new value
+	*/
+       my_free(m_environ[i]);
+       m_environ[i]= my_malloc(value_len + var_len + 2);//include size of "=" as well.
+	
+       /*
+	* copy the complete value in 3 steps. eg: PATH=/usr/bin
+	*/
+
+       m_strncpy(m_environ[i], path_variable, var_len);	
+       m_strncpy(m_environ[i] + var_len, "=", 1);	
+       m_strcpy(m_environ[i] + var_len + 1, value);
+
+       return 0;
+    }
+  }
+  return 1;
+}
+
 int main(int argc, char *argv[], char *envp[]) {
 
+  m_environ = envp;
+ // my_setenv("PATH",my_getenv("PATH"),1);
   my_puts("sbush> ");
 
   if (argc > 1) {
