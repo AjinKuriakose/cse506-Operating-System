@@ -37,8 +37,8 @@ char *my_getenv(const char *name);
 int my_setenv(char *name, char *value, int overwrite);
 char *my_getcwd(char *buf, size_t size);
 void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
-void *my_malloc(size_t size);
-void my_free(void *ptr);
+void *my_malloc(int sz);
+void my_free(void *mem_ptr);
 int  my_munmap(void *addr, size_t length);
 int  my_waitpid(int pid, int *st_ptr, int options);
 int  my_chdir(const char *path);
@@ -106,26 +106,19 @@ int my_munmap(void *addr, size_t length) {
   return sys_call(__NR_munmap, addr, length);
 }
 
-void *my_malloc(size_t size) {
-  int *plen;
-  int len = size + sizeof(size);
-  plen = (int *)my_mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-  if (plen == MAP_FAILED)
+void *my_malloc(int sz) {
+  int *mem_ptr;
+  mem_ptr = (int *)my_mmap(0, sz + sizeof(sz), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+  if (mem_ptr == MAP_FAILED)
     return NULL;
 
-  *plen = len;
-  return (void *)(&plen[1]);
+  *mem_ptr = sz + sizeof(sz);
+  return (void *)(mem_ptr + 1);
 }
 
-void my_free(void *ptr) {
-  if (ptr) {
-    int *plen = (int *)ptr;
-    int len;
-
-    plen--;
-    len = *plen;
-
-    my_munmap((void *)plen, len);
+void my_free(void *mem_ptr) {
+  if (mem_ptr) {
+    my_munmap((void *)mem_ptr, *((int *)mem_ptr - 1));
   }
 }
 
@@ -591,16 +584,18 @@ void read_from_file(int num_tokens, char *cmd_tokens[]) {
 
 void handle_piped_commands(char *arg) {
   char *argv[50] = {0};
-  int i;
-  int num_cmds = tokenize(arg, &argv[0], 50, "|");
+  int i = 0;
+  int num_cmds  = tokenize(arg, &argv[0], 50, "|");
+  int num_pipes = num_cmds - 1;
   piped_commands cmds[num_cmds];
   my_memset(cmds, 0, sizeof(cmds));
 
-  for (i = 0; i < num_cmds; i++) {
+  while (i < num_cmds) {
     tokenize(argv[i], cmds[i].commands, 50, " ");
+    i++;
   }
  
-  execute_piped_commands(num_cmds - 1, cmds);
+  execute_piped_commands(num_pipes, cmds);
 
   /* Freeing */
   i = 0;
@@ -661,8 +656,8 @@ void read_from_stdin() {
 
 int process_start(int input_fd, int output_fd, piped_commands *cmds) {
   int status;
-  pid_t pid;
-  if ((pid = my_fork()) == 0) {
+  pid_t pid = fork();
+  if (pid == 0) {
 
     if (input_fd != 0) {
       my_dup2(input_fd, 0);
