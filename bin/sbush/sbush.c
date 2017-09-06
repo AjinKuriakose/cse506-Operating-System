@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <sys/wait.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -25,27 +24,40 @@ char *my_strstr(char *str1, char *str2);
 void *my_memset(void *dest, int ch, size_t num_bytes);
 void my_strcpy(char *dst, const char *src);
 int  my_strlen(char *str);
+int  my_strncmp(const char *f_str, const char *s_str, size_t n);
+int  my_strcmp(const char *f_str, const char *s_str);
 
 long sys_call(int syscall_number, ...);
-void *my_malloc(size_t size);   /* TODO */
-void my_free(void *ptr);  /* TODO */
 DIR *my_opendir(const char *name); /* TODO */
 struct dirent *my_readdir(DIR *dirp); /* TODO */
 int my_closedir(DIR *dirp); /* TODO */
 int my_setenv(const char *name, const char *value, int overwrite); /* TODO */
 char *my_getenv(const char *name); /* TODO */
 int my_execvp(const char *file, char *const argv[]); /* TODO */
-pid_t my_wait(int *status); /* TODO */
 FILE *my_fopen(const char *path, const char *mode); /* TODO */
 int my_fgetc(FILE *stream); /* TODO */
 char *my_fgets(char *s, int size, FILE *stream); /* TODO */
 
 
-int my_chdir(const char *path);
 char *my_getcwd(char *buf, size_t size);
-int my_dup2(int oldfd, int newfd);
-int my_pipe(int pipefd[2]);
-int my_close(int fd);
+void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+void *my_malloc(size_t size);
+void my_free(void *ptr);
+int  my_munmap(void *addr, size_t length);
+int  my_waitpid(int pid, int *st_ptr, int options);
+int  my_chdir(const char *path);
+int  my_dup2(int oldfd, int newfd);
+int  my_pipe(int pipefd[2]);
+int  my_close(int fd);
+int  my_fork();
+int  my_write(int fd, char *c, int size);
+int  my_putchar3(int c);
+int  my_putchar2(int c);
+int  my_putchar(int c);
+int  my_puts(const char *s);
+size_t my_strspn(char *s1, char *s2);
+size_t my_strcspn(char *s1, char *s2);
+char *my_strchr(char *s, int c);
 
 
 
@@ -58,8 +70,6 @@ void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
-
-char *my_strchr(char *, int);
 
 char ps1_variable[256] = "sbush>";
 
@@ -74,12 +84,60 @@ int my_fork() {
 }
 */
 
+#define	PROT_READ     0x1
+#define	PROT_WRITE    0x2
+#define	MAP_PRIVATE   0x02
+#define MAP_ANONYMOUS 0x20
+#define MAP_FAILED    ((void *)-1)
+
+#define __NR_read     0
+#define __NR_write    1
 #define __NR_close    3
+#define __NR_mmap     9
+#define __NR_munmap   11
 #define __NR_pipe     22
 #define __NR_dup2     33
 #define __NR_fork     57
+#define __NR_wait4    61
 #define __NR_getcwd   79
 #define __NR_chdir    80
+#define __NR_waitid   247
+
+void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+  return (void *)sys_call(__NR_mmap, addr, length, prot, flags, fd, offset);
+}
+
+int my_munmap(void *addr, size_t length) {
+  return sys_call(__NR_munmap, addr, length);
+}
+
+void *my_malloc(size_t size) {
+  int *plen;
+  int len = size + sizeof(size);
+  plen = (int *)my_mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+  if (plen == MAP_FAILED)
+    return NULL;
+
+  *plen = len;
+  return (void *)(&plen[1]);
+}
+
+void my_free(void *ptr) {
+  if (ptr) {
+    int *plen = (int *)ptr;
+    int len;
+
+    plen--;
+    len = *plen;
+
+    my_munmap((void *)plen, len);
+  }
+}
+
+int my_waitpid(int pid, int *st_ptr, int options) {
+  return sys_call(__NR_wait4, pid, st_ptr, options, NULL);
+  //return sys_call(__NR_waitid, pid, st_ptr, options);
+}
 
 int my_chdir(const char *path) {
   return sys_call(__NR_chdir, path);
@@ -102,7 +160,7 @@ int my_close(int fd) {
 }
 
 long sys_call(int syscall_number, ...) {
-  int ret;
+  long ret;
   __asm__(
   "mov    %%rdi,%%rax;"
   "mov    %%rsi,%%rdi;"
@@ -140,6 +198,15 @@ int my_fork() {
   return sys_call(__NR_fork);
 }
 
+int my_write(int fd, char *c, int size) {
+  return sys_call(__NR_write, fd, c, size);
+}
+
+int my_putchar3(int c) {
+  char ch = (char)c;
+  return sys_call(__NR_write, 1, &ch, 1);
+}
+
 int my_putchar2(int c) {
   int ret;
   char *a = (char *)&c;
@@ -154,27 +221,24 @@ int my_putchar2(int c) {
   return ret;
 }
 
-int my_putchar(int c)
-{
+int my_putchar(int c) {
   char ch = c;
-  if (write(1, &ch, 1) == 1)
+  if (my_write(1, &ch, 1) == 1)
     return c;
 
   return 0;
 }
 
-int my_puts(const char *s)
-{
+int my_puts(const char *s) {
   int ret;
-  for( ; *s; ++s) 
-  {
-    if ((ret = my_putchar2(*s)) != *s)
-    {
+  while (*s) {
+    if ((ret = my_putchar(*s)) != *s) {
       printf("Pass : [%c], [%c]\n", *s, ret);
       return EOF;
     }
+    s++;
   } 
-  return (my_putchar2('\n') == '\n') ? 0 : EOF;
+  return (my_putchar('\n') == '\n') ? 0 : EOF;
 }
 
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
@@ -184,7 +248,7 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   my_strcpy(arr, arg);
   char *token = my_strtok_r(arr, sep, &saveptr);
   while (token != NULL && i < max_tokens - 1) {
-    argv[i] = malloc(my_strlen(token) + 1);
+    argv[i] = my_malloc(my_strlen(token) + 1);
     my_strcpy(argv[i], token);
     token = my_strtok_r(NULL, sep, &saveptr);
     i++;
@@ -224,7 +288,7 @@ char *my_strchr(char *s, int c)
 }
 
 void build_argv(char *input, char *arg, char *argv[]) {
-  argv[0] = malloc(my_strlen(input) + 1);
+  argv[0] = my_malloc(my_strlen(input) + 1);
   my_strcpy(argv[0], input);
   tokenize(arg, &argv[1], 49, " ");
 }
@@ -485,14 +549,15 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
     }
     else {
       if (!bg_process)
-        wait(&c_status);
+        //wait(&c_status);
+        my_waitpid(-1, &c_status, 0);
     }
   }
 
   /* Freeing */
   i = 0;
   while (argv[i]) {
-    free(argv[i]);
+    my_free(argv[i]);
     argv[i] = NULL;
     i++;
   }
@@ -575,13 +640,13 @@ void handle_piped_commands(char *arg) {
   /* Freeing */
   i = 0;
   while (*(cmd[i].argv)) {
-    free(*(cmd[i].argv));
+    my_free(*(cmd[i].argv));
     *(cmd[i].argv) = NULL;
     i++;
   }
   i = 0;
   while(argv[i]) {
-    free(argv[i]);
+    my_free(argv[i]);
     argv[i] = NULL;
     i++;
   }
@@ -618,7 +683,7 @@ void read_from_stdin() {
       }
     }
 
-    puts(ps1_variable);
+    my_puts(ps1_variable);
     /*
     printf("sbush> ");
     fflush(stdout);
@@ -648,7 +713,8 @@ int spawn_proc(int in, int out, struct command *cmd)
 
     return execvp (cmd->argv [0], (char * const *)cmd->argv);
   } else {
-    wait(&c_status);
+    //wait(&c_status);
+    my_waitpid(-1, &c_status, 0);
   }
 
   return pid;
@@ -681,7 +747,8 @@ int fork_pipes (int n, struct command *cmd) {
       exit(1);
     }
   } else {
-    wait(&c_status);
+    //wait(&c_status);
+    my_waitpid(-1, &c_status, 0);
   }
 
   return 0;
@@ -689,7 +756,7 @@ int fork_pipes (int n, struct command *cmd) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  puts("sbush> ");
+  my_puts("sbush> ");
   /*
   printf("sbush> ");
   fflush(stdout);
