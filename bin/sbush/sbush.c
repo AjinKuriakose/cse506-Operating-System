@@ -9,10 +9,9 @@
 #define CMD_LS           3
 #define CMD_EXIT         4
 
-struct command
-{
-  char *argv[50];
-};
+typedef struct piped_commands {
+  char *commands[50];
+} piped_commands;
 
 char *m_strcpy(char *dest, char *src);
 char *m_strncpy(char *dest, char *src, int num_bytes);
@@ -67,7 +66,7 @@ void read_from_file(int num_tokens, char *cmd_tokens[]);
 
 char ps1_variable[256] = "sbush>";
 
-int fork_pipes (int n, struct command *cmd);
+int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
 #define	PROT_READ     0x1
 #define	PROT_WRITE    0x2
@@ -477,7 +476,7 @@ int update_if_bg_cmdarg(char *cmd_arg) {
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
   pid_t pid;
-  int i, c_status, bg_process = 0;
+  int i, status, bg_process = 0;
   char *argv[50] = {0};
   char path_value[1024] = {0} ; 
   
@@ -512,7 +511,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
     }
     else {
       if (!bg_process)
-        my_waitpid(-1, &c_status, 0);
+        my_waitpid(-1, &status, 0);
     }
   }
 
@@ -589,21 +588,21 @@ void read_from_file(int num_tokens, char *cmd_tokens[]) {
 void handle_piped_commands(char *arg) {
   char *argv[50] = {0};
   int i;
-  int num_tokens = tokenize(arg, &argv[0], 50, "|");
-  struct command cmd[num_tokens];
-  my_memset(cmd, 0, sizeof(cmd));
+  int num_cmds = tokenize(arg, &argv[0], 50, "|");
+  piped_commands cmds[num_cmds];
+  my_memset(cmds, 0, sizeof(cmds));
 
-  for (i = 0; i < num_tokens; i++) {
-    tokenize(argv[i], cmd[i].argv, 50, " ");
+  for (i = 0; i < num_cmds; i++) {
+    tokenize(argv[i], cmds[i].commands, 50, " ");
   }
  
-  fork_pipes (num_tokens, cmd);
+  execute_piped_commands(num_cmds - 1, cmds);
 
   /* Freeing */
   i = 0;
-  while (*(cmd[i].argv)) {
-    my_free(*(cmd[i].argv));
-    *(cmd[i].argv) = NULL;
+  while (*(cmds[i].commands)) {
+    my_free(*(cmds[i].commands));
+    *(cmds[i].commands) = NULL;
     i++;
   }
   i = 0;
@@ -656,60 +655,62 @@ void read_from_stdin() {
   }
 }
 
-int spawn_proc(int in, int out, struct command *cmd)
-{
-  int c_status;
+int process_start(int input_fd, int output_fd, piped_commands *cmds) {
+  int status;
   pid_t pid;
-  if ((pid = my_fork ()) == 0)
-  {
-    if (in != 0)
-    {
-      my_dup2 (in, 0);
-      my_close (in);
+  if ((pid = my_fork()) == 0) {
+
+    if (input_fd != 0) {
+      my_dup2(input_fd, 0);
+      my_close(input_fd);
     }
 
-    if (out != 1)
-    {
-      my_dup2 (out, 1);
-      my_close (out);
+    if (output_fd != 1) {
+      my_dup2(output_fd, 1);
+      my_close(output_fd);
     }
 
-    return execvp (cmd->argv [0], (char * const *)cmd->argv);
+    return execvp(cmds->commands[0], cmds->commands);
+
   } else {
-    my_waitpid(-1, &c_status, 0);
+    my_waitpid(-1, &status, 0);
   }
 
   return pid;
 }
 
-int fork_pipes (int n, struct command *cmd) {
-  int i;
-  int in, fd [2];
+int execute_piped_commands(int num_pipes, piped_commands *cmds) {
+  int i = 0;
+  int input_fd = 0; /* stdin */
+  int fds[2];
+  int status;
+  pid_t pid;
 
-  in = 0; //stdin
-  for (i = 0; i < n - 1; ++i)
-  {
-    if (my_pipe(fd) != 0)
+  while (i < num_pipes) {
+    if (my_pipe(fds) != 0)
       return 1;
 
-    spawn_proc(in, fd [1], cmd + i);
-    my_close (fd [1]);
+    process_start(input_fd, fds[1], cmds + i);
+    my_close(fds[1]);
 
-    in = fd [0];
+    input_fd = fds[0];
+    i++;
   }
 
-  int c_status;
-  pid_t pid;
+  /* last command */
   pid = my_fork();
-  if(pid == 0) {
-    my_dup2 (in, 0);
-    my_close(in);
-    if(execvp(cmd[i].argv[0], (char * const *)cmd[i].argv) <0) {
+  if (pid == 0) {
+
+    my_dup2(input_fd, 0);
+    my_close(input_fd);
+
+    if (execvp(cmds[i].commands[0], cmds[i].commands) < 0) {
       printf("failed");
       exit(1);
     }
+
   } else {
-    my_waitpid(-1, &c_status, 0);
+    my_waitpid(-1, &status, 0);
   }
 
   return 0;
