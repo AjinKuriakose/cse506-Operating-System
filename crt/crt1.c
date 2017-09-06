@@ -5,15 +5,16 @@ void _start(void) {
   __asm__(
     "xorl %ebp, %ebp;"
 
-    "movq %rdx, %r9;"
-    "popq %rsi;"
-    "movq %rsp, %rdx;"
+     "popq %rdi;"
+     "popq %rdi;"
+	//keeping the same value in argv & env.
+	//would need to do env[argc+1] inside main
+	//replace rdx later with proper value
+      "movq %rsp, %rsi ;"
+      "movq %rsp, %rdx;"
+//    "add %rdx,%rdi;"
 
-    "andq $~15, %rsp;"
-    "pushq %rax;"
-    "pushq %rsp;"
 
-    "movq (main), %rdi;"
     "call main;"
 
     /*exit*/
