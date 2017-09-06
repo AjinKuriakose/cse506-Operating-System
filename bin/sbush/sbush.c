@@ -16,7 +16,6 @@ struct command
   char *argv[50];
 };
 
-
 char *m_strcpy(char *dest, char *src);
 char *m_strncpy(char *dest, char *src, int num_bytes);
 char *my_strtok_r(char *str, char *delim, char **nextp);
@@ -51,8 +50,6 @@ int  my_pipe(int pipefd[2]);
 int  my_close(int fd);
 int  my_fork();
 int  my_write(int fd, char *c, int size);
-int  my_putchar3(int c);
-int  my_putchar2(int c);
 int  my_putchar(int c);
 int  my_puts(const char *s);
 size_t my_strspn(char *s1, char *s2);
@@ -74,15 +71,6 @@ void read_from_file(int num_tokens, char *cmd_tokens[]);
 char ps1_variable[256] = "sbush>";
 
 int fork_pipes (int n, struct command *cmd);
-
-/*
-int my_fork() {
-  __asm__ ("xorq %%rdi, %%rdi;"
-      "movq $57, %%rax;"
-      "syscall;"
-      ::: "rdi", "rax");
-}
-*/
 
 #define	PROT_READ     0x1
 #define	PROT_WRITE    0x2
@@ -136,7 +124,6 @@ void my_free(void *ptr) {
 
 int my_waitpid(int pid, int *st_ptr, int options) {
   return sys_call(__NR_wait4, pid, st_ptr, options, NULL);
-  //return sys_call(__NR_waitid, pid, st_ptr, options);
 }
 
 int my_chdir(const char *path) {
@@ -171,13 +158,6 @@ long sys_call(int syscall_number, ...) {
   "mov    0x8(%%rsp),%%r9;"
   "syscall;"
   "cmp    $0xfffffffffffff001,%%rax;"
-  //"jae    0x7ffff7b0e4a2 <syscall+34>;"
-  //"retq;"
-  //"mov    0x2c29cf(%rip),%rcx;"
-  //"neg    %eax;"
-  //"mov    %eax,%fs:(%rcx);"
-  //"or     $0xffffffffffffffff,%rax;"
-  //"retq"
   :"=r"(ret)
   );
 
@@ -185,40 +165,11 @@ long sys_call(int syscall_number, ...) {
 }
 
 int my_fork() {
-  /*
-  int ret;
-  __asm__(
-    "movq $57, %%rax;"
-    "syscall;"
-    :"=r"(ret)
-  );
-
-  return ret;
-  */
   return sys_call(__NR_fork);
 }
 
 int my_write(int fd, char *c, int size) {
   return sys_call(__NR_write, fd, c, size);
-}
-
-int my_putchar3(int c) {
-  char ch = (char)c;
-  return sys_call(__NR_write, 1, &ch, 1);
-}
-
-int my_putchar2(int c) {
-  int ret;
-  char *a = (char *)&c;
-  __asm__("movq $1, %%rax;"
-      "movq $1, %%rdi;"
-      "movq $1, %%rdx;"
-      "syscall;"
-      :"=r"(ret)
-      :"r"(a)
-      );
-  printf("inside c=%c ret=[%c]", c,ret);
-  return ret;
 }
 
 int my_putchar(int c) {
@@ -232,10 +183,8 @@ int my_putchar(int c) {
 int my_puts(const char *s) {
   int ret;
   while (*s) {
-    if ((ret = my_putchar(*s)) != *s) {
-      printf("Pass : [%c], [%c]\n", *s, ret);
+    if ((ret = my_putchar(*s)) != *s)
       return EOF;
-    }
     s++;
   } 
   return (my_putchar('\n') == '\n') ? 0 : EOF;
@@ -257,7 +206,7 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   argv[i] = NULL;
   return i;
 }
-/* 3 functions */
+
 size_t my_strspn(char *s1, char *s2)
 {
     size_t ret=0;
@@ -549,7 +498,6 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
     }
     else {
       if (!bg_process)
-        //wait(&c_status);
         my_waitpid(-1, &c_status, 0);
     }
   }
@@ -713,7 +661,6 @@ int spawn_proc(int in, int out, struct command *cmd)
 
     return execvp (cmd->argv [0], (char * const *)cmd->argv);
   } else {
-    //wait(&c_status);
     my_waitpid(-1, &c_status, 0);
   }
 
@@ -747,7 +694,6 @@ int fork_pipes (int n, struct command *cmd) {
       exit(1);
     }
   } else {
-    //wait(&c_status);
     my_waitpid(-1, &c_status, 0);
   }
 
@@ -757,27 +703,6 @@ int fork_pipes (int n, struct command *cmd) {
 int main(int argc, char *argv[], char *envp[]) {
 
   my_puts("sbush> ");
-  /*
-  printf("sbush> ");
-  fflush(stdout);
-  */
-
-  /*
-  printf("[%s]\n", my_strstr(NULL, NULL));
-  printf("[%s]\n", my_strstr("aa", NULL));
-  printf("[%s]\n", my_strstr(NULL, "bb"));
-  printf("[%s]\n", my_strstr("aa", ""));
-  printf("[%s]\n", my_strstr("", "bb"));
-  printf("[%s]\n", my_strstr("", ""));
-  printf("[%s]\n", my_strstr("this is a string", "this"));
-  printf("[%s]\n", my_strstr("this is a string", "is"));
-  printf("[%s]\n", my_strstr("this is a string", "a"));
-  printf("[%s]\n", my_strstr("this is a string", "string"));
-  printf("[%s]\n", my_strstr("this is a string", "t"));
-  printf("[%s]\n", my_strstr("this is a string", "s"));
-  printf("[%s]\n", my_strstr("this is a string", "g"));
-  exit (1);
-  */
 
   if (argc > 1) {
 
