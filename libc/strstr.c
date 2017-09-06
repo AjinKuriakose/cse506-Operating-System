@@ -1,4 +1,5 @@
 #include "../include/stdio.h"	
+#include "../include/sys/defs.h"	
 
 char *my_strstr(char *str1, char *str2) {
   char *s1 = str1, *s2 = str2, *ret = NULL;

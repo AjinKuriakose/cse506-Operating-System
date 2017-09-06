@@ -3,7 +3,6 @@
 
 static const int EOF = -1;
 typedef unsigned long	size_t;
-#define NULL 0
 
 int putchar(int c);
 int puts(const char *s);

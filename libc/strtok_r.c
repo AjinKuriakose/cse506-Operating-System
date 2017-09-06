@@ -1,5 +1,5 @@
 #include "../include/stdio.h"
-
+#include "../include/sys/defs.h"
 char *my_strtok_r(char *str, char *delim, char **nextp) {
   char *ret;
   if (str == NULL)
