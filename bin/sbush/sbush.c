@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-//#include <dirent.h>
+#include <dirent.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -30,7 +30,8 @@ long sys_call(int syscall_number, ...);
 //DIR *my_opendir(const char *name); /* TODO */
 //struct dirent *my_readdir(DIR *dirp); /* TODO */
 //int my_closedir(DIR *dirp); /* TODO */
-int my_execvp(const char *file, char *const argv[]); /* TODO */
+
+int do_execute(char *cmd, char *cmd_path[], char *env[]); 
 
 
 char *my_getenv(const char *name);
@@ -93,6 +94,7 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds);
 #define __NR_pipe     22
 #define __NR_dup2     33
 #define __NR_fork     57
+#define __NR_execve   59	
 #define __NR_wait4    61
 #define __NR_getcwd   79
 #define __NR_chdir    80
@@ -150,6 +152,9 @@ int my_close(int fd) {
   return sys_call(__NR_close, fd);
 }
 
+int my_execve(char *filename, char *argv[], char *envp[]) {
+  return sys_call(__NR_execve, filename, argv, envp);
+}
 long sys_call(int syscall_number, ...) {
   long ret;
   __asm__(
@@ -198,6 +203,55 @@ int my_puts(const char *s) {
   return (my_putchar('\n') == '\n') ? 0 : EOF;
 }
 
+/*manu*/
+int tokenize(char *arg, char *argv[], int max_tokens, char *sep); 
+
+int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
+
+  char *slash = my_strstr(cmd, "/");
+  /* commands like ls */
+  if (slash == 0) {
+
+    return do_execute(cmd, argv, env);
+
+  }
+  /*complete path: eg: /bin/ls */
+
+  if(my_execve(cmd, argv, env) < 0) {
+   return -1;
+  }
+  return -1;
+}
+
+int do_execute(char *cmd, char *argv[], char *env[]) {
+
+  char *path_env = my_getenv("PATH");
+  char *paths[50] = {0};
+  char exe_path[255] = {0};
+
+  int i, len, ret = 1;
+  int num_paths  = tokenize(path_env + 5, paths, 50, ":");
+  /* 
+   * iterate and find out the path of cmd
+   */
+  for (i = 0; i < num_paths; i++) {
+    len = my_strlen(paths[i]);
+
+    m_strncpy(exe_path, paths[i], len);    
+    m_strncpy(exe_path + len, "/", 1);
+    m_strcpy(exe_path + len + 1, cmd);
+
+    if(my_execve(exe_path, argv, env) < 0) {
+    //  printf("command to try : %s\n", exe_path);
+      continue;
+    }	
+  }
+    if (i == num_paths)
+	ret = -1; 
+  return ret;
+}
+
+/*manu*/
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   int i = 0;
   char *saveptr;
@@ -497,7 +551,8 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
 
   pid = my_fork();
   if (pid == 0) {
-    if (execvp(cmd, argv) < 0) {
+     if (find_path_and_exe(cmd, argv, m_environ) < 0) {
+  //  if (execvp(cmd, argv) < 0) {
       printf("%s: command not found\n", cmd);
       exit(1);
     }
@@ -668,8 +723,8 @@ int process_start(int input_fd, int output_fd, piped_commands *cmds) {
       my_dup2(output_fd, 1);
       my_close(output_fd);
     }
-
-    return execvp(cmds->commands[0], cmds->commands);
+    return find_path_and_exe(cmds->commands[0], cmds->commands, m_environ);
+    //return execvp(cmds->commands[0], cmds->commands);
 
   } else {
     my_waitpid(-1, &status, 0);
@@ -758,7 +813,7 @@ int my_setenv(char *path_variable, char *value, int overwrite) {
 int main(int argc, char *argv[], char *envp[]) {
 
   m_environ = envp;
- // my_setenv("PATH",my_getenv("PATH"),1);
+  //find_path_and_exe("/home/manmathew/main/path/a.sh",argv,envp);
   my_puts("sbush> ");
 
   if (argc > 1) {
