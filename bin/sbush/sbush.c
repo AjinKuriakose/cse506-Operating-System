@@ -553,9 +553,13 @@ void handle_piped_commands(char *arg) {
 
   /* Freeing */
   i = 0;
-  while (*(cmds[i].commands)) {
-    free(*(cmds[i].commands));
-    *(cmds[i].commands) = NULL;
+  while (i < num_cmds) {
+    int j = 0;
+    while(cmds[i].commands[j]) {
+      free(cmds[i].commands[j]);
+      cmds[i].commands[j] = NULL;
+      j++;
+    }
     i++;
   }
   i = 0;
