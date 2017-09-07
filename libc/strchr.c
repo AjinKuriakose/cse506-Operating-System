@@ -1,4 +1,6 @@
-char *my_strchr(char *s, int c)
+#include <string.h>
+
+char *strchr(char *s, int c)
 {
     char* ret=0;
     do {

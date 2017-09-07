@@ -1,6 +1,8 @@
-#include "../include/stdio.h"
+#include <stdio.h>
+#include <string.h>
 
-int my_strncmp (const char *f_str, const char *s_str, size_t n) {
+
+int strncmp (const char *f_str, const char *s_str, size_t n) {
   for ( ; n > 0; f_str++, s_str++, n--) {
     if (*f_str != *s_str) {
       return (*(unsigned char *)f_str < *(unsigned char *)s_str) ? -1 : 1;

@@ -1,7 +1,9 @@
-#include <stdio.h>
+#include <unistd.h>
 
-int putchar(int c)
-{
-  // write character to stdout
-  return c;
+int putchar(int c) {
+  char ch = c;
+  if (write(1, &ch, 1) == 1)
+    return c;
+
+  return 0;
 }

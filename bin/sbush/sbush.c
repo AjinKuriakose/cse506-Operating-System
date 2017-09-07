@@ -1,7 +1,6 @@
-//#include "/home/manmathew/main/include/unistd.h"
 #include <unistd.h>
-//#include <stdlib.h>
-//#include <dirent.h>
+#include <string.h>
+#include <stdio.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -14,80 +13,46 @@ typedef struct piped_commands {
 } piped_commands;
 
 struct linux_dirent64 {
-	unsigned long  d_ino;    /* 64-bit inode number */
-	unsigned long  d_off;    /* 64-bit offset to next structure */
-	unsigned short d_reclen; /* Size of this dirent */
-	unsigned char  d_type;   /* File type */
-	char           d_name[]; /* Filename (null-terminated) */
+  unsigned long  d_ino;    /* 64-bit inode number */
+  unsigned long  d_off;    /* 64-bit offset to next structure */
+  unsigned short d_reclen; /* Size of this dirent */
+  unsigned char  d_type;   /* File type */
+  char           d_name[]; /* Filename (null-terminated) */
 };
 
-enum {
-    DT_UNKNOWN = 0,
-#define DT_UNKNOWN DT_UNKNOWN
-    DT_FIFO = 1,
-#define DT_FIFO  DT_FIFO
-    DT_CHR = 2,
-#define DT_CHR   DT_CHR
-    DT_DIR = 4,
-#define DT_DIR   DT_DIR
-    DT_BLK = 6,
-#define DT_BLK   DT_BLK
-    DT_REG = 8,
-#define DT_REG   DT_REG
-    DT_LNK = 10,
-#define DT_LNK   DT_LNK
-    DT_SOCK = 12,
-#define DT_SOCK  DT_SOCK
-    DT_WHT = 14
-#define DT_WHT   DT_WHT
-};
 
 char **m_environ;
 
-char *m_strcpy(char *dest, char *src);
-char *m_strncpy(char *dest, char *src, int num_bytes);
-char *my_strtok_r(char *str, char *delim, char **nextp);
-char *my_strstr(char *str1, char *str2);
-void *my_memset(void *dest, int ch, size_t num_bytes);
-void my_strcpy(char *dst, const char *src);
-int  my_strlen(char *str);
-int  my_strncmp(const char *f_str, const char *s_str, size_t n);
-int  my_strcmp(const char *f_str, const char *s_str);
-
 long sys_call(int syscall_number, ...);
-//DIR *my_opendir(const char *name); /* TODO */
-//struct dirent *my_readdir(DIR *dirp); /* TODO */
-//int my_closedir(DIR *dirp); /* TODO */
+//DIR *opendir(const char *name); /* TODO */
+//struct dirent *readdir(DIR *dirp); /* TODO */
+//int closedir(DIR *dirp); /* TODO */
 
 int do_execute(char *cmd, char *cmd_path[], char *env[]); 
 
 
-char *my_getenv(const char *name);
-int my_setenv(char *name, char *value, int overwrite);
-char *my_getcwd(char *buf, size_t size);
-void my_exit(int status);
-void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
-void *my_malloc(int sz);
-void my_free(void *mem_ptr);
-int  my_munmap(void *addr, size_t length);
-int  my_waitpid(int pid, int *st_ptr, int options);
-int  my_chdir(const char *path);
-int  my_dup2(int oldfd, int newfd);
-int  my_pipe(int pipefd[2]);
-int  my_open(const char *pathname, int flags);
-int  my_close(int fd);
-int  my_fork();
-int  my_read(int fd, char *c, int size);
-int  my_write(int fd, char *c, int size);
-int  my_putchar(int c);
-int  my_puts_nonewline(const char *s);
-int  my_puts(const char *s);
-size_t my_strspn(char *s1, char *s2);
-size_t my_strcspn(char *s1, char *s2);
-char *my_strchr(char *s, int c);
-
-
-
+char *getenv(const char *name);
+int setenv(char *name, char *value, int overwrite);
+char *getcwd(char *buf, size_t size);
+void exit(int status);
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+void *malloc(int sz);
+void free(void *mem_ptr);
+int  munmap(void *addr, size_t length);
+int  waitpid(int pid, int *st_ptr, int options);
+int  chdir(const char *path);
+int  dup2(int oldfd, int newfd);
+int  pipe(int pipefd[2]);
+int  open(const char *pathname, int flags);
+int  close(int fd);
+pid_t fork();
+ssize_t read(int fd, void *c, size_t size);
+int  putchar(int c);
+int  puts_nonewline(const char *s);
+int  puts(const char *s);
+size_t strspn(char *s1, char *s2);
+size_t strcspn(char *s1, char *s2);
+char *strchr(char *s, int c);
 
 int  get_command(char *cmd);
 void handle_cd(char *path);
@@ -102,63 +67,30 @@ char ps1_variable[256] = "sbush>";
 
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
-#define	PROT_READ       0x1
-#define	PROT_WRITE      0x2
-#define	MAP_PRIVATE     0x02
-#define MAP_ANONYMOUS   0x20
-#define MAP_FAILED      ((void *)-1)
-
-#define O_RDONLY        0x0000
-#define O_WRONLY        0x0001
-#define O_RDWR          0x0002
-
-#define S_IREAD         0000400
-#define S_IWRITE        0000200
-
-#define __NR_read       0
-#define __NR_write      1
-#define __NR_open       2
-#define __NR_close      3
-#define __NR_mmap       9
-#define __NR_munmap     11
-#define __NR_pipe       22
-#define __NR_dup2       33
-#define __NR_fork       57
-#define __NR_execve     59	
-#define __NR_exit       60
-#define __NR_wait4      61
-#define __NR_getdents   78
-#define __NR_getcwd     79
-#define __NR_chdir      80
-#define __NR_getdents64 217
-#define __NR_waitid     247
-
-#define EOF             -1
-
 void print_prompt() {
-  my_puts_nonewline(ps1_variable);
-  my_puts_nonewline(" ");
+  puts_nonewline(ps1_variable);
+  puts_nonewline(" ");
 }
 
-int my_getdents64(int fd, struct linux_dirent64 *dirp, int count) {
+int getdents64(int fd, struct linux_dirent64 *dirp, int count) {
   return sys_call(__NR_getdents64, fd, dirp, count);
 }
 
-void my_exit(int status) {
+void exit(int status) {
   sys_call(__NR_exit, status);
 }
 
-void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   return (void *)sys_call(__NR_mmap, addr, length, prot, flags, fd, offset);
 }
 
-int my_munmap(void *addr, size_t length) {
+int munmap(void *addr, size_t length) {
   return sys_call(__NR_munmap, addr, length);
 }
 
-void *my_malloc(int sz) {
+void *malloc(int sz) {
   int *mem_ptr;
-  mem_ptr = (int *)my_mmap(0, sz + sizeof(sz), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+  mem_ptr = (int *)mmap(0, sz + sizeof(sz), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
   if (mem_ptr == MAP_FAILED)
     return NULL;
 
@@ -166,41 +98,41 @@ void *my_malloc(int sz) {
   return (void *)(mem_ptr + 1);
 }
 
-void my_free(void *mem_ptr) {
+void free(void *mem_ptr) {
   if (mem_ptr) {
-    my_munmap((void *)mem_ptr, *((int *)mem_ptr - 1));
+    munmap((void *)mem_ptr, *((int *)mem_ptr - 1));
   }
 }
 
-int my_waitpid(int pid, int *st_ptr, int options) {
+int waitpid(int pid, int *st_ptr, int options) {
   return sys_call(__NR_wait4, pid, st_ptr, options, NULL);
 }
 
-int my_chdir(const char *path) {
+int chdir(const char *path) {
   return sys_call(__NR_chdir, path);
 }
 
-char *my_getcwd(char *buf, size_t size) {
+char *getcwd(char *buf, size_t size) {
   return (char *)sys_call(__NR_getcwd, buf, size);
 }
 
-int my_dup2(int oldfd, int newfd) {
+int dup2(int oldfd, int newfd) {
   return sys_call(__NR_dup2, oldfd, newfd);
 }
 
-int my_pipe(int pipefd[2]) {
+int pipe(int pipefd[2]) {
   return sys_call(__NR_pipe, pipefd);
 }
 
-int my_open(const char *pathname, int flags) {
+int open(const char *pathname, int flags) {
   return sys_call(__NR_open, pathname, flags);
 }
 
-int my_close(int fd) {
+int close(int fd) {
   return sys_call(__NR_close, fd);
 }
 
-int my_execve(char *filename, char *argv[], char *envp[]) {
+int execve(char *filename, char *argv[], char *envp[]) {
   return sys_call(__NR_execve, filename, argv, envp);
 }
 long sys_call(int syscall_number, ...) {
@@ -221,41 +153,34 @@ long sys_call(int syscall_number, ...) {
   return ret;
 }
 
-int my_fork() {
+pid_t fork() {
   return sys_call(__NR_fork);
 }
 
-int my_read(int fd, char *c, int size) {
+ssize_t read(int fd, void *c, size_t size) {
   return sys_call(__NR_read, fd, c, size);
 }
 
-int my_write(int fd, char *c, int size) {
+int write(int fd, const void *c, size_t size) {
   return sys_call(__NR_write, fd, c, size);
 }
 
-int my_putchar(int c) {
-  char ch = c;
-  if (my_write(1, &ch, 1) == 1)
-    return c;
 
-  return 0;
-}
-
-int my_puts_nonewline(const char *s) {
+int puts_nonewline(const char *s) {
   int ret;
   while (*s) {
-    if ((ret = my_putchar(*s)) != *s)
+    if ((ret = putchar(*s)) != *s)
       return EOF;
     s++;
   } 
   return 0;
 }
 
-int my_puts(const char *s) {
-  if (my_puts_nonewline(s) < 0)
+int puts(const char *s) {
+  if (puts_nonewline(s) < 0)
     return EOF;
 
-  return (my_putchar('\n') == '\n') ? 0 : EOF;
+  return (putchar('\n') == '\n') ? 0 : EOF;
 }
 
 /*manu*/
@@ -263,7 +188,7 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep);
 
 int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
 
-  char *slash = my_strstr(cmd, "/");
+  char *slash = strstr(cmd, "/");
   /* commands like ls */
   if (slash == 0) {
 
@@ -272,7 +197,7 @@ int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
   }
   /*complete path: eg: /bin/ls */
 
-  if(my_execve(cmd, argv, env) < 0) {
+  if(execve(cmd, argv, env) < 0) {
    return -1;
   }
   return -1;
@@ -280,7 +205,7 @@ int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
 
 int do_execute(char *cmd, char *argv[], char *env[]) {
 
-  char *path_env = my_getenv("PATH");
+  char *path_env = getenv("PATH");
   char *paths[50] = {0};
   char exe_path[255] = {0};
 
@@ -290,13 +215,13 @@ int do_execute(char *cmd, char *argv[], char *env[]) {
    * iterate and find out the path of cmd
    */
   for (i = 0; i < num_paths; i++) {
-    len = my_strlen(paths[i]);
+    len = strlen(paths[i]);
 
-    m_strncpy(exe_path, paths[i], len);    
-    m_strncpy(exe_path + len, "/", 1);
-    m_strcpy(exe_path + len + 1, cmd);
+    strncpy(exe_path, paths[i], len);    
+    strncpy(exe_path + len, "/", 1);
+    strcpy(exe_path + len + 1, cmd);
 
-    if(my_execve(exe_path, argv, env) < 0) {
+    if(execve(exe_path, argv, env) < 0) {
     //  printf("command to try : %s\n", exe_path);
       continue;
     }	
@@ -311,12 +236,12 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   int i = 0;
   char *saveptr;
   char arr[255] = {0};
-  my_strcpy(arr, arg);
-  char *token = my_strtok_r(arr, sep, &saveptr);
+  strcpy(arr, arg);
+  char *token = strtok_r(arr, sep, &saveptr);
   while (token != NULL && i < max_tokens - 1) {
-    argv[i] = my_malloc(my_strlen(token) + 1);
-    my_strcpy(argv[i], token);
-    token = my_strtok_r(NULL, sep, &saveptr);
+    argv[i] = malloc(strlen(token) + 1);
+    strcpy(argv[i], token);
+    token = strtok_r(NULL, sep, &saveptr);
     i++;
   }
 
@@ -324,154 +249,34 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   return i;
 }
 
-size_t my_strspn(char *s1, char *s2)
-{
-    size_t ret=0;
-    while(*s1 && my_strchr(s2,*s1++))
-        ret++;
-    return ret;    
-}
-
-size_t my_strcspn(char *s1, char *s2)
-{
-    size_t ret=0;
-    while(*s1)
-        if(my_strchr(s2,*s1))
-            return ret;
-        else
-            s1++,ret++;
-    return ret;
-}
-
-char *my_strchr(char *s, int c)
-{
-    char* ret=0;
-    do {
-        if( *s == (char)c )
-            ret=s;
-    } while(*s++);
-    return ret;
-}
-
 void build_argv(char *input, char *arg, char *argv[]) {
-  argv[0] = my_malloc(my_strlen(input) + 1);
-  my_strcpy(argv[0], input);
+  argv[0] = malloc(strlen(input) + 1);
+  strcpy(argv[0], input);
   tokenize(arg, &argv[1], 49, " ");
 }
 
-int my_strlen(char *str) {
-  int i;
-  for (i = 0; *str != '\0'; str++)
-    i++;
-  return i;
-}
-
-int my_strncmp (const char *f_str, const char *s_str, size_t n) {
-  for ( ; n > 0; f_str++, s_str++, n--) { 
-    if (*f_str != *s_str) { 
-      return (*(unsigned char *)f_str < *(unsigned char *)s_str) ? -1 : 1;
-    }
-    else if(*f_str == '\0') {
-      return 0;
-    } 
-  }
-  return 0;
-}
-
-int my_strcmp (const char *f_str, const char *s_str) {
-
-  while (*f_str && (*f_str == *s_str)) {
-    f_str++; s_str++;
-  }
-  return (*(unsigned char *)f_str - *(unsigned char *)s_str);
-}
-
-void *my_memset(void *dest, int ch, size_t num_bytes) {
-  char *tmp = dest;
-  while (num_bytes) {
-    *tmp++ = ch;
-    num_bytes--;
-  }
-  return dest;
-}
-
-char *my_strtok_r(char *str, char *delim, char **nextp) {
-  char *ret;
-  if (str == NULL)
-    str = *nextp;
-
-  str += my_strspn(str, delim);
-  if (*str == '\0')
-    return NULL;
-
-  ret = str;
-  str += my_strcspn(str, delim);
-  if (*str)
-    *str++ = '\0';
-
-  *nextp = str;
-  return ret;
-}
-
-void my_strcpy(char *dst, const char *src) {
-  while (*src) {
-    *dst++ = *src++; 
-  }
-  *dst = '\0';
-}
-
-char *my_strstr(char *str1, char *str2) {
-  char *s1 = str1, *s2 = str2, *ret = NULL;
-  int match_len = 0;
-
-  if (!str1 || !str2 || !*str1 || !*str2)
-    return ret;
-
-  while (*s1 && *s2) {
-    if (my_strlen(s1) < my_strlen(s2))
-      break;
-
-    if (*s1 == *s2) {
-      match_len++;
-      if (!ret)
-        ret = s1;
-      s2++;
-    } else {
-      match_len = 0;
-      s2 = str2;
-      ret = NULL;
-    }
-    s1++;
-  }
-
-  if (match_len != my_strlen(str2))
-    ret = NULL;
-
-  return ret;
-}
 
 void handle_cd(char *path) {
   
   int ret;
-  ret = my_chdir(path);
+  ret = chdir(path);
   if (ret != 0) {
-    my_puts_nonewline("sbush: cd: ");
-    my_puts_nonewline(path); 
-    my_puts(": No such file or directory"); 
+    puts_nonewline("sbush: cd: ");
+    puts_nonewline(path); 
+    puts(": No such file or directory"); 
   }
 }
 
 void handle_cwd() {
-
   char buff[1024] = {0};
-  if (my_getcwd(buff, sizeof(buff)) != NULL)
-    my_puts(buff);
+  if (getcwd(buff, sizeof(buff)) != NULL)
+    puts(buff);
 }
 
 void handle_ls() {
 
   char buff[1024] = {0};
-  if (my_getcwd(buff, sizeof(buff)) == NULL)
+  if (getcwd(buff, sizeof(buff)) == NULL)
     return;
 
   int fd;
@@ -479,20 +284,20 @@ void handle_ls() {
 	int i = 0;
 	char buf[1024];
 	struct linux_dirent64 *d_ent;
-	fd = my_open(buff, O_RDONLY);
-  ret = my_getdents64(fd, (struct linux_dirent64 *)buf, 1024);
+	fd = open(buff, O_RDONLY);
+  ret = getdents64(fd, (struct linux_dirent64 *)buf, 1024);
 
 	while (i < ret) {
 		d_ent = (struct linux_dirent64 *) (buf + i);
     if ((d_ent->d_name)[0] != '.')
-      my_puts(d_ent->d_name);
+      puts(d_ent->d_name);
 
 		i += d_ent->d_reclen;
 	}
 
 #if 0
   char buff[1024] = {0};
-  if (my_getcwd(buff, sizeof(buff)) != NULL) {
+  if (getcwd(buff, sizeof(buff)) != NULL) {
 
     DIR *dir;
     dir = opendir(buff);
@@ -503,7 +308,7 @@ void handle_ls() {
         
         /* For now, ignoring invisible files */
         if (*d_entry->d_name != '.')
-          my_puts(d_entry->d_name);
+          puts(d_entry->d_name);
       }
 
       closedir(dir);
@@ -515,11 +320,11 @@ void handle_ls() {
 int get_command(char *cmd) {
 
   /* built-in */
-  if (my_strcmp(cmd, "cd") == 0)
+  if (strcmp(cmd, "cd") == 0)
     return CMD_CD;
 
   /* built-in */
-  else if (my_strcmp(cmd, "exit") == 0)
+  else if (strcmp(cmd, "exit") == 0)
     return CMD_EXIT;
 
   else
@@ -529,64 +334,47 @@ int get_command(char *cmd) {
 void get_path_string(char *cmd, char *path_value) {
 
   char *ptr = NULL;
-  if ((my_strstr(cmd, "$PATH")) != NULL) {
+  if ((strstr(cmd, "$PATH")) != NULL) {
     /*
      * 2 cases. eg: PATH=$PATH:/bin:/usr/bin 
      * $PATH anywhere else. beginning or somewhere else
      */ 
-    char *path = my_strstr(cmd, "=");
+    char *path = strstr(cmd, "=");
     path++; 
     char *temp = path;
-    int len = my_strlen(path);
+    int len = strlen(path);
 
-    ptr = my_strstr(path, "$PATH");
+    ptr = strstr(path, "$PATH");
 
-    char *sys_env = my_getenv("PATH");
+    char *sys_env = getenv("PATH");
 
     /* $PATH in the beginning */
     if (temp == ptr) {
-      m_strncpy(path_value, sys_env, my_strlen(sys_env));
+      strncpy(path_value, sys_env, strlen(sys_env));
       if (len - 6 > 0) { //6 len of $PATH:
-        m_strcpy(path_value+my_strlen(sys_env), ptr+5);
+        strcpy(path_value+strlen(sys_env), ptr+5);
       } 
     } else {
       /* $PATH anywhere else */
-      m_strncpy(path_value, temp, ptr-temp); 
-      m_strncpy(path_value + (ptr - temp), sys_env, my_strlen(sys_env));
-      m_strcpy(path_value + (ptr - temp) + my_strlen(sys_env), ptr + 5);
+      strncpy(path_value, temp, ptr-temp); 
+      strncpy(path_value + (ptr - temp), sys_env, strlen(sys_env));
+      strcpy(path_value + (ptr - temp) + strlen(sys_env), ptr + 5);
     }
 
   } else {
     /* eg: PATH=/usr/bin */ 
-    ptr = my_strstr(cmd, "=");
-    m_strcpy(path_value, ptr + 1); 
+    ptr = strstr(cmd, "=");
+    strcpy(path_value, ptr + 1); 
   }
 }
 
-
-char *m_strcpy(char *dest, char *src) {
-  int i;
-  for (i=0; src[i] != '\0'; i++) {
-    dest[i] = src[i];
-  }
-  dest[i] = '\0';
-  return dest;
-}
-
-char *m_strncpy(char *dest, char *src, int len) {
-  int i;
-  for (i = 0; i < len && src[i] != '\0'; i++)  {
-    dest[i] = src[i];
-  }
-  return dest;
-}
 
 int check_if_path_cmd(char *cmd) {
-  return my_strncmp(cmd, "PATH=", 5) == 0 ? 1 : 0; 
+  return strncmp(cmd, "PATH=", 5) == 0 ? 1 : 0; 
 }
 
 int check_if_ps1_cmd(char *cmd) {
-  return my_strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
+  return strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
 }
 
 /*
@@ -595,7 +383,7 @@ int check_if_ps1_cmd(char *cmd) {
 int update_if_bg_cmdarg(char *cmd_arg) {
   char *amp;
   int ret = 0;
-  if ((amp = my_strstr(cmd_arg, "&")) != NULL) {
+  if ((amp = strstr(cmd_arg, "&")) != NULL) {
     *amp = '\0'; 
     ret = 1;
   }
@@ -613,12 +401,12 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   /* PATH variable set */
   if (check_if_path_cmd(cmd)) {
     get_path_string(cmd, path_value); 
-    my_setenv("PATH", path_value, 1);
+    setenv("PATH", path_value, 1);
     return;
   }
   /* PS1 variable set */ 
   else if (check_if_ps1_cmd(cmd)) {
-    m_strcpy(ps1_variable, my_strstr(cmd, "=") + 1);
+    strcpy(ps1_variable, strstr(cmd, "=") + 1);
     return;
   }
   /* command & handling, true if & is found in the command */
@@ -628,28 +416,28 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
  
   build_argv(cmd, cmd_arg, argv);
 
-  pid = my_fork();
+  pid = fork();
   if (pid == 0) {
      if (find_path_and_exe(cmd, argv, m_environ) < 0) {
   //  if (execvp(cmd, argv) < 0) {
-      my_puts_nonewline(cmd);
-      my_puts(": command not found");
-      my_exit(1);
+      puts_nonewline(cmd);
+      puts(": command not found");
+      exit(1);
     }
   } else {
     if (pid < 0) {
-      my_exit(1);
+      exit(1);
     }
     else {
       if (!bg_process)
-        my_waitpid(-1, &status, 0);
+        waitpid(-1, &status, 0);
     }
   }
 
   /* Freeing */
   i = 0;
   while (argv[i]) {
-    my_free(argv[i]);
+    free(argv[i]);
     argv[i] = NULL;
     i++;
   }
@@ -660,7 +448,7 @@ void execute_command_line(char *cmd) {
   char *str, *token, *saveptr;
   for (i = 1, str = cmd; ; i++, str = NULL) {
 
-    token = my_strtok_r(str, " ", &saveptr);
+    token = strtok_r(str, " ", &saveptr);
     if (token == NULL)
       break;
 
@@ -679,15 +467,15 @@ void execute_commands(char *cmd, char *cmd_arg) {
       break;
 
     case CMD_EXIT:
-      my_exit(0);
+      exit(0);
 
     case CMD_UNKNOWN:
       execute_non_builtin(cmd, cmd_arg);
       break;
 
     default:
-      my_puts_nonewline(cmd);
-      my_puts(": command not found");
+      puts_nonewline(cmd);
+      puts(": command not found");
       break;
   }
 }
@@ -695,7 +483,7 @@ void execute_commands(char *cmd, char *cmd_arg) {
 /* Read from the file one line at a time and execute */
 void read_from_file(int num_tokens, char *cmd_tokens[]) {
 
-  int file = my_open(cmd_tokens[1], O_RDONLY);
+  int file = open(cmd_tokens[1], O_RDONLY);
   char code[1024] = {0};
   size_t n = 0;
   char c;
@@ -703,7 +491,7 @@ void read_from_file(int num_tokens, char *cmd_tokens[]) {
   if (file == -1)
     return;
 
-  while (my_read(file, &c, 1) > 0)
+  while (read(file, &c, 1) > 0)
   {
     code[n++] = (char) c;
     if (c == '\n') {
@@ -723,7 +511,7 @@ void handle_piped_commands(char *arg) {
   int num_cmds  = tokenize(arg, &argv[0], 50, "|");
   int num_pipes = num_cmds - 1;
   piped_commands cmds[num_cmds];
-  my_memset(cmds, 0, sizeof(cmds));
+  memset(cmds, 0, sizeof(cmds));
 
   while (i < num_cmds) {
     tokenize(argv[i], cmds[i].commands, 50, " ");
@@ -735,13 +523,13 @@ void handle_piped_commands(char *arg) {
   /* Freeing */
   i = 0;
   while (*(cmds[i].commands)) {
-    my_free(*(cmds[i].commands));
+    free(*(cmds[i].commands));
     *(cmds[i].commands) = NULL;
     i++;
   }
   i = 0;
   while(argv[i]) {
-    my_free(argv[i]);
+    free(argv[i]);
     argv[i] = NULL;
     i++;
   }
@@ -751,22 +539,22 @@ void read_from_stdin() {
   int cnt;
   char *str, *saveptr, *token;
   char buff[1024] = {0};
-  while (my_read(0, buff, sizeof(buff)) > 0) {
+  while (read(0, buff, sizeof(buff)) > 0) {
 
     cnt = 1;
-    size_t buff_length = my_strlen(buff);
+    size_t buff_length = strlen(buff);
     if (buff_length != 0 && buff[buff_length - 1] == '\n') {
 
       buff_length--;
       buff[buff_length] = '\0';
     }
 
-    if (my_strstr(buff, "|")) {
+    if (strstr(buff, "|")) {
       handle_piped_commands(buff);
     }  else {
       str = buff;
       while (1) {
-        token = my_strtok_r(str, " ", &saveptr);
+        token = strtok_r(str, " ", &saveptr);
         if (token == NULL)
           break;
 
@@ -780,29 +568,29 @@ void read_from_stdin() {
 
     print_prompt();
 
-    my_memset(buff, 0, sizeof(buff));
+    memset(buff, 0, sizeof(buff));
   }
 }
 
 int process_start(int input_fd, int output_fd, piped_commands *cmds) {
   int status;
-  pid_t pid = my_fork();
+  pid_t pid = fork();
   if (pid == 0) {
 
     if (input_fd != 0) {
-      my_dup2(input_fd, 0);
-      my_close(input_fd);
+      dup2(input_fd, 0);
+      close(input_fd);
     }
 
     if (output_fd != 1) {
-      my_dup2(output_fd, 1);
-      my_close(output_fd);
+      dup2(output_fd, 1);
+      close(output_fd);
     }
     return find_path_and_exe(cmds->commands[0], cmds->commands, m_environ);
     //return execvp(cmds->commands[0], cmds->commands);
 
   } else {
-    my_waitpid(-1, &status, 0);
+    waitpid(-1, &status, 0);
   }
 
   return pid;
@@ -816,66 +604,66 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds) {
   pid_t pid;
 
   while (i < num_pipes) {
-    if (my_pipe(fds) != 0)
+    if (pipe(fds) != 0)
       return 1;
 
     process_start(input_fd, fds[1], cmds + i);
-    my_close(fds[1]);
+    close(fds[1]);
 
     input_fd = fds[0];
     i++;
   }
 
   /* last command */
-  pid = my_fork();
+  pid = fork();
   if (pid == 0) {
 
-    my_dup2(input_fd, 0);
-    my_close(input_fd);
+    dup2(input_fd, 0);
+    close(input_fd);
 
     if (find_path_and_exe(cmds[i].commands[0], cmds[i].commands, m_environ)) {
-      my_exit(1);
+      exit(1);
     }
 
   } else {
-    my_waitpid(-1, &status, 0);
+    waitpid(-1, &status, 0);
   }
 
   return 0;
 }
 
-char *my_getenv(const char *arg) {
+char *getenv(const char *arg) {
   int i;
   for (i = 0; m_environ[i] !=0 ; i++) {
-    if (my_strncmp(m_environ[i], "PATH=", 5) == 0) { 
+    if (strncmp(m_environ[i], "PATH=", 5) == 0) { 
       return m_environ[i];
     } 
   }
  return NULL;
 }
 
-int my_setenv(char *path_variable, char *value, int overwrite) {
+int setenv(char *path_variable, char *value, int overwrite) {
   //setenv("PATH", path_value, 1);
   //overwrite variable is not used now.
   int i;
-  int var_len = my_strlen(path_variable);
-  int value_len = my_strlen(value);
+  int var_len = strlen(path_variable);
+  int value_len = strlen(value);
 
   for (i = 0; m_environ[i] !=0 ; i++) {
 
-    if (my_strncmp(m_environ[i], "PATH=", 5) == 0) { 
+    if (strncmp(m_environ[i], "PATH=", 5) == 0) { 
       /*
        * first free the value. Then allocate for new value
        */
-      my_free(m_environ[i]);
-      m_environ[i]= my_malloc(value_len + var_len + 2);//include size of "=" as well.
+      free(m_environ[i]);
+      m_environ[i]= malloc(value_len + var_len + 2);//include size of "=" as well.
 
       /*
        * copy the complete value in 3 steps. eg: PATH=/usr/bin
        */
-      m_strncpy(m_environ[i], path_variable, var_len);	
-      m_strncpy(m_environ[i] + var_len, "=", 1);	
-      m_strcpy(m_environ[i] + var_len + 1, value);
+      strncpy(m_environ[i], path_variable, var_len);	
+      strncpy(m_environ[i] + var_len, "=", 1);	
+      strcpy(m_environ[i] + var_len + 1, value);
 
       return 0;
     }
@@ -887,7 +675,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
   m_environ = envp + argc + 1;
   //find_path_and_exe("/home/manmathew/main/path/a.sh",argv,envp);
- // my_setenv("PATH",my_getenv("PATH"),1);
+ // setenv("PATH",getenv("PATH"),1);
 
   if (argc > 1) {
 
