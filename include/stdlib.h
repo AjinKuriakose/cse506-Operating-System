@@ -12,8 +12,8 @@ void free(void *ptr);
 
 
 
-void exit(int status);
 char *getenv(const char *name);
 int setenv(char *name, char *value, int overwrite);
+long sys_call(int syscall_number, ...);
 
 #endif

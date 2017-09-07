@@ -8,6 +8,37 @@
 #define CMD_LS           3
 #define CMD_EXIT         4
 
+#define	PROT_READ       0x1
+#define	PROT_WRITE      0x2
+#define	MAP_PRIVATE     0x02
+#define MAP_ANONYMOUS   0x20
+#define MAP_FAILED      ((void *)-1)
+
+#define O_RDONLY        0x0000
+#define O_WRONLY        0x0001
+#define O_RDWR          0x0002
+
+#define S_IREAD         0000400
+#define S_IWRITE        0000200
+
+#define __NR_read       0
+#define __NR_write      1
+#define __NR_open       2
+#define __NR_close      3
+#define __NR_mmap       9
+#define __NR_munmap     11
+#define __NR_pipe       22
+#define __NR_dup2       33
+#define __NR_fork       57
+#define __NR_execve     59	
+#define __NR_exit       60
+#define __NR_wait4      61
+#define __NR_getdents   78
+#define __NR_getcwd     79
+#define __NR_chdir      80
+#define __NR_getdents64 217
+#define __NR_waitid     247
+
 typedef struct piped_commands {
   char *commands[50];
 } piped_commands;
@@ -36,7 +67,7 @@ int setenv(char *name, char *value, int overwrite);
 char *getcwd(char *buf, size_t size);
 void exit(int status);
 void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
-void *malloc(int sz);
+void *malloc(size_t sz);
 void free(void *mem_ptr);
 int  munmap(void *addr, size_t length);
 int  waitpid(int pid, int *st_ptr, int options);
@@ -50,9 +81,6 @@ ssize_t read(int fd, void *c, size_t size);
 int  putchar(int c);
 int  puts_nonewline(const char *s);
 int  puts(const char *s);
-size_t strspn(char *s1, char *s2);
-size_t strcspn(char *s1, char *s2);
-char *strchr(char *s, int c);
 
 int  get_command(char *cmd);
 void handle_cd(char *path);
@@ -76,9 +104,10 @@ int getdents64(int fd, struct linux_dirent64 *dirp, int count) {
   return sys_call(__NR_getdents64, fd, dirp, count);
 }
 
-void exit(int status) {
-  sys_call(__NR_exit, status);
-}
+
+//void exit(int status) {
+ // sys_call(__NR_exit, status);
+//}
 
 void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   return (void *)sys_call(__NR_mmap, addr, length, prot, flags, fd, offset);
@@ -88,7 +117,7 @@ int munmap(void *addr, size_t length) {
   return sys_call(__NR_munmap, addr, length);
 }
 
-void *malloc(int sz) {
+void *malloc(size_t sz) {
   int *mem_ptr;
   mem_ptr = (int *)mmap(0, sz + sizeof(sz), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
   if (mem_ptr == MAP_FAILED)
@@ -132,9 +161,10 @@ int close(int fd) {
   return sys_call(__NR_close, fd);
 }
 
-int execve(char *filename, char *argv[], char *envp[]) {
+int execve(const char *filename, char *const argv[], char *const envp[]) {
   return sys_call(__NR_execve, filename, argv, envp);
 }
+
 long sys_call(int syscall_number, ...) {
   long ret;
   __asm__(
@@ -161,7 +191,7 @@ ssize_t read(int fd, void *c, size_t size) {
   return sys_call(__NR_read, fd, c, size);
 }
 
-int write(int fd, const void *c, size_t size) {
+ssize_t write(int fd, const void *c, size_t size) {
   return sys_call(__NR_write, fd, c, size);
 }
 
