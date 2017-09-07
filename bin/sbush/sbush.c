@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -7,37 +8,6 @@
 #define CMD_CWD          2
 #define CMD_LS           3
 #define CMD_EXIT         4
-
-#define	PROT_READ       0x1
-#define	PROT_WRITE      0x2
-#define	MAP_PRIVATE     0x02
-#define MAP_ANONYMOUS   0x20
-#define MAP_FAILED      ((void *)-1)
-
-#define O_RDONLY        0x0000
-#define O_WRONLY        0x0001
-#define O_RDWR          0x0002
-
-#define S_IREAD         0000400
-#define S_IWRITE        0000200
-
-#define __NR_read       0
-#define __NR_write      1
-#define __NR_open       2
-#define __NR_close      3
-#define __NR_mmap       9
-#define __NR_munmap     11
-#define __NR_pipe       22
-#define __NR_dup2       33
-#define __NR_fork       57
-#define __NR_execve     59	
-#define __NR_exit       60
-#define __NR_wait4      61
-#define __NR_getdents   78
-#define __NR_getcwd     79
-#define __NR_chdir      80
-#define __NR_getdents64 217
-#define __NR_waitid     247
 
 typedef struct piped_commands {
   char *commands[50];
@@ -54,10 +24,6 @@ struct linux_dirent64 {
 
 char **m_environ;
 
-long sys_call(int syscall_number, ...);
-//DIR *opendir(const char *name); /* TODO */
-//struct dirent *readdir(DIR *dirp); /* TODO */
-//int closedir(DIR *dirp); /* TODO */
 
 int do_execute(char *cmd, char *cmd_path[], char *env[]); 
 
@@ -65,22 +31,7 @@ int do_execute(char *cmd, char *cmd_path[], char *env[]);
 char *getenv(const char *name);
 int setenv(char *name, char *value, int overwrite);
 char *getcwd(char *buf, size_t size);
-void exit(int status);
-void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
-void *malloc(size_t sz);
-void free(void *mem_ptr);
-int  munmap(void *addr, size_t length);
-int  waitpid(int pid, int *st_ptr, int options);
-int  chdir(const char *path);
-int  dup2(int oldfd, int newfd);
-int  pipe(int pipefd[2]);
-int  open(const char *pathname, int flags);
-int  close(int fd);
-pid_t fork();
-ssize_t read(int fd, void *c, size_t size);
-int  putchar(int c);
 int  puts_nonewline(const char *s);
-int  puts(const char *s);
 
 int  get_command(char *cmd);
 void handle_cd(char *path);
@@ -96,106 +47,12 @@ char ps1_variable[256] = "sbush>";
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
 void print_prompt() {
-  //puts_nonewline(ps1_variable);
-  //puts_nonewline(" ");
   puts(ps1_variable);
 }
 
 int getdents64(int fd, struct linux_dirent64 *dirp, int count) {
   return sys_call(__NR_getdents64, fd, dirp, count);
 }
-
-
-//void exit(int status) {
- // sys_call(__NR_exit, status);
-//}
-
-void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  return (void *)sys_call(__NR_mmap, addr, length, prot, flags, fd, offset);
-}
-
-int munmap(void *addr, size_t length) {
-  return sys_call(__NR_munmap, addr, length);
-}
-
-void *malloc(size_t sz) {
-  int *mem_ptr;
-  mem_ptr = (int *)mmap(0, sz + sizeof(sz), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-  if (mem_ptr == MAP_FAILED)
-    return NULL;
-
-  *mem_ptr = sz + sizeof(sz);
-  return (void *)(mem_ptr + 1);
-}
-
-void free(void *mem_ptr) {
-  if (mem_ptr) {
-    munmap((void *)mem_ptr, *((int *)mem_ptr - 1));
-  }
-}
-
-int waitpid(int pid, int *st_ptr, int options) {
-  return sys_call(__NR_wait4, pid, st_ptr, options, NULL);
-}
-
-int chdir(const char *path) {
-  return sys_call(__NR_chdir, path);
-}
-
-char *getcwd(char *buf, size_t size) {
-  return (char *)sys_call(__NR_getcwd, buf, size);
-}
-
-int dup2(int oldfd, int newfd) {
-  return sys_call(__NR_dup2, oldfd, newfd);
-}
-
-int pipe(int pipefd[2]) {
-  return sys_call(__NR_pipe, pipefd);
-}
-
-int open(const char *pathname, int flags) {
-  return sys_call(__NR_open, pathname, flags);
-}
-
-int close(int fd) {
-  return sys_call(__NR_close, fd);
-}
-
-int execve(const char *filename, char *const argv[], char *const envp[]) {
-  return sys_call(__NR_execve, filename, argv, envp);
-}
-
-long sys_call(int syscall_number, ...) {
-  long ret;
-  __asm__(
-  "mov    %%rdi,%%rax;"
-  "mov    %%rsi,%%rdi;"
-  "mov    %%rdx,%%rsi;"
-  "mov    %%rcx,%%rdx;"
-  "mov    %%r8,%%r10;"
-  "mov    %%r9,%%r8;"
-  "mov    0x8(%%rsp),%%r9;"
-  "syscall;"
-  "cmp    $0xfffffffffffff001,%%rax;"
-  :"=r"(ret)
-  );
-
-  return ret;
-}
-
-pid_t fork() {
-  return sys_call(__NR_fork);
-}
-
-ssize_t read(int fd, void *c, size_t size) {
-  return sys_call(__NR_read, fd, c, size);
-}
-
-ssize_t write(int fd, const void *c, size_t size) {
-  return sys_call(__NR_write, fd, c, size);
-}
-
 
 int puts_nonewline(const char *s) {
   int ret;
@@ -207,14 +64,6 @@ int puts_nonewline(const char *s) {
   return 0;
 }
 
-int puts(const char *s) {
-  if (puts_nonewline(s) < 0)
-    return EOF;
-
-  return (putchar('\n') == '\n') ? 0 : EOF;
-}
-
-/*manu*/
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep); 
 
 int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
@@ -262,7 +111,6 @@ int do_execute(char *cmd, char *argv[], char *env[]) {
   return ret;
 }
 
-/*manu*/
 int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   int i = 0;
   char *saveptr;
@@ -306,46 +154,26 @@ void handle_cwd() {
 
 void handle_ls() {
 
-  char buff[1024] = {0};
-  if (getcwd(buff, sizeof(buff)) == NULL)
-    return;
+	char buff[1024] = {0};
+	if (getcwd(buff, sizeof(buff)) == NULL)
+		return;
 
-  int fd;
-  int ret;
+	int fd;
+	int ret;
 	int i = 0;
 	char buf[1024];
 	struct linux_dirent64 *d_ent;
 	fd = open(buff, O_RDONLY);
-  ret = getdents64(fd, (struct linux_dirent64 *)buf, 1024);
+	ret = getdents64(fd, (struct linux_dirent64 *)buf, 1024);
 
 	while (i < ret) {
 		d_ent = (struct linux_dirent64 *) (buf + i);
-    if ((d_ent->d_name)[0] != '.')
-      puts(d_ent->d_name);
+		if ((d_ent->d_name)[0] != '.')
+			puts(d_ent->d_name);
 
 		i += d_ent->d_reclen;
 	}
 
-#if 0
-  char buff[1024] = {0};
-  if (getcwd(buff, sizeof(buff)) != NULL) {
-
-    DIR *dir;
-    dir = opendir(buff);
-    if (dir) {
-
-      struct dirent *d_entry;
-      while ((d_entry = readdir(dir))) {
-        
-        /* For now, ignoring invisible files */
-        if (*d_entry->d_name != '.')
-          puts(d_entry->d_name);
-      }
-
-      closedir(dir);
-    }
-  }
-#endif
 }
 
 int get_command(char *cmd) {
@@ -450,7 +278,6 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   pid = fork();
   if (pid == 0) {
      if (find_path_and_exe(cmd, argv, m_environ) < 0) {
-  //  if (execvp(cmd, argv) < 0) {
       puts_nonewline(cmd);
       puts(": command not found");
       exit(1);
@@ -622,7 +449,6 @@ int process_start(int input_fd, int output_fd, piped_commands *cmds) {
       close(output_fd);
     }
     return find_path_and_exe(cmds->commands[0], cmds->commands, m_environ);
-    //return execvp(cmds->commands[0], cmds->commands);
 
   } else {
     waitpid(-1, &status, 0);
@@ -678,8 +504,10 @@ char *getenv(const char *arg) {
 }
 
 int setenv(char *path_variable, char *value, int overwrite) {
-  //setenv("PATH", path_value, 1);
+  
+  //eg: setenv("PATH", path_value, 1); 
   //overwrite variable is not used now.
+
   int i;
   int var_len = strlen(path_variable);
   int value_len = strlen(value);
@@ -709,9 +537,6 @@ int setenv(char *path_variable, char *value, int overwrite) {
 int main(int argc, char *argv[], char *envp[]) {
 
   m_environ = envp + argc + 1;
-  //find_path_and_exe("/home/manmathew/main/path/a.sh",argv,envp);
- // setenv("PATH",getenv("PATH"),1);
-
   if (argc > 1) {
 
     /* Case 1 : Non-interactive mode */

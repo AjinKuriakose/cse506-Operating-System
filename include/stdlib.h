@@ -9,11 +9,13 @@ void exit(int status);
 void *malloc(size_t size);
 void free(void *ptr);
 
-
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+int  munmap(void *addr, size_t length);
 
 
 char *getenv(const char *name);
 int setenv(char *name, char *value, int overwrite);
 long sys_call(int syscall_number, ...);
+int  waitpid(int pid, int *st_ptr, int options);
 
 #endif

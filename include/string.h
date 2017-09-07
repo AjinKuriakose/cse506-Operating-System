@@ -1,5 +1,5 @@
-#ifndef _STDLIB_H
-#define _STDLIB_H
+#ifndef _STRING_H
+#define _STRING_H
 
 #include <sys/defs.h>
 
@@ -15,4 +15,4 @@ extern size_t strspn(char *s1, char *s2);
 extern size_t strcspn(char *s1, char *s2);
 extern char *strchr(char *s, int c);
 
-#endif /* _STDLIB_H */
+#endif /* _STRING_H */
