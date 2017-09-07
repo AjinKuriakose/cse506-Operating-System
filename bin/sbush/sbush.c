@@ -1,7 +1,6 @@
-#include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <dirent.h>
+//#include <stdlib.h>
+//#include <dirent.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -13,8 +12,36 @@ typedef struct piped_commands {
   char *commands[50];
 } piped_commands;
 
-char **m_environ;
+struct linux_dirent64 {
+	unsigned long  d_ino;    /* 64-bit inode number */
+	unsigned long  d_off;    /* 64-bit offset to next structure */
+	unsigned short d_reclen; /* Size of this dirent */
+	unsigned char  d_type;   /* File type */
+	char           d_name[]; /* Filename (null-terminated) */
+};
 
+enum {
+    DT_UNKNOWN = 0,
+#define DT_UNKNOWN DT_UNKNOWN
+    DT_FIFO = 1,
+#define DT_FIFO  DT_FIFO
+    DT_CHR = 2,
+#define DT_CHR   DT_CHR
+    DT_DIR = 4,
+#define DT_DIR   DT_DIR
+    DT_BLK = 6,
+#define DT_BLK   DT_BLK
+    DT_REG = 8,
+#define DT_REG   DT_REG
+    DT_LNK = 10,
+#define DT_LNK   DT_LNK
+    DT_SOCK = 12,
+#define DT_SOCK  DT_SOCK
+    DT_WHT = 14
+#define DT_WHT   DT_WHT
+};
+
+char **m_environ;
 
 char *m_strcpy(char *dest, char *src);
 char *m_strncpy(char *dest, char *src, int num_bytes);
@@ -37,6 +64,7 @@ int do_execute(char *cmd, char *cmd_path[], char *env[]);
 char *my_getenv(const char *name);
 int my_setenv(char *name, char *value, int overwrite);
 char *my_getcwd(char *buf, size_t size);
+void my_exit(int status);
 void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 void *my_malloc(int sz);
 void my_free(void *mem_ptr);
@@ -51,6 +79,7 @@ int  my_fork();
 int  my_read(int fd, char *c, int size);
 int  my_write(int fd, char *c, int size);
 int  my_putchar(int c);
+int  my_puts_nonewline(const char *s);
 int  my_puts(const char *s);
 size_t my_strspn(char *s1, char *s2);
 size_t my_strcspn(char *s1, char *s2);
@@ -72,33 +101,51 @@ char ps1_variable[256] = "sbush>";
 
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
-#define	PROT_READ     0x1
-#define	PROT_WRITE    0x2
-#define	MAP_PRIVATE   0x02
-#define MAP_ANONYMOUS 0x20
-#define MAP_FAILED    ((void *)-1)
+#define	PROT_READ       0x1
+#define	PROT_WRITE      0x2
+#define	MAP_PRIVATE     0x02
+#define MAP_ANONYMOUS   0x20
+#define MAP_FAILED      ((void *)-1)
 
-#define O_RDONLY      0x0000
-#define O_WRONLY      0x0001
-#define O_RDWR        0x0002
+#define O_RDONLY        0x0000
+#define O_WRONLY        0x0001
+#define O_RDWR          0x0002
 
-#define S_IREAD       0000400
-#define S_IWRITE      0000200
+#define S_IREAD         0000400
+#define S_IWRITE        0000200
 
-#define __NR_read     0
-#define __NR_write    1
-#define __NR_open     2
-#define __NR_close    3
-#define __NR_mmap     9
-#define __NR_munmap   11
-#define __NR_pipe     22
-#define __NR_dup2     33
-#define __NR_fork     57
-#define __NR_execve   59	
-#define __NR_wait4    61
-#define __NR_getcwd   79
-#define __NR_chdir    80
-#define __NR_waitid   247
+#define __NR_read       0
+#define __NR_write      1
+#define __NR_open       2
+#define __NR_close      3
+#define __NR_mmap       9
+#define __NR_munmap     11
+#define __NR_pipe       22
+#define __NR_dup2       33
+#define __NR_fork       57
+#define __NR_execve     59	
+#define __NR_exit       60
+#define __NR_wait4      61
+#define __NR_getdents   78
+#define __NR_getcwd     79
+#define __NR_chdir      80
+#define __NR_getdents64 217
+#define __NR_waitid     247
+
+#define EOF             -1
+
+void print_prompt() {
+  my_puts_nonewline(ps1_variable);
+  my_puts_nonewline(" ");
+}
+
+int my_getdents64(int fd, struct linux_dirent64 *dirp, int count) {
+  return sys_call(__NR_getdents64, fd, dirp, count);
+}
+
+void my_exit(int status) {
+  sys_call(__NR_exit, status);
+}
 
 void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   return (void *)sys_call(__NR_mmap, addr, length, prot, flags, fd, offset);
@@ -193,13 +240,20 @@ int my_putchar(int c) {
   return 0;
 }
 
-int my_puts(const char *s) {
+int my_puts_nonewline(const char *s) {
   int ret;
   while (*s) {
     if ((ret = my_putchar(*s)) != *s)
       return EOF;
     s++;
   } 
+  return 0;
+}
+
+int my_puts(const char *s) {
+  if (my_puts_nonewline(s) < 0)
+    return EOF;
+
   return (my_putchar('\n') == '\n') ? 0 : EOF;
 }
 
@@ -399,18 +453,42 @@ void handle_cd(char *path) {
   
   int ret;
   ret = my_chdir(path);
-  if (ret == -1)
-    printf("sbush: cd: %s: No such file or directory\n", path); 
+  if (ret != 0) {
+    my_puts_nonewline("sbush: cd: ");
+    my_puts_nonewline(path); 
+    my_puts(": No such file or directory"); 
+  }
 }
 
 void handle_cwd() {
 
   char buff[1024] = {0};
   if (my_getcwd(buff, sizeof(buff)) != NULL)
-    printf ("%s\n", buff);
+    my_puts(buff);
 }
 
 void handle_ls() {
+
+  char buff[1024] = {0};
+  if (my_getcwd(buff, sizeof(buff)) == NULL)
+    return;
+
+  int fd;
+  int ret;
+	int i = 0;
+	char buf[1024];
+	struct linux_dirent64 *d_ent;
+	fd = my_open(buff, O_RDONLY);
+  ret = my_getdents64(fd, (struct linux_dirent64 *)buf, 1024);
+
+	while (i < ret) {
+		d_ent = (struct linux_dirent64 *) (buf + i);
+    if ((d_ent->d_name)[0] != '.')
+      my_puts(d_ent->d_name);
+
+		i += d_ent->d_reclen;
+	}
+
 #if 0
   char buff[1024] = {0};
   if (my_getcwd(buff, sizeof(buff)) != NULL) {
@@ -424,7 +502,7 @@ void handle_ls() {
         
         /* For now, ignoring invisible files */
         if (*d_entry->d_name != '.')
-          printf ("%s\n", d_entry->d_name);
+          my_puts(d_entry->d_name);
       }
 
       closedir(dir);
@@ -462,7 +540,7 @@ void get_path_string(char *cmd, char *path_value) {
 
     ptr = my_strstr(path, "$PATH");
 
-    char *sys_env = getenv("PATH");
+    char *sys_env = my_getenv("PATH");
 
     /* $PATH in the beginning */
     if (temp == ptr) {
@@ -553,13 +631,13 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   if (pid == 0) {
      if (find_path_and_exe(cmd, argv, m_environ) < 0) {
   //  if (execvp(cmd, argv) < 0) {
-      printf("%s: command not found\n", cmd);
-      exit(1);
+      my_puts_nonewline(cmd);
+      my_puts(": command not found");
+      my_exit(1);
     }
   } else {
     if (pid < 0) {
-      printf("Fork failed\n");
-      exit(1);
+      my_exit(1);
     }
     else {
       if (!bg_process)
@@ -600,14 +678,15 @@ void execute_commands(char *cmd, char *cmd_arg) {
       break;
 
     case CMD_EXIT:
-      exit(0);
+      my_exit(0);
 
     case CMD_UNKNOWN:
       execute_non_builtin(cmd, cmd_arg);
       break;
 
     default:
-      printf("%s: command not found\n", cmd);
+      my_puts_nonewline(cmd);
+      my_puts(": command not found");
       break;
   }
 }
@@ -623,7 +702,7 @@ void read_from_file(int num_tokens, char *cmd_tokens[]) {
   if (file == -1)
     return;
 
-  while (read(file, &c, 1) > 0)
+  while (my_read(file, &c, 1) > 0)
   {
     code[n++] = (char) c;
     if (c == '\n') {
@@ -698,20 +777,15 @@ void read_from_stdin() {
       }
     }
 
-    my_puts(ps1_variable);
-    /*
-    printf("sbush> ");
-    fflush(stdout);
-    */
+    print_prompt();
 
-    //exit(1); /* TODO : REMOVE, JUST A TEST (VALGRIND) */
     my_memset(buff, 0, sizeof(buff));
   }
 }
 
 int process_start(int input_fd, int output_fd, piped_commands *cmds) {
   int status;
-  pid_t pid = fork();
+  pid_t pid = my_fork();
   if (pid == 0) {
 
     if (input_fd != 0) {
@@ -758,9 +832,8 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds) {
     my_dup2(input_fd, 0);
     my_close(input_fd);
 
-    if (execvp(cmds[i].commands[0], cmds[i].commands) < 0) {
-      printf("failed");
-      exit(1);
+    if (find_path_and_exe(cmds[i].commands[0], cmds[i].commands, m_environ)) {
+      my_exit(1);
     }
 
   } else {
@@ -781,8 +854,8 @@ char *my_getenv(const char *arg) {
 }
 
 int my_setenv(char *path_variable, char *value, int overwrite) {
-   //setenv("PATH", path_value, 1);
-   //overwrite variable is not used now.
+  //setenv("PATH", path_value, 1);
+  //overwrite variable is not used now.
   int i;
   int var_len = my_strlen(path_variable);
   int value_len = my_strlen(value);
@@ -790,21 +863,20 @@ int my_setenv(char *path_variable, char *value, int overwrite) {
   for (i = 0; m_environ[i] !=0 ; i++) {
 
     if (my_strncmp(m_environ[i], "PATH=", 5) == 0) { 
-       /*
-	* first free the value. Then allocate for new value
-	*/
-       my_free(m_environ[i]);
-       m_environ[i]= my_malloc(value_len + var_len + 2);//include size of "=" as well.
-	
-       /*
-	* copy the complete value in 3 steps. eg: PATH=/usr/bin
-	*/
+      /*
+       * first free the value. Then allocate for new value
+       */
+      my_free(m_environ[i]);
+      m_environ[i]= my_malloc(value_len + var_len + 2);//include size of "=" as well.
 
-       m_strncpy(m_environ[i], path_variable, var_len);	
-       m_strncpy(m_environ[i] + var_len, "=", 1);	
-       m_strcpy(m_environ[i] + var_len + 1, value);
+      /*
+       * copy the complete value in 3 steps. eg: PATH=/usr/bin
+       */
+      m_strncpy(m_environ[i], path_variable, var_len);	
+      m_strncpy(m_environ[i] + var_len, "=", 1);	
+      m_strcpy(m_environ[i] + var_len + 1, value);
 
-       return 0;
+      return 0;
     }
   }
   return 1;
@@ -814,7 +886,8 @@ int main(int argc, char *argv[], char *envp[]) {
 
   m_environ = envp;
   //find_path_and_exe("/home/manmathew/main/path/a.sh",argv,envp);
-  my_puts("sbush> ");
+ // my_setenv("PATH",my_getenv("PATH"),1);
+  print_prompt();
 
   if (argc > 1) {
 
