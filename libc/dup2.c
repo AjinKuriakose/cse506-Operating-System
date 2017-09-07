@@ -2,6 +2,6 @@
 #include<stdlib.h>
 
 int dup2(int oldfd, int newfd) {
-  return sys_call(__NR_dup2, oldfd, newfd);
+  return syscall(__NR_dup2, oldfd, newfd);
 }
 

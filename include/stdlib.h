@@ -15,7 +15,7 @@ int  munmap(void *addr, size_t length);
 
 char *getenv(const char *name);
 int setenv(char *name, char *value, int overwrite);
-long sys_call(int syscall_number, ...);
+long syscall(int syscall_number, ...);
 int  waitpid(int pid, int *st_ptr, int options);
 
 #endif

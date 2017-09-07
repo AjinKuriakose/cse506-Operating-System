@@ -16,7 +16,7 @@ void handle_cwd();
 void handle_ls();
 
 int getdents64(int fd, struct linux_dirent64 *dirp, int count) {
-  return sys_call(__NR_getdents64, fd, dirp, count);
+  return syscall(__NR_getdents64, fd, dirp, count);
 }
 
 int puts_nonewline(const char *s) {
