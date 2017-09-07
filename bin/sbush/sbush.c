@@ -1,3 +1,4 @@
+//#include "/home/manmathew/main/include/unistd.h"
 #include <unistd.h>
 //#include <stdlib.h>
 //#include <dirent.h>
@@ -884,10 +885,9 @@ int my_setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  m_environ = envp;
+  m_environ = envp + argc + 1;
   //find_path_and_exe("/home/manmathew/main/path/a.sh",argv,envp);
  // my_setenv("PATH",my_getenv("PATH"),1);
-  print_prompt();
 
   if (argc > 1) {
 
@@ -897,6 +897,7 @@ int main(int argc, char *argv[], char *envp[]) {
   } else {
 
     /* Case 2 : Interactive mode */
+    print_prompt();
     read_from_stdin();
   }
 
