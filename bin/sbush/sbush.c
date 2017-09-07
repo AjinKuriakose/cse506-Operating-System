@@ -96,8 +96,9 @@ char ps1_variable[256] = "sbush>";
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
 void print_prompt() {
-  puts_nonewline(ps1_variable);
-  puts_nonewline(" ");
+  //puts_nonewline(ps1_variable);
+  //puts_nonewline(" ");
+  puts(ps1_variable);
 }
 
 int getdents64(int fd, struct linux_dirent64 *dirp, int count) {
