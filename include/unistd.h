@@ -48,16 +48,12 @@ int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
 
 pid_t fork();
-<<<<<<< HEAD
 //int execvpe(const char *file, char *const argv[], char *const envp[]);
 int execve(const char *file, char *const argv[], char *const envp[]);
 pid_t wait(int *status);
 //int waitpid(int pid, int *status);//:TODO
-=======
-int execvpe(const char *file, char *const argv[], char *const envp[]);
-pid_t wait(int *status);
-int waitpid(int pid, int *status);
->>>>>>> 510a90eac653c0424a6099101f029d911cf7b8ec
+//pid_t wait(int *status);
+//int waitpid(int pid, int *status);
 
 unsigned int sleep(unsigned int seconds);
 
