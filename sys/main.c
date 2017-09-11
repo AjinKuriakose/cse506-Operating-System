@@ -30,7 +30,10 @@ void boot(void)
   // note: function changes rsp, local stack variables can't be practically used
   register char *temp1, *temp2;
 
-  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
+  for(temp1 = (char*)0xb8000, temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2, temp1 += 2) {
+    *temp2 = 7 /* white */;
+    *temp1 = ' ';
+  }
   __asm__(
     "cli;"
     "movq %%rsp, %0;"
@@ -39,15 +42,44 @@ void boot(void)
     :"r"(&initial_stack[INITIAL_STACK_SIZE])
   );
   init_gdt();
-  start(
+/*  start(
     (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
     (uint64_t*)&physbase,
     (uint64_t*)(uint64_t)loader_stack[4]
   );
+*/
+  /*
   for(
     temp1 = "!!!!! start() returned !!!!!", temp2 = (char*)0xb8000;
     *temp1;
     temp1 += 1, temp2 += 2
   ) *temp2 = *temp1;
+  */
+
+  //kprintf("this is a line printed by amd\nthis is another line\nanother one");
+  kprintf("this is a line printed by amd\n"
+          "this is a line printed by amd\n");
+  //kprintf("this is a line printed by amd,this is a line printed by amd,this is a line printed by amd\n");
+  //kprintf("\nthis is a line printed by amd,this is a line printed by amd,this is a line printed by amd");
+
+  /*
+  char *a = "Arjun Mathew Dan";
+  char *s = a;
+  while (*s) {
+    kprintf("The char is : %c\n", s);
+    s++;
+  }
+  */
+
+  char c = 'A';
+  kprintf("The char is : %c\n", c); 
+  c = 'M';
+  kprintf("The char is : %c\n", c); 
+  kprintf("The char is : %c\n", 'D');
+
+  char *st = "This is Awesome!";
+  kprintf("Line : %s\n\n\n", st);
+  kprintf("%d", 25);
+  kprintf("%c", 'F');
   while(1);
 }
