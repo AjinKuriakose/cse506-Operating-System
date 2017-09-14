@@ -79,7 +79,11 @@ void boot(void)
 
   char *st = "This is Awesome!";
   kprintf("Line : %s\n\n\n", st);
-  kprintf("%d", 25);
-  kprintf("%c", 'F');
+  kprintf("%d\n", 25);
+  kprintf("%p\n", 25);
+  kprintf("%p\n", 0x7fffd54becf4);
+  kprintf("%x\n", 6753429);
+ // kprintf("%c", 'F');
+  //kprintf("%d", 1234);
   while(1);
 }
