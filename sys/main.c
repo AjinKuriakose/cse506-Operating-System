@@ -42,12 +42,12 @@ void boot(void)
     :"r"(&initial_stack[INITIAL_STACK_SIZE])
   );
   init_gdt();
-/*  start(
+  start(
     (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
     (uint64_t*)&physbase,
     (uint64_t*)(uint64_t)loader_stack[4]
   );
-*/
+
   /*
   for(
     temp1 = "!!!!! start() returned !!!!!", temp2 = (char*)0xb8000;
@@ -81,7 +81,9 @@ void boot(void)
   kprintf("Line : %s\n\n\n", st);
   kprintf("%d\n", 25);
   kprintf("%p\n", 25);
-  kprintf("%p\n", 0x7fffd54becf4);
+  //kprintf("%p\n", 0x7fffd54becf4);
+  int gg = 2;
+  kprintf("Addr : %p\n", &gg);
   kprintf("%x\n", 6753429);
  // kprintf("%c", 'F');
   //kprintf("%d", 1234);

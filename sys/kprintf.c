@@ -8,7 +8,7 @@ int strlen(char *str) {
   return i;
 }
 
-void convert(char *a, int n, int base, int i) {
+void convert(char *a, unsigned long n, int base, int i) {
 
   int rem = n % base;
   if (n == 0)
@@ -89,6 +89,7 @@ void kprintf(const char *fmt, ...)
   int str_len;
   int int_arg;
   int q = 0;
+  unsigned long gg;
 
   while (*fmt) {
     if (*fmt != '%') {
@@ -130,8 +131,8 @@ void kprintf(const char *fmt, ...)
         /* TODO : Wrong... */
         sbuff[0] = '0';
         sbuff[1] = 'x';
-        int_arg = va_arg(args, int);
-  			convert(&sbuff[2], int_arg, 16, 0);
+        gg = va_arg(args, unsigned long);
+  			convert(&sbuff[2], gg, 16, 0);
         reverse(&sbuff[2]);
         str_len = find_length(sbuff);
         while (str_len--) {
