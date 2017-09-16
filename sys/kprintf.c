@@ -8,6 +8,26 @@ int strlen(char *str) {
   return i;
 }
 
+void *memset(void *dest, int ch, int num_bytes) {
+  char *tmp = dest;
+  while (num_bytes) {
+    *tmp++ = ch;
+    num_bytes--;
+  }
+  return dest;
+}
+
+void my_memcpy(void *dest, const void *src, int n) {
+  char *d = (char *)dest;
+  char *s = (char *)src;
+  while (n) {
+    *d = *s;
+    d++;
+    s++;
+    n--;
+  }
+}
+
 void convert(char *a, unsigned long n, int base, int i) {
 
   int rem = n % base;
@@ -24,19 +44,37 @@ void convert(char *a, unsigned long n, int base, int i) {
 }
 
 void display(const char *fmt) {
-  static char *temp1, *temp2 = (char *)VIDEO_MEM_BEGIN;
-  static int char_count = CHAR_WIDTH;
-  for (temp1 = (char *)fmt; *temp1; temp1 += 1, temp2 += CHAR_WIDTH) {
-    if (*temp1 == '\n') {
-      temp2 += (SCREEN_WIDTH - char_count);
-      char_count = 0;
-    } else {
-      *temp2 = *temp1;
-    }
-    if (!(char_count % SCREEN_WIDTH))
-      char_count = 0;
+  static int row = 1;
+  static int col = 1;
+  char *c;
+  static char *temp = (char *)VIDEO_MEM_BEGIN;
 
-    char_count += CHAR_WIDTH;
+  for (c = (char *)fmt; *c; c += 1, temp += CHAR_WIDTH) {
+    if (row > 25) {
+      my_memcpy((char *)VIDEO_MEM_BEGIN, (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH, 3840);
+      temp -= SCREEN_WIDTH;
+      memset(temp, 0, SCREEN_WIDTH);
+      row = 25;
+    }
+
+    if (*c == '\n') {
+      temp += 2 * (80 - col);
+      col = 1;
+      row++;
+      continue;
+    }
+
+    if (col != 81) {
+      memset(temp, 0, SCREEN_WIDTH - 2 * (col - 1));
+      *temp = *c;
+      col++;
+    } else {
+      display("\n");
+      col = 1;
+      c -= 1;
+      temp -= CHAR_WIDTH;
+      continue;
+    }
   }
 }
 
@@ -56,10 +94,10 @@ void reverse(char *a) {
   int j = strlen(a);
   char c;
 
-  for (i=0,j=strlen(a)-1;i<j;i++,j--) {
+  for (i = 0,j = strlen(a) - 1; i < j; i++, j--) {
     c = a[i];
-    a[i]=a[j];
-    a[j]=c;
+    a[i] = a[j];
+    a[j] = c;
   }
 
 }
@@ -68,9 +106,9 @@ void int2char(int num, char *input) {
 
   int i = 0, r;
 
-  while(num) {
+  while (num) {
     r = num % 10;
-    num = num/10;
+    num = num / 10;
     input[i++] = r + 48;
   }
 
@@ -104,6 +142,8 @@ void kprintf(const char *fmt, ...)
         *s++ = (unsigned char)va_arg(args, int);
         break;
       case 'd':
+        q = 0;
+        memset(sbuff, 0, sizeof(sbuff));
         int_arg = va_arg(args, int);
         int2char(int_arg, sbuff); 
         str_len = find_length(sbuff);
@@ -119,6 +159,8 @@ void kprintf(const char *fmt, ...)
         }
         break;
       case 'x':
+        q = 0;
+        memset(sbuff, 0, sizeof(sbuff));
         int_arg = va_arg(args, int);
   			convert(sbuff, int_arg, 16, 0);
         reverse(sbuff);
@@ -128,11 +170,12 @@ void kprintf(const char *fmt, ...)
         }
         break;
       case 'p':
-        /* TODO : Wrong... */
+        q = 0;
+        memset(sbuff, 0, sizeof(sbuff));
         sbuff[0] = '0';
         sbuff[1] = 'x';
-        gg = va_arg(args, unsigned long);
-  			convert(&sbuff[2], gg, 16, 0);
+        gg = (unsigned long)va_arg(args, unsigned long);
+        convert(&sbuff[2], gg, 16, 0);
         reverse(&sbuff[2]);
         str_len = find_length(sbuff);
         while (str_len--) {

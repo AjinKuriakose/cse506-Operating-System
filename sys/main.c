@@ -42,11 +42,13 @@ void boot(void)
     :"r"(&initial_stack[INITIAL_STACK_SIZE])
   );
   init_gdt();
+/*
   start(
     (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
     (uint64_t*)&physbase,
     (uint64_t*)(uint64_t)loader_stack[4]
   );
+*/
 
   /*
   for(
@@ -56,36 +58,28 @@ void boot(void)
   ) *temp2 = *temp1;
   */
 
-  //kprintf("this is a line printed by amd\nthis is another line\nanother one");
-  kprintf("this is a line printed by amd\n"
-          "this is a line printed by amd\n");
-  //kprintf("this is a line printed by amd,this is a line printed by amd,this is a line printed by amd\n");
-  //kprintf("\nthis is a line printed by amd,this is a line printed by amd,this is a line printed by amd");
-
-  /*
-  char *a = "Arjun Mathew Dan";
-  char *s = a;
-  while (*s) {
-    kprintf("The char is : %c\n", s);
-    s++;
+  int i = 1;
+  int a = 2;
+  int b = 2;
+  int c = 2;
+  kprintf("a = %d, b = %d, c = %d\n", a, b, c);
+  kprintf("addr a = %p\n", &i);
+  while (i < 27) {
+    kprintf("This is line %d\n", i);
+    i++;
   }
-  */
+  kprintf("Name : AMD\n");
+  kprintf("Name : AMD\n");
+  kprintf("This is a very long line.This is a very long line.This is a very long line.67890123\n");
+  kprintf("This is a very long line.This is a very long line.This is a very long line.67890123");
+  kprintf("%x\n", i);
+  kprintf("%x\n", i);
+  kprintf("%s\n", "arjun");
+  kprintf("%p\n", &i);
+  kprintf("%c, %c, %c\n", 65, 66, 67);
+  kprintf("%s, %s, %s\n", "abc", "def", "ghi");
+  kprintf("%d, %d, %d\n", 7, 8, 9);
+  kprintf("%x, %x, %x\n", 25, 26, 27);
 
-  char c = 'A';
-  kprintf("The char is : %c\n", c); 
-  c = 'M';
-  kprintf("The char is : %c\n", c); 
-  kprintf("The char is : %c\n", 'D');
-
-  char *st = "This is Awesome!";
-  kprintf("Line : %s\n\n\n", st);
-  kprintf("%d\n", 25);
-  kprintf("%p\n", 25);
-  //kprintf("%p\n", 0x7fffd54becf4);
-  int gg = 2;
-  kprintf("Addr : %p\n", &gg);
-  kprintf("%x\n", 6753429);
- // kprintf("%c", 'F');
-  //kprintf("%d", 1234);
   while(1);
 }
