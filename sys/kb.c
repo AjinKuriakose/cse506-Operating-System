@@ -8,6 +8,10 @@
  *
  */
 
+#define FLAG_CTRL     0x80
+#define FLAG_SHIFT    0x40
+#define FLAG_ALT      0x20
+
 unsigned char scancode_arr[128] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
@@ -48,6 +52,46 @@ unsigned char scancode_arr[128] =
     0,	/* All other keys are undefined */
 };		
 
+unsigned char scancode_arr_upper[128] =
+{
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*',	/* 9 */
+  '(', ')', '_', '+', '\b',	/* Backspace */
+ '\t',			/* Tab */
+  'Q', 'W', 'E', 'R',	/* 19 */
+  'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',	/* Enter key */
+    0,			/* 29   - Control */
+  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':',	/* 39 */
+ '\"', '~',   0,		/* Left shift */
+ '|', 'Z', 'X', 'C', 'V', 'B', 'N',			/* 49 */
+  'M', '<', '>', '?',   0,				/* Right shift */
+  '*',
+    0,	/* Alt */
+  ' ',	/* Space bar */
+    0,	/* Caps lock */
+    0,	/* 59 - F1 key ... > */
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,	/* < ... F10 */
+    0,	/* 69 - Num lock*/
+    0,	/* Scroll Lock */
+    0,	/* Home key */
+    0,	/* Up Arrow */
+    0,	/* Page Up */
+  '-',
+    0,	/* Left Arrow */
+    0,
+    0,	/* Right Arrow */
+  '+',
+    0,	/* 79 - End key*/
+    0,	/* Down Arrow */
+    0,	/* Page Down */
+    0,	/* Insert Key */
+    0,	/* Delete Key */
+    0,   0,   0,
+    0,	/* F11 Key */
+    0,	/* F12 Key */
+    0,	/* All other keys are undefined */
+};		
+
 static inline uint8_t inb(uint16_t port)
 {
     uint8_t ret;
@@ -58,15 +102,36 @@ static inline uint8_t inb(uint16_t port)
 }
 
 void key_handler() {
+  static unsigned char flag = 0;
   unsigned char scode;
   scode = inb(0x60);
-  if (scode & 0x80) {
+  if (!(scode & 0x80)) {
 
-    kprintf("Shift, ctrl, .. pressed\n");
-  } else {
+    if (scode == 0x2A || scode == 0x36) {
 
-    kprintf("%c---\n", scancode_arr[scode]);
-    display_glyph(scancode_arr[scode], 0);
+      flag = FLAG_SHIFT;
+      return;
+
+    } else if (scode == 0x1D || scode == -0x1D) {
+
+      flag = FLAG_CTRL;
+      return;
+
+    } else if (scode == 0x38 || scode == -0x38) {
+
+      flag = FLAG_ALT;
+      return;
+    }
+
+    if (flag & FLAG_CTRL) {
+      display_glyph(scancode_arr_upper[scode], 1);
+    } else if (flag & FLAG_SHIFT) {
+      display_glyph(scancode_arr_upper[scode], 0);
+    } else {
+      display_glyph(scancode_arr[scode], 0);
+    }
+
+    flag = 0;
   }
 }
 
@@ -78,10 +143,12 @@ void display_glyph(unsigned char glyph, int is_ctrl_char) {
   memset(temp, 0, 10);
   
   sbuff[0] = '[';
+
   if (is_ctrl_char)
     sbuff[1] = '^';
   else
     sbuff[1] = ' ';
+
   sbuff[2] = glyph;
   sbuff[3] = ' ';
   sbuff[4] = ']';
