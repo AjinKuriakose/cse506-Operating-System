@@ -1,5 +1,6 @@
 #include <sys/defs.h>
 #include <sys/gdt.h>
+#include <sys/idt.h>
 #include <sys/kprintf.h>
 #include <sys/tarfs.h>
 #include <sys/ahci.h>
@@ -25,6 +26,13 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 }
 
+void testfn(){
+ __asm__(
+    "int $0x20"
+  );
+}
+
+
 void boot(void)
 {
   // note: function changes rsp, local stack variables can't be practically used
@@ -34,6 +42,7 @@ void boot(void)
     *temp2 = 7 /* white */;
     *temp1 = ' ';
   }
+/*
   __asm__(
     "cli;"
     "movq %%rsp, %0;"
@@ -41,7 +50,13 @@ void boot(void)
     :"=g"(loader_stack)
     :"r"(&initial_stack[INITIAL_STACK_SIZE])
   );
+*/
   init_gdt();
+  init_idt();
+
+  kprintf("interrupt!");
+  testfn();
+
 /*
   start(
     (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
@@ -57,7 +72,7 @@ void boot(void)
     temp1 += 1, temp2 += 2
   ) *temp2 = *temp1;
   */
-
+/*
   int i = 1;
   int a = 2;
   int b = 2;
@@ -68,6 +83,7 @@ void boot(void)
     kprintf("This is line %d\n", i);
     i++;
   }
+	
   kprintf("Name : AMD\n");
   kprintf("Name : AMD\n");
   kprintf("This is a very long line.This is a very long line.This is a very long line.67890123\n");
@@ -80,6 +96,6 @@ void boot(void)
   kprintf("%s, %s, %s\n", "abc", "def", "ghi");
   kprintf("%d, %d, %d\n", 7, 8, 9);
   kprintf("%x, %x, %x\n", 25, 26, 27);
-
+*/
   while(1);
 }
