@@ -1,47 +1,6 @@
 #include <sys/kprintf.h>
+#include <sys/utils.h>
 #include <stdarg.h>
-
-int strlen(char *str) {
-  int i;
-  for (i = 0; *str != '\0'; str++)
-    i++;
-  return i;
-}
-
-void *memset(void *dest, int ch, int num_bytes) {
-  char *tmp = dest;
-  while (num_bytes) {
-    *tmp++ = ch;
-    num_bytes--;
-  }
-  return dest;
-}
-
-void my_memcpy(void *dest, const void *src, int n) {
-  char *d = (char *)dest;
-  char *s = (char *)src;
-  while (n) {
-    *d = *s;
-    d++;
-    s++;
-    n--;
-  }
-}
-
-void convert(char *a, unsigned long n, int base, int i) {
-
-  int rem = n % base;
-  if (n == 0)
-    return;
-
-  convert(a, n / base, base, i + 1);
-  if (rem < 10) {
-    a[i] = rem + 48;
-
-  } else {
-    a[i] = rem - 10 + 'A';
-  }
-}
 
 void display(const char *fmt) {
   static int row = 1;
@@ -50,11 +9,11 @@ void display(const char *fmt) {
   static char *temp = (char *)VIDEO_MEM_BEGIN;
 
   for (c = (char *)fmt; *c; c += 1, temp += CHAR_WIDTH) {
-    if (row > 25) {
-      my_memcpy((char *)VIDEO_MEM_BEGIN, (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH, 3840);
+    if (row > 23) {
+      memcpy((char *)VIDEO_MEM_BEGIN, (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH, 3620);
       temp -= SCREEN_WIDTH;
       memset(temp, 0, SCREEN_WIDTH);
-      row = 25;
+      row = 23;
     }
 
     if (*c == '\n') {
@@ -76,43 +35,6 @@ void display(const char *fmt) {
       continue;
     }
   }
-}
-
-int find_length(char *str) {
-
-  int len = 0;
-  while (*str) {
-    len++;
-    str++;
-  }
-
-  return len;
-}
-
-void reverse(char *a) {
-  int i;
-  int j = strlen(a);
-  char c;
-
-  for (i = 0,j = strlen(a) - 1; i < j; i++, j--) {
-    c = a[i];
-    a[i] = a[j];
-    a[j] = c;
-  }
-
-}
-
-void int2char(int num, char *input) {
-
-  int i = 0, r;
-
-  while (num) {
-    r = num % 10;
-    num = num / 10;
-    input[i++] = r + 48;
-  }
-
-  reverse(input);
 }
 
 void kprintf(const char *fmt, ...)
@@ -146,14 +68,14 @@ void kprintf(const char *fmt, ...)
         memset(sbuff, 0, sizeof(sbuff));
         int_arg = va_arg(args, int);
         int2char(int_arg, sbuff); 
-        str_len = find_length(sbuff);
+        str_len = strlen(sbuff);
         while (str_len--) {
           *s++ = sbuff[q++];
         }
         break;
       case 's':
         st = va_arg(args, char *);
-        str_len = find_length(st);
+        str_len = strlen(st);
         while (str_len--) {
           *s++ = *st++;
         }
@@ -164,7 +86,7 @@ void kprintf(const char *fmt, ...)
         int_arg = va_arg(args, int);
   			convert(sbuff, int_arg, 16, 0);
         reverse(sbuff);
-        str_len = find_length(sbuff);
+        str_len = strlen(sbuff);
         while (str_len--) {
           *s++ = sbuff[q++];
         }
@@ -177,7 +99,7 @@ void kprintf(const char *fmt, ...)
         gg = (unsigned long)va_arg(args, unsigned long);
         convert(&sbuff[2], gg, 16, 0);
         reverse(&sbuff[2]);
-        str_len = find_length(sbuff);
+        str_len = strlen(sbuff);
         while (str_len--) {
           *s++ = sbuff[q++];
         }
@@ -193,3 +115,4 @@ void kprintf(const char *fmt, ...)
 
   display(buff);
 }
+
