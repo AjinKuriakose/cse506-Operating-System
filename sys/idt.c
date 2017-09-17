@@ -21,12 +21,9 @@ struct idtr_t {
 }__attribute__((packed));
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
-void _isr_timer();
-void _isr_sys_def();
 
 static struct idt_elem_t idt[MAX_IDT];
 
-//idt register
 static struct idtr_t idtr = { sizeof(idt), (uint64_t)idt };
 
 static void init_idt_entry(unsigned char irq, uint64_t base, uint16_t sel, uint8_t type) {
@@ -41,7 +38,6 @@ static void init_idt_entry(unsigned char irq, uint64_t base, uint16_t sel, uint8
    idt[irq].off_3 = (base >> 32) & 0xFFFFFFFF;
 
    idt[irq].pad_2 = 0;
-
 }
 
 void init_idt() {
@@ -52,14 +48,14 @@ void init_idt() {
   init_idt_entry(3, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(4, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(5, (uint64_t)_isr_sys_def, 0x08, 0x8E);
-  init_idt_entry(6, (uint64_t)_isr_sys_def, 0x08, 0x8E);
+  init_idt_entry(6, (uint64_t)_isr_sys_def, 0x08, 0x8E); //==
   init_idt_entry(7, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(8, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(9, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(10, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(11, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(12, (uint64_t)_isr_sys_def, 0x08, 0x8E);
-  init_idt_entry(13, (uint64_t)_isr_sys_def, 0x08, 0x8E);
+  init_idt_entry(13, (uint64_t)_isr_sys_def, 0x08, 0x8E); //==
   init_idt_entry(14, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(15, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(16, (uint64_t)_isr_sys_def, 0x08, 0x8E);
@@ -78,7 +74,7 @@ void init_idt() {
   init_idt_entry(29, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(30, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(31, (uint64_t)_isr_sys_def, 0x08, 0x8E);
-  init_idt_entry(32, (uint64_t)_isr_timer, 0x08, 0x8E);
+  init_idt_entry(40, (uint64_t)_isr_timer, 0x08, 0x8E);
 
   _x86_64_asm_lidt(&idtr);
 }

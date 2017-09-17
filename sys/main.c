@@ -1,6 +1,7 @@
 #include <sys/defs.h>
 #include <sys/gdt.h>
 #include <sys/idt.h>
+#include <sys/pic.h>
 #include <sys/kprintf.h>
 #include <sys/tarfs.h>
 #include <sys/ahci.h>
@@ -26,12 +27,14 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 }
 
+/*
+ * sample software interrupt
+ */
 void testfn(){
  __asm__(
     "int $0x20"
   );
 }
-
 
 void boot(void)
 {
@@ -42,20 +45,19 @@ void boot(void)
     *temp2 = 7 /* white */;
     *temp1 = ' ';
   }
-/*
+
+  init_gdt();
+  pic_offset_init(0x28, 0x30);
+  init_idt();
+
   __asm__(
     "cli;"
+    "sti;"
     "movq %%rsp, %0;"
     "movq %1, %%rsp;"
     :"=g"(loader_stack)
     :"r"(&initial_stack[INITIAL_STACK_SIZE])
   );
-*/
-  init_gdt();
-  init_idt();
-
-  kprintf("interrupt!");
-  testfn();
 
 /*
   start(
@@ -65,37 +67,16 @@ void boot(void)
   );
 */
 
-  /*
-  for(
-    temp1 = "!!!!! start() returned !!!!!", temp2 = (char*)0xb8000;
-    *temp1;
-    temp1 += 1, temp2 += 2
-  ) *temp2 = *temp1;
-  */
-/*
-  int i = 1;
-  int a = 2;
-  int b = 2;
-  int c = 2;
-  kprintf("a = %d, b = %d, c = %d\n", a, b, c);
-  kprintf("addr a = %p\n", &i);
-  while (i < 27) {
-    kprintf("This is line %d\n", i);
-    i++;
-  }
-	
-  kprintf("Name : AMD\n");
-  kprintf("Name : AMD\n");
-  kprintf("This is a very long line.This is a very long line.This is a very long line.67890123\n");
-  kprintf("This is a very long line.This is a very long line.This is a very long line.67890123");
-  kprintf("%x\n", i);
-  kprintf("%x\n", i);
-  kprintf("%s\n", "arjun");
-  kprintf("%p\n", &i);
-  kprintf("%c, %c, %c\n", 65, 66, 67);
-  kprintf("%s, %s, %s\n", "abc", "def", "ghi");
-  kprintf("%d, %d, %d\n", 7, 8, 9);
-  kprintf("%x, %x, %x\n", 25, 26, 27);
-*/
   while(1);
 }
+
+void testprint() {
+  kprintf("IR..");
+}
+ 
+void testprint0() {
+  kprintf("IR0..");
+}
+ 
+
+
