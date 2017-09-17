@@ -35,6 +35,7 @@ void memcpy(void *dest, const void *src, int n) {
   }
 }
 
+/* number base converter, int to oct, hex etc */
 void convert(char *a, unsigned long n, int base, int i) {
 
   int rem = n % base;
@@ -60,7 +61,6 @@ void reverse(char *a) {
     a[i] = a[j];
     a[j] = c;
   }
-
 }
 
 void int2char(int num, char *input) {

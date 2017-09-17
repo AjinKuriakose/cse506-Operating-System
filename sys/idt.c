@@ -48,14 +48,14 @@ void init_idt() {
   init_idt_entry(3, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(4, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(5, (uint64_t)_isr_sys_def, 0x08, 0x8E);
-  init_idt_entry(6, (uint64_t)_isr_sys_def, 0x08, 0x8E); //==
+  init_idt_entry(6, (uint64_t)_isr_sys_def, 0x08, 0x8E); 
   init_idt_entry(7, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(8, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(9, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(10, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(11, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(12, (uint64_t)_isr_sys_def, 0x08, 0x8E);
-  init_idt_entry(13, (uint64_t)_isr_sys_def, 0x08, 0x8E); //==
+  init_idt_entry(13, (uint64_t)_isr_sys_def, 0x08, 0x8E); 
   init_idt_entry(14, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(15, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(16, (uint64_t)_isr_sys_def, 0x08, 0x8E);
@@ -74,7 +74,10 @@ void init_idt() {
   init_idt_entry(29, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(30, (uint64_t)_isr_sys_def, 0x08, 0x8E);
   init_idt_entry(31, (uint64_t)_isr_sys_def, 0x08, 0x8E);
+  
+  /* Hardware interrupts, offset by 0x28 = 40 */ 
   init_idt_entry(40, (uint64_t)_isr_timer, 0x08, 0x8E);
+  init_idt_entry(41, (uint64_t)_isr_kb, 0x08, 0x8E);
 
   _x86_64_asm_lidt(&idtr);
 }

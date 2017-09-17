@@ -28,7 +28,7 @@ void print_timer() {
 	if (count == 18) {
 		sec += 1;
 
-    kprintf("This is AMD....%d\n", count);
+//    kprintf("This is AMD....%d\n", count);
 
 		display_time(sec);
 		count = 0;
