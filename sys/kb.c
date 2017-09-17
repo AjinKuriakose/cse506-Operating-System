@@ -66,22 +66,27 @@ void key_handler() {
   } else {
 
     kprintf("%c---\n", scancode_arr[scode]);
-    display_glyph(scancode_arr[scode]);
+    display_glyph(scancode_arr[scode], 0);
   }
 }
 
-void display_glyph(unsigned char glyph) {
-  unsigned char sbuff[16] = {0};
+void display_glyph(unsigned char glyph, int is_ctrl_char) {
+  unsigned char sbuff[6] = {0};
   unsigned char *c;
   int i = 0;
-  char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * (SCREEN_HEIGHT - 1);
+  char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * SCREEN_HEIGHT - 10;
   memset(temp, 0, 10);
   
   sbuff[0] = '[';
-  sbuff[1] = glyph;
-  sbuff[2] = ']';
+  if (is_ctrl_char)
+    sbuff[1] = '^';
+  else
+    sbuff[1] = ' ';
+  sbuff[2] = glyph;
+  sbuff[3] = ' ';
+  sbuff[4] = ']';
 
-  for (c = sbuff; i < 3; c += 1, i++, temp += CHAR_WIDTH) {
+  for (c = sbuff; i < 5; c += 1, i++, temp += CHAR_WIDTH) {
       *temp = *c;
   }
 }
