@@ -6,8 +6,8 @@ void display_time(int secs) {
   int buff_len = 0;
   char sbuff[256] = {0};
   char *c;
-  char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * (SCREEN_HEIGHT - 1);
-  memset(temp, 0, SCREEN_WIDTH);
+  char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * (SCREEN_HEIGHT - 1) + 10; /* 6 = offset due to glyph print */
+  memset(temp, 0, SCREEN_WIDTH - 10);
 
   buff_len += strlen(UP_TIME_PRINT);
        strncpy(sbuff, UP_TIME_PRINT, buff_len);

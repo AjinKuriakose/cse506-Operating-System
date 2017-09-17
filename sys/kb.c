@@ -1,7 +1,7 @@
 #include <sys/kb.h>
 #include <sys/defs.h>
 #include <sys/kprintf.h>
-
+#include <sys/utils.h>
 
 /*
  * scancode reference: http://www.osdever.net/bkerndev/Docs/keyboard.htm
@@ -57,27 +57,32 @@ static inline uint8_t inb(uint16_t port)
     return ret;
 }
 
-char get_scancode() {
-    char ch = 0;
-    do {
-        if (inb(0x60) != ch) {
-            ch = inb(0x60);
-            if (ch > 0)
-                return ch;
-        }
-    } while (1);
-}
-char getchar() {
-    return scancode_arr[(int)get_scancode()];
-}
-
 void key_handler() {
+  unsigned char scode;
+  scode = inb(0x60);
+  if (scode & 0x80) {
 
-   unsigned char scancode;
-   scancode = inb(0x60);
-   kprintf("%c",scancode_arr[scancode]);
- //  kprintf("%c",getchar());
+    kprintf("Shift, ctrl, .. pressed\n");
+  } else {
 
+    kprintf("%c---\n", scancode_arr[scode]);
+    display_glyph(scancode_arr[scode]);
+  }
 }
 
- 
+void display_glyph(unsigned char glyph) {
+  unsigned char sbuff[16] = {0};
+  unsigned char *c;
+  int i = 0;
+  char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * (SCREEN_HEIGHT - 1);
+  memset(temp, 0, 10);
+  
+  sbuff[0] = '[';
+  sbuff[1] = glyph;
+  sbuff[2] = ']';
+
+  for (c = sbuff; i < 3; c += 1, i++, temp += CHAR_WIDTH) {
+      *temp = *c;
+  }
+}
+
