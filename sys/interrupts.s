@@ -1,189 +1,193 @@
-.global _isr_timer
-_isr_timer:
-  cli
-  call print_timer
-  sti
-  call send_EOI
-  iretq
-
-.global _isr_timer_new
-_isr_timer_new:
-    iretq
-    push %rax
-    push %rcx
-    push %rdx
-    push %rbx
-    push %rbp
-    push %rsi
-    push %rdi
-    #call print_timer
-    #call send_EOI
-    pop %rdi    
-    pop %rsi    
-    pop %rbp    
-    pop %rbx    
-    pop %rdx    
-    pop %rcx
-    pop %rax
-    iretq
-
 .global _isr_kb
 _isr_kb:
-  iretq
-  cli
-  call key_handler 
-  sti
+  call key_handler
   call send_EOI
   iretq
-
-.global send_EOI
-.global print_timer
 
 .global _isr_timer1
 _isr_timer1:
-    push %rax
-    push %rcx
-    push %rdx
-    push %rbx
-    push %rbp
-    push %rsi
-    push %rdi
-    call print_timer
-    call send_EOI 
-    pop %rdi
-    pop %rsi
-    pop %rbp
-    pop %rbx
-    pop %rdx
-    pop %rcx
-    pop %rax
-    iretq
+  call send_EOI
+  pushq %rax
+  pushq %rcx
+  pushq %rdx
+  pushq %rbx
+  pushq %rbp
+  pushq %rsi
+  pushq %rdi
+  pushq %r8
+  pushq %r9
+  pushq %r10
+  call print_timer
+  call send_EOI
+  popq %r10
+  popq %r9
+  popq %r8
+  popq %rdi
+  popq %rsi
+  popq %rbp
+  popq %rbx
+  popq %rdx
+  popq %rcx
+  popq %rax
+  iretq
 
 .global _isr_sys_def0
 _isr_sys_def0:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def1
 _isr_sys_def1:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def2
 _isr_sys_def2:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def3
 _isr_sys_def3:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def4
 _isr_sys_def4:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def5
 _isr_sys_def5:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def6
 _isr_sys_def6:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def7
 _isr_sys_def7:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def8
 _isr_sys_def8:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def9
 _isr_sys_def9:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def10
 _isr_sys_def10:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def11
 _isr_sys_def11:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def12
 _isr_sys_def12:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def13
 _isr_sys_def13:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def14
 _isr_sys_def14:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def15
 _isr_sys_def15:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def16
 _isr_sys_def16:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def17
 _isr_sys_def17:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def18
 _isr_sys_def18:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def19
 _isr_sys_def19:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def20
 _isr_sys_def20:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def21
 _isr_sys_def21:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def22
 _isr_sys_def22:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def23
 _isr_sys_def23:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def24
 _isr_sys_def24:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def25
 _isr_sys_def25:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def26
 _isr_sys_def26:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def27
 _isr_sys_def27:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def28
 _isr_sys_def28:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def29
 _isr_sys_def29:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def30
 _isr_sys_def30:
- iretq
+  call send_EOI
+  iretq
 
 .global _isr_sys_def31
 _isr_sys_def31:
- iretq
+  call send_EOI
+  iretq
 

@@ -7,7 +7,7 @@ void display_time(int secs) {
   char sbuff[256] = {0};
   char *c;
   char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * (SCREEN_HEIGHT - 1);
-  memset(temp, 0, SCREEN_WIDTH - 10);
+  clear_chars(temp, SCREEN_WIDTH - 10);
 
   buff_len += strlen(UP_TIME_PRINT);
        strncpy(sbuff, UP_TIME_PRINT, buff_len);
@@ -20,17 +20,13 @@ void display_time(int secs) {
 }
 
 void print_timer() {
+  static int count;
+  static int sec;
+  count += 1;
 
-	static int count;
-	static int sec;
-	count += 1;
-
-	if (count == 18) {
-		sec += 1;
-
-//    kprintf("This is AMD....%d\n", count);
-
-		display_time(sec);
-		count = 0;
-	}
+  if (count == 18) {
+    sec += 1;
+    display_time(sec);
+    count = 0;
+  }
 }

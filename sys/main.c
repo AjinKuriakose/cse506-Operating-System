@@ -1,8 +1,8 @@
 #include <sys/defs.h>
 #include <sys/gdt.h>
+#include <sys/kprintf.h>
 #include <sys/idt.h>
 #include <sys/pic.h>
-#include <sys/kprintf.h>
 #include <sys/tarfs.h>
 #include <sys/ahci.h>
 
@@ -13,7 +13,6 @@ extern char kernmem, physbase;
 
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
-  return;
   struct smap_t {
     uint64_t base, length;
     uint32_t type;
@@ -26,50 +25,33 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   }
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-}
-
-/*
- * sample software interrupt
- */
-void testfn(){
- __asm__(
-    "int $0x20"
+  
+  init_idt();
+  pic_offset_init(0x20,0x28);
+  __asm__ volatile (
+    "cli;"
+    "sti;"
   );
+  while(1) __asm__ volatile ("hlt");
 }
 
 void boot(void)
 {
   // note: function changes rsp, local stack variables can't be practically used
   register char *temp1, *temp2;
-#if 0
-  for(temp1 = (char*)0xb8000, temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2, temp1 += 2) {
-    *temp2 = 7 /* white */;
-    *temp1 = 'x';
+
+  for(temp1=(char *)0xb8000, temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2, temp1 += 2) {
+	*temp2 = 7 /* white */;
+	*temp1 =' ';
   }
-#endif
-for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
+  __asm__ volatile (
+    "cli;"
+    "movq %%rsp, %0;"
+    "movq %1, %%rsp;"
+    :"=g"(loader_stack)
+    :"r"(&initial_stack[INITIAL_STACK_SIZE])
+  );
   init_gdt();
-  pic_offset_init(0x28, 0x30);
-  init_idt();
-
-  __asm__(
-    "cli;"
-    "sti;"
-    "movq %%rsp, %0;"
-    "movq %1, %%rsp;"
-    :"=g"(loader_stack)
-    :"r"(&initial_stack[INITIAL_STACK_SIZE])
-  );
-/*
-
-  __asm__(
-    "cli;"
-    "movq %%rsp, %0;"
-    "movq %1, %%rsp;"
-    :"=g"(loader_stack)
-    :"r"(&initial_stack[INITIAL_STACK_SIZE])
-  );
-*/
   start(
     (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
     (uint64_t*)&physbase,
@@ -80,18 +62,5 @@ for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 
     *temp1;
     temp1 += 1, temp2 += 2
   ) *temp2 = *temp1;
-//while(1) __asm__ volatile ("hlt");
-while(1); 
-
+  while(1) __asm__ volatile ("hlt");
 }
-/*
-void testprint() {
-  kprintf("IR..");
-}
- 
-void testprint0() {
-  kprintf("IR0..");
-}
- 
-
-*/

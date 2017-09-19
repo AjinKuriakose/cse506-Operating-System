@@ -95,9 +95,9 @@ unsigned char scancode_arr_upper[128] =
 static inline uint8_t inb(uint16_t port)
 {
     uint8_t ret;
-    __asm__ __volatile__( "inb %1, %0"
+    __asm__ __volatile__("inb %1, %0"
                    : "=a"(ret)
-                   : "Nd"(port) );
+                   : "Nd"(port));
     return ret;
 }
 
@@ -122,13 +122,17 @@ void key_handler() {
       flag = FLAG_ALT;
       return;
     }
-
+     
     if (flag & FLAG_CTRL) {
       display_glyph(scancode_arr_upper[scode], 1);
     } else if (flag & FLAG_SHIFT) {
       display_glyph(scancode_arr_upper[scode], 0);
     } else {
-      display_glyph(scancode_arr[scode], 0);
+      if (scode == 0x1C) {
+        display_glyph('M', 1);
+      } else {
+        display_glyph(scancode_arr[scode], 0);
+      }
     }
 
     flag = 0;
@@ -140,7 +144,7 @@ void display_glyph(unsigned char glyph, int is_ctrl_char) {
   unsigned char *c;
   int i = 0;
   char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * SCREEN_HEIGHT - 10;
-  memset(temp, 0, 10);
+  clear_chars(temp, 10);
   
   sbuff[0] = '[';
 

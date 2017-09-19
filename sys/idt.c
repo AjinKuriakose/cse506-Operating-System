@@ -3,7 +3,6 @@
 
 #define MAX_IDT	256 
 
-
 struct idt_elem_t {
    uint16_t off_1; 
    uint16_t selector;  
@@ -13,7 +12,6 @@ struct idt_elem_t {
    uint32_t off_3; 
    uint32_t pad_2; 
 }__attribute__((packed));
-
 
 struct idtr_t {
   uint16_t limit;
@@ -76,8 +74,8 @@ void init_idt() {
   init_idt_entry(31, (uint64_t)_isr_sys_def31, 0x08, 0x8E);
   
   /* Hardware interrupts, offset by 0x28 = 40 */ 
-  init_idt_entry(40, (uint64_t)_isr_timer1, 0x08, 0x8E);
-  init_idt_entry(41, (uint64_t)_isr_kb, 0x08, 0x8E);
+  init_idt_entry(32, (uint64_t)_isr_timer1, 0x08, 0x8E);
+  init_idt_entry(33, (uint64_t)_isr_kb, 0x08, 0x8E);
 
   _x86_64_asm_lidt(&idtr);
 }

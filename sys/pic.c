@@ -14,14 +14,11 @@
 
 void mask_pins(unsigned char IRQline); 
 
-static inline void outb(uint16_t port, uint8_t val)
-{
+static inline void outb(uint16_t port, uint8_t val) {
     __asm__ __volatile__( "outb %0, %1" : : "a"(val), "Nd"(port) );
 }
 
-
-static inline uint8_t inb(uint16_t port)
-{
+static inline uint8_t inb(uint16_t port) {
     uint8_t ret;
     __asm__ __volatile__( "inb %1, %0"
                    : "=a"(ret)
@@ -29,13 +26,11 @@ static inline uint8_t inb(uint16_t port)
     return ret;
 }
 
-static inline void io_wait(void)
-{
+static inline void io_wait(void) {
     __asm__ __volatile__( "outb %%al, $0x80" : : "a"(0) );
 }
 
-void pic_offset_init(int offset1, int offset2)
-{
+void pic_offset_init(int offset1, int offset2) {
 	unsigned char m1, m2;
 
 	m1 = inb(PIC1_DATA);                     
@@ -63,7 +58,6 @@ void pic_offset_init(int offset1, int offset2)
 	outb(PIC1_DATA, m1); 
 	outb(PIC2_DATA, m2);
 
-
 	mask_pins(2);
 	mask_pins(3);
 	mask_pins(4);
@@ -80,8 +74,7 @@ void pic_offset_init(int offset1, int offset2)
 	mask_pins(15);
 }
 
-void send_EOI(/*unsigned char irq*/)
-{
+void send_EOI(/*unsigned char irq*/) {
 //	if(irq >= 8)
 //		outb(PIC2_CMD, PIC_EOI);
  
@@ -89,20 +82,19 @@ void send_EOI(/*unsigned char irq*/)
 }
 
 void mask_pins(unsigned char irq) {
-    uint16_t port;
-    uint8_t value;
+	uint16_t port;
+	uint8_t value;
 
-    if (irq < 8) {
-        port = PIC1_DATA;
-    } else {
-        port = PIC2_DATA;
-        irq -= 8; /* slave's irq is 8-15 */
-    }
-    /*
-     * when no command is issued, data port returns the interrupt mask
-     */
-    
-    value = inb(port) | (1 << irq);
-    outb(port, value);
+	if (irq < 8) {
+		port = PIC1_DATA;
+	} else {
+		port = PIC2_DATA;
+		irq -= 8; /* slave's irq is 8-15 */
+	}
+
+	/* when no command is issued, data port returns the interrupt mask */
+
+	value = inb(port) | (1 << irq);
+	outb(port, value);
 }
 

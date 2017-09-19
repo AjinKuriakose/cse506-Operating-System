@@ -12,7 +12,7 @@ void display(const char *fmt) {
     if (row > 23) {
       memcpy((char *)VIDEO_MEM_BEGIN, (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH, 3620);
       temp -= SCREEN_WIDTH;
-      memset(temp, 0, SCREEN_WIDTH);
+      clear_chars(temp, SCREEN_WIDTH);
       row = 23;
     }
 
@@ -24,7 +24,7 @@ void display(const char *fmt) {
     }
 
     if (col != 81) {
-      memset(temp, 0, SCREEN_WIDTH - 2 * (col - 1));
+      clear_chars(temp, SCREEN_WIDTH - 2 * (col - 1));
       *temp = *c;
       col++;
     } else {
@@ -36,6 +36,7 @@ void display(const char *fmt) {
     }
   }
 }
+
 
 void kprintf(const char *fmt, ...)
 {

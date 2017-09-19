@@ -15,6 +15,13 @@ char *strncpy(char *dest, char *src, int len) {
   return dest;
 }
 
+void clear_chars(char *temp, int size) {
+  int i = 0;
+  for (i = 0; i < size; i += 2) {
+     temp[i] = 0;
+  }
+}
+
 void *memset(void *dest, int ch, int num_bytes) {
   char *tmp = dest;
   while (num_bytes) {
@@ -37,7 +44,6 @@ void memcpy(void *dest, const void *src, int n) {
 
 /* number base converter, int to oct, hex etc */
 void convert(char *a, unsigned long n, int base, int i) {
-
   int rem = n % base;
   if (n == 0)
     return;
@@ -64,9 +70,7 @@ void reverse(char *a) {
 }
 
 void int2char(int num, char *input) {
-
   int i = 0, r;
-
   while (num) {
     r = num % 10;
     num = num / 10;
