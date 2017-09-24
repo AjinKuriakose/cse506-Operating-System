@@ -5,6 +5,7 @@
 #include <sys/pic.h>
 #include <sys/tarfs.h>
 #include <sys/ahci.h>
+#include <sys/pci.h>
 
 #define INITIAL_STACK_SIZE 4096
 uint8_t initial_stack[INITIAL_STACK_SIZE]__attribute__((aligned(16)));
@@ -32,6 +33,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
     "cli;"
     "sti;"
   );
+checkAllBuses();  
   while(1) __asm__ volatile ("hlt");
 }
 
