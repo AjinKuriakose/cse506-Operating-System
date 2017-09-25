@@ -7,6 +7,9 @@
 #define	SATA_SIG_ATAPI	0xEB140101	// SATAPI drive
 #define	SATA_SIG_SEMB	0xC33C0101	// Enclosure management bridge
 #define	SATA_SIG_PM	0x96690101	// Port multiplier
+#define AHCI_DEV_NULL	0
+#define HBA_PORT_IPM_ACTIVE	1
+#define HBA_PORT_DET_PRESENT	3
  
 static int check_type(hba_port_t *port);
 
@@ -82,24 +85,28 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
              checkDevice(bus, device);
          }
      }
+	kprintf("value of bus %d\n",bus);
  }
 
-uint32_t get_ahci_bar_address(uint8_t bus, uint8_t slot) {
+hba_mem_t * get_ahci_bar_address(uint8_t bus, uint8_t slot) {
 
    uint32_t abar5_1, abar5_2;
+   uint64_t addr;
 
    abar5_1 = (uint32_t)pciConfigReadWord(bus,slot,0,0x24);
    abar5_2 = (uint32_t)pciConfigReadWord(bus,slot,0,0x26);
 
    /* Forming actual base address of AHCI BAR  */
-   return (uint32_t)((abar5_2 << 16 | abar5_1 ) & (uint32_t)(0xFFFFF000)) >> 12;
+   addr = (uint64_t)((abar5_2 << 16 | abar5_1 ) & (uint32_t)(0xFFFFF000));
+   return (hba_mem_t *)addr;
 
 }
 
 uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 
     uint16_t vendor, device,cls;
-    uint32_t ahci_bar;
+    //uint32_t ahci_bar;
+    hba_mem_t * ahci_bar;
 
     /* try and read the first configuration register. Since there are no */
     /* vendors that == 0xFFFF, it must be a non-existent device. */
@@ -114,11 +121,11 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 		 * writing a new value (which is <1GB) to AHCI bar5
 		 * register would make AHCI driver to use that address.
 		 */
-		pciConfigWriteWord(bus,slot,0,0x24,0x35201020);
+		pciConfigWriteWord(bus,slot,0,0x24,0x3A200000);
 		ahci_bar = get_ahci_bar_address(bus, slot);
 
 		kprintf("BAR is : %x\n", ahci_bar); 
-		check_ahci_device((hba_mem_t *)&ahci_bar);
+		check_ahci_device(ahci_bar);
 	}
     } 
     return (vendor);
@@ -128,7 +135,9 @@ void check_ahci_device(hba_mem_t *abar) {
 	// Search disk in impelemented ports
 	//DWORD pi = abar->pi;
 	uint32_t pi = abar->pi;
+	kprintf("pi is %x\n", pi);
 	int i = 0;
+	kprintf("i is %d\n", 0);
 	while (i<32)
 	{
 		if (pi & 1)
@@ -165,7 +174,7 @@ void check_ahci_device(hba_mem_t *abar) {
 // Check device type
 static int check_type(hba_port_t *port)
 {
-#if 0
+
 	uint32_t ssts = port->ssts;
  
 	uint8_t ipm = (ssts >> 8) & 0x0F;
@@ -175,7 +184,7 @@ static int check_type(hba_port_t *port)
 		return AHCI_DEV_NULL;
 	if (ipm != HBA_PORT_IPM_ACTIVE)
 		return AHCI_DEV_NULL;
-#endif 
+ 
 	switch (port->sig)
 	{
 	case AHCI_DEV_SATAPI:
