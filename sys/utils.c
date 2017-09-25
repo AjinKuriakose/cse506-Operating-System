@@ -71,10 +71,16 @@ void reverse(char *a) {
 
 void int2char(int num, char *input) {
   int i = 0, r;
-  while (num) {
-    r = num % 10;
-    num = num / 10;
-    input[i++] = r + 48;
+  if (num == 0) {
+    input[i++] = 48;
+
+  } else {
+
+    while (num) {
+      r = num % 10;
+      num = num / 10;
+      input[i++] = r + 48;
+    }
   }
 
   reverse(input);

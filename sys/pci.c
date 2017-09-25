@@ -137,7 +137,6 @@ void check_ahci_device(hba_mem_t *abar) {
 	uint32_t pi = abar->pi;
 	kprintf("pi is %x\n", pi);
 	int i = 0;
-	kprintf("i is %d\n", 0);
 	while (i<32)
 	{
 		if (pi & 1)
