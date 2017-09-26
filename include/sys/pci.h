@@ -13,7 +13,8 @@ void check_ahci_device(hba_mem_t *hba_mem);
 void stop_cmd(hba_port_t *port);
 void start_cmd(hba_port_t *port);
 //void port_rebase(hba_port_t *port, int portno);
-void port_rebase(hba_port_t *port, int portno,uint64_t);
+void port_rebase(hba_port_t *port, int portno, hba_mem_t *abar);
 int find_cmdslot(hba_port_t *port);
-uint8_t read(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint16_t *buf, uint16_t);
+uint8_t read_port(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint16_t *buf);
+uint8_t write_port(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint16_t *buf);
 #endif
