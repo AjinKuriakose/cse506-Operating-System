@@ -134,7 +134,7 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 		 * register would make AHCI driver to use that address.
 		 */
 		//pciConfigWriteWord(bus,slot,0,0x24,0x30000000);
-		pciConfigWriteWord(bus,slot,0,0x24,0x32100000);
+		pciConfigWriteWord(bus,slot,0,0x24,0x2A100000);
 		ahci_bar = get_ahci_bar_address(bus, slot);
 
 		kprintf("BAR is : %x\n", ahci_bar); 
@@ -160,14 +160,10 @@ void check_ahci_device(hba_mem_t *abar) {
 				if(i==1) {
 				//	kprintf("call fun ****** %x\n",abar->ghc);
 
-				//	abar->ghc = abar->ghc | 0x01;
-				//	abar->ghc = abar->ghc | (1<<1);
-				//	abar->ghc |= (1U << 31);
-				//	kprintf("call fun ****** %x\n",abar->ghc);
 					port_rebase(abar->ports,i,abar);
 					kprintf("call fun\n");
-				#if 0
 				
+				#if 0	
 				//	uint16_t buf1=0x01;
 					uint8_t *buf_ptr;
 					//uint8_t *buf_ptr2;
@@ -177,6 +173,7 @@ void check_ahci_device(hba_mem_t *abar) {
 					//uint64_t buf_add2 = 0x0000000010240000;
 					buf_ptr = (uint8_t *)buf_add;
 					//buf_ptr2 = (uint8_t *)buf_add2;
+
 
 					//memset((void *)buf_ptr,1,1024);
 					*buf_ptr = 0x11;
@@ -280,6 +277,7 @@ void port_rebase(hba_port_t *port, int portno, hba_mem_t *AHCI_BASE)
 {
 	//uint64_t abar = AHCI_BASE;
 
+
 	AHCI_BASE->ghc |= (1U << 31); 
 	AHCI_BASE->ghc |= (1U); 
 	AHCI_BASE->ghc |= (1U << 31); 
@@ -293,6 +291,7 @@ void port_rebase(hba_port_t *port, int portno, hba_mem_t *AHCI_BASE)
 	// Command list maxim size = 32*32 = 1K per port
 
 	port->clb = (uint64_t)(AHCI_BASE + (portno<<10));
+	kprintf("clb %x\n",port->clb);
 	//port->clbu = 0;
 
 	memset((void*)(port->clb), 0, 1024);
@@ -305,7 +304,13 @@ void port_rebase(hba_port_t *port, int portno, hba_mem_t *AHCI_BASE)
  
 	// Command table offset: 40K + 8K*portno
 	// Command table size = 256*32 = 8K per port
-	hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)(port->clb);
+
+	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)0x0000000021000000; 
+	cmdheader = (hba_cmd_header_t *) port->clb;
+	//hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)(port->clb);
+
+	kprintf("command header add : %x\n",&cmdheader);
+
 	for (int i=0; i<32; i++)
 	{
 		cmdheader[i].prdtl = 8;	// 8 prdt entries per command table
