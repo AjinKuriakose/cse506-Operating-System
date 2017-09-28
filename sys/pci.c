@@ -20,6 +20,9 @@
 #define BYTE	uint8_t
 #define TRUE	1	
 #define FALSE	0 
+#define AHCI_BASE	0x400000
+#define BUFF		0x32400000
+
 
 //char *arr="ha";
 
@@ -134,7 +137,7 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 		 * register would make AHCI driver to use that address.
 		 */
 		//pciConfigWriteWord(bus,slot,0,0x24,0x30000000);
-		pciConfigWriteWord(bus,slot,0,0x24,0x2A100000);
+		pciConfigWriteWord(bus,slot,0,0x24,0x3B800000);
 		ahci_bar = get_ahci_bar_address(bus, slot);
 
 		kprintf("BAR is : %x\n", ahci_bar); 
@@ -144,6 +147,21 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
     return (vendor);
 }
 
+/*
+ *
+ * this function would set the following bits in ghc register
+ * 0 - HBA reset.
+ *  1 - interrupt enable
+ *  31 - AHCI enable, hba would use ahci mechanisms for communication
+ *  more details section 3.1.2 ahci spec.
+ *
+ */
+ 
+void set_ghc_ports(hba_mem_t *abar) {
+	abar->ghc |= (1U); 
+	abar->ghc |= (1U << 31); 
+	abar->ghc |= (1U << 1); 
+}
 void check_ahci_device(hba_mem_t *abar) {
 	// Search disk in impelemented ports
 	//DWORD pi = abar->pi;
@@ -158,49 +176,47 @@ void check_ahci_device(hba_mem_t *abar) {
 			{
 				kprintf("SATA drive found at port %d\n", i);
 				if(i==1) {
-				//	kprintf("call fun ****** %x\n",abar->ghc);
-
-					port_rebase(abar->ports,i,abar);
-					kprintf("call fun\n");
+						
+					set_ghc_ports(abar);
+					/* rebasing the ports */
+					port_rebase(abar->ports,i);
 				
-				#if 0	
 				//	uint16_t buf1=0x01;
 					uint8_t *buf_ptr;
 					//uint8_t *buf_ptr2;
-					uint8_t *buf_ptr_write;
+					//uint8_t *buf_ptr_write;
 
-					uint64_t buf_add = 0x0000000030000000;
+					//uint64_t buf_add = 0x0000000030000000;
 					//uint64_t buf_add2 = 0x0000000010240000;
-					buf_ptr = (uint8_t *)buf_add;
+					buf_ptr = (uint8_t *)BUFF;
 					//buf_ptr2 = (uint8_t *)buf_add2;
 
 
-					//memset((void *)buf_ptr,1,1024);
-					*buf_ptr = 0x11;
-					//*buf_ptr2 = 0x22;
+					memset((void *)buf_ptr,1,1024);
+					/**buf_ptr = 0x11;
 					*(buf_ptr+1) = 0x11;
 					*(buf_ptr+2) = 0x11;
 					*(buf_ptr+3) = 0x11;
-
-					buf_ptr_write = buf_ptr + 10240;
+					
+					//buf_ptr_write = buf_ptr + 10240;
 					kprintf("value1 is.. %x [%d]\n",buf_ptr, *buf_ptr);
 					//kprintf("value1 is.. %x [%d]\n",buf_ptr2, *buf_ptr2);
 					kprintf("value2 is.. %x [%d]\n",buf_ptr+1, *(buf_ptr+1));
 					kprintf("value3 is.. %x [%d]\n",buf_ptr+2, *(buf_ptr+2));
 					kprintf("value4 is.. %x [%d]\n",buf_ptr+3, *(buf_ptr+3));
 					//uint16_t buf;
+					*/
 					uint8_t ret;
-        				abar->ghc = (1<<1);
 
 					ret = write_port(&abar->ports[i], 0, 0 ,16,(uint16_t *)buf_ptr);
 					kprintf("return value write %d\n",ret);
 
-					ret = read_port(&abar->ports[i], 0, 0 ,16, (uint16_t *)buf_ptr_write);
+					memset((void *)buf_ptr,0,1024);
+					ret = read_port(&abar->ports[i], 0, 0 ,16, (uint16_t *)buf_ptr);
 					kprintf("return value of read %d\n",ret);
 
 					//read(&abar->ports[i], 0, 0, 1, &buf,0);
-					kprintf("value read : [%x] %x\n",*(buf_ptr_write), buf_ptr_write);
-				#endif
+					kprintf("value read : [%x] %x\n",*(buf_ptr), buf_ptr);
 				
 				//	kprintf("call fun %x\n",((hba_port_t *)(uint64_t)&abar->ports[i])->sig);
 				}	
@@ -273,15 +289,13 @@ void checkDevice(uint8_t bus, uint8_t device) {
 #endif
  }
 
-void port_rebase(hba_port_t *port, int portno, hba_mem_t *AHCI_BASE)
+/*
+ * code reference wiki.osdev.org/AHCI
+ *
+ */
+
+void port_rebase(hba_port_t *port, int portno)
 {
-	//uint64_t abar = AHCI_BASE;
-
-
-	AHCI_BASE->ghc |= (1U << 31); 
-	AHCI_BASE->ghc |= (1U); 
-	AHCI_BASE->ghc |= (1U << 31); 
-	AHCI_BASE->ghc |= (1U << 1); 
 
 	stop_cmd(port);	// Stop command engine
  
@@ -289,38 +303,31 @@ void port_rebase(hba_port_t *port, int portno, hba_mem_t *AHCI_BASE)
 	// Command list entry size = 32
 	// Command list entry maxim count = 32
 	// Command list maxim size = 32*32 = 1K per port
-
-	port->clb = (uint64_t)(AHCI_BASE + (portno<<10));
-	kprintf("clb %x\n",port->clb);
+	port->clb = AHCI_BASE + (portno<<10);
 	//port->clbu = 0;
-
 	memset((void*)(port->clb), 0, 1024);
-
+ 
 	// FIS offset: 32K+256*portno
 	// FIS entry size = 256 bytes per port
-	port->fb = (uint64_t)(AHCI_BASE + (32<<10) + (portno<<8));
+	port->fb = AHCI_BASE + (32<<10) + (portno<<8);
 	//port->fbu = 0;
 	memset((void*)(port->fb), 0, 256);
  
 	// Command table offset: 40K + 8K*portno
 	// Command table size = 256*32 = 8K per port
-
-	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)0x0000000021000000; 
-	cmdheader = (hba_cmd_header_t *) port->clb;
-	//hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)(port->clb);
-
-	kprintf("command header add : %x\n",&cmdheader);
-
+	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)(port->clb);
 	for (int i=0; i<32; i++)
 	{
 		cmdheader[i].prdtl = 8;	// 8 prdt entries per command table
 					// 256 bytes per command table, 64+16+48+16*8
 		// Command table offset: 40K + 8K*portno + cmdheader_index*256
-		cmdheader[i].ctba = (uint64_t)(AHCI_BASE + (40<<10) + (portno<<13) + (i<<8));
-		//cmdheader[i].ctbau = 0;
+		cmdheader[i].ctba = AHCI_BASE + (40<<10) + (portno<<13) + (i<<8);
+	//	cmdheader[i].ctbau = 0;
 		memset((void*)cmdheader[i].ctba, 0, 256);
 	}
+ 
 	start_cmd(port);	// Start command engine
+
 }
  
 // Start command engine
@@ -333,6 +340,7 @@ void start_cmd(hba_port_t *port)
 	// Set FRE (bit4) and ST (bit0)
 	port->cmd |= HBA_PxCMD_FRE;
 	port->cmd |= HBA_PxCMD_ST; 
+	kprintf("Start completed.. \n");
 }
  
 // Stop command engine
