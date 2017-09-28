@@ -21,7 +21,8 @@
 #define TRUE	1	
 #define FALSE	0 
 #define AHCI_BASE	0x400000
-#define BUFF		0x32400000
+//#define BUFF		0x32400000
+#define BUFF		0x900000
 
 
 //char *arr="ha";
@@ -179,9 +180,8 @@ void check_ahci_device(hba_mem_t *abar) {
 						
 					set_ghc_ports(abar);
 					/* rebasing the ports */
-					port_rebase(abar->ports,i);
-				
-				//	uint16_t buf1=0x01;
+					port_rebase(&abar->ports[1],i);
+					kprintf("testing after port rebase..");
 					uint8_t *buf_ptr;
 					//uint8_t *buf_ptr2;
 					//uint8_t *buf_ptr_write;
@@ -192,28 +192,23 @@ void check_ahci_device(hba_mem_t *abar) {
 					//buf_ptr2 = (uint8_t *)buf_add2;
 
 
-					memset((void *)buf_ptr,1,1024);
+					memset((void *)buf_ptr,0,1024);
+					*buf_ptr = 0x47;
 					/**buf_ptr = 0x11;
 					*(buf_ptr+1) = 0x11;
 					*(buf_ptr+2) = 0x11;
 					*(buf_ptr+3) = 0x11;
 					
-					//buf_ptr_write = buf_ptr + 10240;
-					kprintf("value1 is.. %x [%d]\n",buf_ptr, *buf_ptr);
-					//kprintf("value1 is.. %x [%d]\n",buf_ptr2, *buf_ptr2);
-					kprintf("value2 is.. %x [%d]\n",buf_ptr+1, *(buf_ptr+1));
-					kprintf("value3 is.. %x [%d]\n",buf_ptr+2, *(buf_ptr+2));
-					kprintf("value4 is.. %x [%d]\n",buf_ptr+3, *(buf_ptr+3));
-					//uint16_t buf;
 					*/
 					uint8_t ret;
+					kprintf("value trying to write %d\n", *buf_ptr);
 
 					ret = write_port(&abar->ports[i], 0, 0 ,16,(uint16_t *)buf_ptr);
 					kprintf("return value write %d\n",ret);
 
 					memset((void *)buf_ptr,0,1024);
 					ret = read_port(&abar->ports[i], 0, 0 ,16, (uint16_t *)buf_ptr);
-					kprintf("return value of read %d\n",ret);
+					//kprintf("return value of read %d\n",ret);
 
 					//read(&abar->ports[i], 0, 0, 1, &buf,0);
 					kprintf("value read : [%x] %x\n",*(buf_ptr), buf_ptr);
@@ -306,7 +301,7 @@ void port_rebase(hba_port_t *port, int portno)
 	port->clb = AHCI_BASE + (portno<<10);
 	//port->clbu = 0;
 	memset((void*)(port->clb), 0, 1024);
- 
+	kprintf("--- port->clb from port rebase is %x\n", port->clb); 
 	// FIS offset: 32K+256*portno
 	// FIS entry size = 256 bytes per port
 	port->fb = AHCI_BASE + (32<<10) + (portno<<8);
@@ -316,6 +311,7 @@ void port_rebase(hba_port_t *port, int portno)
 	// Command table offset: 40K + 8K*portno
 	// Command table size = 256*32 = 8K per port
 	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)(port->clb);
+	kprintf("--- cmd_header addr from port rebase is %x\n", cmdheader); 
 	for (int i=0; i<32; i++)
 	{
 		cmdheader[i].prdtl = 8;	// 8 prdt entries per command table
@@ -367,7 +363,6 @@ void stop_cmd(hba_port_t *port)
 uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WORD *buf)
 {
 	port->is_rwc = (DWORD)-1;		// Clear pending interrupt bits
-	kprintf("interrupt bits %x \n", port->is_rwc); 
 	int spin = 0; // Spin lock timeout counter
 	int slot = find_cmdslot(port);
 	if (slot == -1)
@@ -454,8 +449,8 @@ uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WOR
 	}
  
 	kprintf("read not done3.. \n"); 
-	kprintf("interrupt bits end %x \n", port->is_rwc); 
-	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
+//	kprintf("interrupt bits end %x \n", port->is_rwc); 
+//	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
 	// Check again
 	if (port->is_rwc & HBA_PxIS_TFES)
 	{
@@ -477,6 +472,7 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 		return FALSE;
  
 	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)port->clb;
+	kprintf("--- port->clb from write_port is %x\n", port->clb); 
 	cmdheader += slot;
 	cmdheader->cfl = sizeof(fis_reg_h2d_t)/sizeof(DWORD);	// Command FIS size
 	cmdheader->w = 1;		// write from device
@@ -490,6 +486,7 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 	int i;
 	for (i=0; i<cmdheader->prdtl-1; i++)
 	{
+//		kprintf("inside loop\n");
 		//cmdtbl->prdt_entry[i].dba = (uint64_t)(DWORD)buf;
 		cmdtbl->prdt_entry[i].dba = (uint64_t)buf;
 		cmdtbl->prdt_entry[i].dbc = 8*1024;	// 8K bytes
@@ -555,9 +552,9 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 		}
 	}
  
-//	kprintf("write not done3.. \n"); 
-	kprintf("interrupt bits end %x \n", port->is_rwc); 
-	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
+	kprintf("write not done3.. \n"); 
+//	kprintf("interrupt bits end %x \n", port->is_rwc); 
+//	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
 	// Check again
 	if (port->is_rwc & HBA_PxIS_TFES)
 	{
