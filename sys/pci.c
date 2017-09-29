@@ -123,14 +123,17 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
     //uint32_t ahci_bar;
     //hba_mem_t * ahci_bar;
     uint64_t ahci_bar;
+    uint16_t progif_revid;
 
     /* try and read the first configuration register. Since there are no */
     /* vendors that == 0xFFFF, it must be a non-existent device. */
-    if ((vendor = pciConfigReadWord(bus,slot,0,0)) != 0xFFFF) {
-       device = pciConfigReadWord(bus,slot,0,2);
-       cls = pciConfigReadWord(bus,slot,0,0x0A);
-	if (cls == 0x0106) {
-		kprintf("\nVendor %x Device %x Class:%x Sub:%x \n", vendor, device,cls&0xFF00, cls);
+    if ((vendor = pciConfigReadWord(bus,slot,func,0)) != 0xFFFF) {
+       device = pciConfigReadWord(bus,slot,func,2);
+       cls = pciConfigReadWord(bus,slot,func,0x0A);
+        progif_revid = pciConfigReadWord(bus,slot,func,0x08);
+	if (cls == 0x0106 /*&& progif_revid == 0x0006*/) {
+		kprintf("progif_revid [%x], [%x]\n", progif_revid, progif_revid >> 8);
+		kprintf("\nVendor %x Device %x Class:%x\n", vendor, device, cls);
 		/*
 		 * using an address below 1GB. initial value at offset
 		 * 0x24 was > 1GB (physical address of the device). 
@@ -141,7 +144,7 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 		pciConfigWriteWord(bus,slot,0,0x24,0x3B800000);
 		ahci_bar = get_ahci_bar_address(bus, slot);
 
-		kprintf("BAR is : %x\n", ahci_bar); 
+		//kprintf("BAR is : %x\n", ahci_bar); 
 		check_ahci_device((hba_mem_t *)ahci_bar);
 	}
     } 
@@ -181,39 +184,34 @@ void check_ahci_device(hba_mem_t *abar) {
 					set_ghc_ports(abar);
 					/* rebasing the ports */
 					port_rebase(&abar->ports[1],i);
-					kprintf("testing after port rebase..");
+					//kprintf("testing after port rebase..");
+					#if 0
 					uint8_t *buf_ptr;
-					//uint8_t *buf_ptr2;
-					//uint8_t *buf_ptr_write;
 
-					//uint64_t buf_add = 0x0000000030000000;
-					//uint64_t buf_add2 = 0x0000000010240000;
 					buf_ptr = (uint8_t *)BUFF;
 					//buf_ptr2 = (uint8_t *)buf_add2;
 
 
 					memset((void *)buf_ptr,0,1024);
-					*buf_ptr = 0x47;
-					/**buf_ptr = 0x11;
-					*(buf_ptr+1) = 0x11;
-					*(buf_ptr+2) = 0x11;
-					*(buf_ptr+3) = 0x11;
-					
-					*/
-					uint8_t ret;
-					kprintf("value trying to write %d\n", *buf_ptr);
+					*buf_ptr = 0x77;
 
-					ret = write_port(&abar->ports[i], 0, 0 ,16,(uint16_t *)buf_ptr);
-					kprintf("return value write %d\n",ret);
+					uint8_t ret;
+					//kprintf("value trying to write %x\n", *buf_ptr);
+
+					ret = write_port(&abar->ports[i], 1, 0 ,1,(uint16_t *)buf_ptr);
+					kprintf("return value write %x\n",ret);
+
 
 					memset((void *)buf_ptr,0,1024);
-					ret = read_port(&abar->ports[i], 0, 0 ,16, (uint16_t *)buf_ptr);
+					//kprintf("value after memset %x\n", *buf_ptr);
+					ret = read_port(&abar->ports[i], 1, 0 ,1, (uint16_t *)buf_ptr);
 					//kprintf("return value of read %d\n",ret);
 
 					//read(&abar->ports[i], 0, 0, 1, &buf,0);
 					kprintf("value read : [%x] %x\n",*(buf_ptr), buf_ptr);
 				
 				//	kprintf("call fun %x\n",((hba_port_t *)(uint64_t)&abar->ports[i])->sig);
+					#endif
 				}	
 			}
 			else if (dt == AHCI_DEV_SATAPI)
@@ -229,7 +227,7 @@ void check_ahci_device(hba_mem_t *abar) {
 				kprintf("PM drive found at port %d\n", i);
 			}
 			else
-			{ kprintf("No drive found at port %d\n", i);
+			{ //kprintf("No drive found at port %d\n", i);
 			}
 		}
  
@@ -265,23 +263,43 @@ static int check_type(hba_port_t *port)
 		return AHCI_DEV_SATA;
 	}
 }
-
+#if 0
+void checkFunction(uint8_t bus, uint8_t device, uint8_t function) {
+     uint8_t baseClass;
+     uint8_t subClass;
+     uint8_t secondaryBus;
+ 
+     baseClass = getBaseClass(bus, device, function);
+     subClass = getSubClass(bus, device, function);
+     if( (baseClass == 0x06) && (subClass == 0x04) ) {
+         secondaryBus = getSecondaryBus(bus, device, function);
+         checkBus(secondaryBus);
+     }
+ }
+#endif
 void checkDevice(uint8_t bus, uint8_t device) {
      uint8_t function = 0;
+#if 0
     uint16_t vendorID;
      vendorID=find_ahci_drive(bus, device, function);
      if(vendorID == 0xFFFF) return;        // Device doesn't exist
-#if 0
-     checkFunction(bus, device, function);
-     headerType = getHeaderType(bus, device, function);
-     if( (headerType & 0x80) != 0) {
+
          /* It is a multi-function device, so check remaining functions */
-         for(function = 1; function < 8; function++) { if(getVendorID(bus, device, function) != 0xFFFF) {
-                 checkFunction(bus, device, function);
+         for(function = 1; function < 8; function++) { 
+		if(find_ahci_drive(bus, device, function) != 0xFFFF) {
+                // checkFunction(bus, device, function);
+		kprintf("found device.. function : %d\n", function);
              }
          }
-     }
+
+
 #endif
+         for(function = 0; function < 8; function++) { 
+		if(find_ahci_drive(bus, device, function) != 0xFFFF) {
+                // checkFunction(bus, device, function);
+	//	kprintf("found device.. function : %d\n", function);
+             }
+         }
  }
 
 /*
@@ -301,7 +319,7 @@ void port_rebase(hba_port_t *port, int portno)
 	port->clb = AHCI_BASE + (portno<<10);
 	//port->clbu = 0;
 	memset((void*)(port->clb), 0, 1024);
-	kprintf("--- port->clb from port rebase is %x\n", port->clb); 
+//	kprintf("--- port->clb from port rebase is %x\n", port->clb); 
 	// FIS offset: 32K+256*portno
 	// FIS entry size = 256 bytes per port
 	port->fb = AHCI_BASE + (32<<10) + (portno<<8);
@@ -311,7 +329,7 @@ void port_rebase(hba_port_t *port, int portno)
 	// Command table offset: 40K + 8K*portno
 	// Command table size = 256*32 = 8K per port
 	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)(port->clb);
-	kprintf("--- cmd_header addr from port rebase is %x\n", cmdheader); 
+//	kprintf("--- cmd_header addr from port rebase is %x\n", cmdheader); 
 	for (int i=0; i<32; i++)
 	{
 		cmdheader[i].prdtl = 8;	// 8 prdt entries per command table
@@ -448,7 +466,7 @@ uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WOR
 		}
 	}
  
-	kprintf("read not done3.. \n"); 
+	//kprintf("read not done3.. \n"); 
 //	kprintf("interrupt bits end %x \n", port->is_rwc); 
 //	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
 	// Check again
@@ -472,7 +490,7 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 		return FALSE;
  
 	hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)port->clb;
-	kprintf("--- port->clb from write_port is %x\n", port->clb); 
+//	kprintf("--- port->clb from write_port is %x\n", port->clb); 
 	cmdheader += slot;
 	cmdheader->cfl = sizeof(fis_reg_h2d_t)/sizeof(DWORD);	// Command FIS size
 	cmdheader->w = 1;		// write from device
@@ -525,7 +543,7 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 //	kprintf("write not done1.. \n"); 
  
 	// The below loop waits until the port is no longer busy before issuing a new command
-	kprintf("port->tfd %x\n", port->tfd);
+//	kprintf("port->tfd %x\n", port->tfd);
 	while ((port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
 	{
 		spin++;
@@ -552,7 +570,7 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 		}
 	}
  
-	kprintf("write not done3.. \n"); 
+//	kprintf("write not done3.. \n"); 
 //	kprintf("interrupt bits end %x \n", port->is_rwc); 
 //	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
 	// Check again
