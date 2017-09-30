@@ -7,7 +7,7 @@ void checkDevice(uint8_t bus, uint8_t device);
 void checkBus(uint8_t bus);
 uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,uint8_t func, uint8_t offset);
 //hba_mem_t * get_ahci_bar_address(uint8_t bus, uint8_t slot);
-uint64_t get_ahci_bar_address(uint8_t bus, uint8_t slot);
+uint64_t get_ahci_bar_address(uint8_t bus, uint8_t slot, uint8_t func);
 void check_ahci_device(hba_mem_t *hba_mem);
 
 void stop_cmd(hba_port_t *port);

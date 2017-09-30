@@ -21,8 +21,10 @@
 #define TRUE	1	
 #define FALSE	0 
 #define AHCI_BASE	0x400000
-//#define BUFF		0x32400000
+//#define AHCI_BASE	0xBD810000
+//#define BUFF		0x900000
 #define BUFF		0x900000
+//#define BUFF		0xBD880000
 
 
 //char *arr="ha";
@@ -56,6 +58,7 @@ void pciConfigWriteWord (uint8_t bus, uint8_t slot,
     address += offset;
  
     /* write out the address */
+	kprintf("address is %x\n", address);
     sysOutLong (0xCF8, address);
     sysOutLong(0xCFC,newVal);
 }
@@ -85,6 +88,7 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
 	kprintf("port value read : %x\n",sysInLong (0xCFC));
     }
     #endif
+//	kprintf("address is %x\n", address);
     return (tmp);
  }
 
@@ -93,10 +97,10 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
   * on every pci bus
   */
  void checkAllBuses(void) {
-     uint8_t bus;
+     uint16_t bus;
      uint8_t device;
  
-     for(bus = 0; bus < 255; bus++) {
+     for(bus = 0; bus < 256; bus++) {
          for(device = 0; device < 32; device++) {
              checkDevice(bus, device);
          }
@@ -104,12 +108,14 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
 	kprintf("value of bus %d\n",bus);
  }
 
-uint64_t get_ahci_bar_address(uint8_t bus, uint8_t slot) {
+uint64_t get_ahci_bar_address(uint8_t bus, uint8_t slot, uint8_t func) {
 
    uint32_t abar5_1, abar5_2;
 
-   abar5_1 = (uint32_t)pciConfigReadWord(bus,slot,0,0x24);
-   abar5_2 = (uint32_t)pciConfigReadWord(bus,slot,0,0x26);
+   abar5_1 = (uint32_t)pciConfigReadWord(bus,slot,func,0x24);
+   abar5_2 = (uint32_t)pciConfigReadWord(bus,slot,func,0x26);
+		kprintf("BAR1 is : %x\n", abar5_1); 
+		kprintf("BAR2 is : %x\n", abar5_2); 
 
    /* Forming actual base address of AHCI BAR  */
    //addr = (uint64_t)((abar5_2 << 16 | abar5_1 ) & (uint32_t)(0xFFFFF000));
@@ -131,7 +137,7 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
        device = pciConfigReadWord(bus,slot,func,2);
        cls = pciConfigReadWord(bus,slot,func,0x0A);
         progif_revid = pciConfigReadWord(bus,slot,func,0x08);
-	if (cls == 0x0106 /*&& progif_revid == 0x0006*/) {
+	if (cls == 0x0106  /* && (progif_revid >> 8) == 0x06 */) {
 		kprintf("progif_revid [%x], [%x]\n", progif_revid, progif_revid >> 8);
 		kprintf("\nVendor %x Device %x Class:%x\n", vendor, device, cls);
 		/*
@@ -141,10 +147,11 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 		 * register would make AHCI driver to use that address.
 		 */
 		//pciConfigWriteWord(bus,slot,0,0x24,0x30000000);
-		pciConfigWriteWord(bus,slot,0,0x24,0x3B800000);
-		ahci_bar = get_ahci_bar_address(bus, slot);
+		//pciConfigWriteWord(bus,slot,func,0x24,0x3B800000);
+		pciConfigWriteWord(bus,slot,func,0x24,0xA6000);
+		ahci_bar = get_ahci_bar_address(bus, slot,func);
 
-		//kprintf("BAR is : %x\n", ahci_bar); 
+		kprintf("BAR is : %x\n", ahci_bar); 
 		check_ahci_device((hba_mem_t *)ahci_bar);
 	}
     } 
@@ -171,44 +178,51 @@ void check_ahci_device(hba_mem_t *abar) {
 	//DWORD pi = abar->pi;
 	uint32_t pi = abar->pi;
 	int i = 0;
+	kprintf("pi is %x\n", pi);
 	while (i<32)
 	{
 		if (pi & 1)
 		{
 			int dt = check_type(&abar->ports[i]);
+//			kprintf("after pi & 1 %x : dt is %d \n", pi,dt);
 			if (dt == AHCI_DEV_SATA)
 			{
 				kprintf("SATA drive found at port %d\n", i);
-				if(i==1) {
+				if(i==0) {
 						
 					set_ghc_ports(abar);
 					/* rebasing the ports */
-					port_rebase(&abar->ports[1],i);
+					port_rebase(&abar->ports[0],i);
 					//kprintf("testing after port rebase..");
-					#if 0
+					#if 1
 					uint8_t *buf_ptr;
 
 					buf_ptr = (uint8_t *)BUFF;
 					//buf_ptr2 = (uint8_t *)buf_add2;
 
 
-					memset((void *)buf_ptr,0,1024);
-					*buf_ptr = 0x77;
+					memset((void *)buf_ptr,0,4096);
 
 					uint8_t ret;
-					//kprintf("value trying to write %x\n", *buf_ptr);
+					kprintf("value trying to write %x %d\n", *buf_ptr, *buf_ptr);
 
-					ret = write_port(&abar->ports[i], 1, 0 ,1,(uint16_t *)buf_ptr);
-					kprintf("return value write %x\n",ret);
+					for(int j=1;j<100;j++) {
+						memset((void *)buf_ptr,j,4096);
+							ret = write_port(&abar->ports[0], j * 8, 0 ,8,(uint16_t *)buf_ptr);
+					}
 
+					kprintf("write 100 complted.. \n");
+				//	ret = write_port(&abar->ports[0], 1, 0 ,1,(uint16_t *)buf_ptr);
+				//	kprintf("return value write %x\n",ret);
 
 					memset((void *)buf_ptr,0,1024);
-					//kprintf("value after memset %x\n", *buf_ptr);
-					ret = read_port(&abar->ports[i], 1, 0 ,1, (uint16_t *)buf_ptr);
-					//kprintf("return value of read %d\n",ret);
+					kprintf("value after memset %d %x\n", *buf_ptr, *(buf_ptr+1));
+					ret = read_port(&abar->ports[0], 1, 0 ,8, (uint16_t *)buf_ptr);
+					kprintf("return value of read %d\n",ret);
 
 					//read(&abar->ports[i], 0, 0, 1, &buf,0);
-					kprintf("value read : [%x] %x\n",*(buf_ptr), buf_ptr);
+					ret = read_port(&abar->ports[0], 23 * 8, 0 ,8, (uint16_t *)buf_ptr);
+					kprintf("value read : %d %d %d\n",*(buf_ptr), *(buf_ptr+513),*(buf_ptr+4095));
 				
 				//	kprintf("call fun %x\n",((hba_port_t *)(uint64_t)&abar->ports[i])->sig);
 					#endif
@@ -240,17 +254,21 @@ void check_ahci_device(hba_mem_t *abar) {
 // Check device type
 static int check_type(hba_port_t *port)
 {
-
+#if 0
 	uint32_t ssts = port->ssts;
  
 	uint8_t ipm = (ssts >> 8) & 0x0F;
 	uint8_t det = ssts & 0x0F;
  
+
 	if (det != hba_port_t_DET_PRESENT)	// Check drive status
 		return AHCI_DEV_NULL;
+	
 	if (ipm != hba_port_t_IPM_ACTIVE)
 		return AHCI_DEV_NULL;
- 
+
+#endif
+//	kprintf("port->sig = %x\n", port->sig); 
 	switch (port->sig)
 	{
 	case AHCI_DEV_SATAPI:
@@ -259,8 +277,10 @@ static int check_type(hba_port_t *port)
 		return AHCI_DEV_SEMB;
 	case AHCI_DEV_PM:
 		return AHCI_DEV_PM;
-	default:
+	case AHCI_DEV_SATA:
 		return AHCI_DEV_SATA;
+	default:
+		return AHCI_DEV_NULL;
 	}
 }
 #if 0
@@ -435,7 +455,7 @@ uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WOR
  
 	cmdfis->count = count;
 	//cmdfis->counth = HIBYTE(count);
-//	kprintf("read not done1.. \n"); 
+	kprintf("read not done1.. \n"); 
  
 	// The below loop waits until the port is no longer busy before issuing a new command
 //	kprintf("port->tfd %x\n", port->tfd);
@@ -443,15 +463,17 @@ uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WOR
 	{
 		spin++;
 	}
+	kprintf("read not done before hung \n"); 
 	if (spin == 1000000)
 	{
 		kprintf("Port is hung\n");
 		return FALSE;
 	}
  
+	kprintf("read not done before command\n"); 
 	port->ci = 1<<slot;	// Issue command
  
-//	kprintf("read not done2.. \n"); 
+	kprintf("read not done2.. \n"); 
 	// Wait for completion
 	while (1)
 	{
@@ -466,7 +488,7 @@ uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WOR
 		}
 	}
  
-	//kprintf("read not done3.. \n"); 
+	kprintf("read not done3.. \n"); 
 //	kprintf("interrupt bits end %x \n", port->is_rwc); 
 //	kprintf("HBA_PxIS_TFES %x \n", HBA_PxIS_TFES); 
 	// Check again
@@ -548,15 +570,18 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 	{
 		spin++;
 	}
+//	kprintf("write not done before spin 10000000. \n"); 
 	if (spin == 1000000)
 	{
 		kprintf("Port is hung\n");
 		return FALSE;
 	}
  
+//	kprintf("write not done before issue command.. \n"); 
 	port->ci = 1<<slot;	// Issue command
  
 	// Wait for completion
+//	kprintf("write not done before while.. \n"); 
 	while (1)
 	{
 		// In some longer duration reads, it may be helpful to spin on the DPS bit 
@@ -579,7 +604,7 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 		kprintf("Read disk error\n");
 		return FALSE;
 	}
-	kprintf("write complted.. \n"); 
+//	kprintf("write complted.. \n"); 
 	return TRUE;
 }
 // Find a free command list slot
