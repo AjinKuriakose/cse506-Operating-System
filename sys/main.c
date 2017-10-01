@@ -33,7 +33,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
     "cli;"
     "sti;"
   );
-checkAllBuses();  
+
+  checkAllBuses();  
   while(1) __asm__ volatile ("hlt");
 }
 
@@ -66,3 +67,4 @@ void boot(void)
   ) *temp2 = *temp1;
   while(1) __asm__ volatile ("hlt");
 }
+

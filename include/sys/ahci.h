@@ -1,29 +1,34 @@
 #ifndef _AHCI_H
 #define _AHCI_H
 
-#define HBA_GHC_AE     (1U << 31)
-#define HBA_GHC_IE     (1U << 1)
-#define HBA_GHC_HR     (1U)
+#define HBA_GHC_AE      (1U << 31)
+#define HBA_GHC_IE      (1U << 1)
+#define HBA_GHC_HR      (1U)
 
-#define HBA_PxCMD_ST   (1U)
-#define HBA_PxCMD_CLO  (1U << 3)
-#define HBA_PxCMD_FRE  (1U << 4)
-#define HBA_PxCMD_FR   (1U << 14)
-#define HBA_PxCMD_CR   (1U << 15)
-#define HBA_PxIS_TFES  (1U << 30)
+#define HBA_PxCMD_ST    (1U)
+#define HBA_PxCMD_CLO   (1U << 3)
+#define HBA_PxCMD_FRE   (1U << 4)
+#define HBA_PxCMD_FR    (1U << 14)
+#define HBA_PxCMD_CR    (1U << 15)
+#define HBA_PxIS_TFES   (1U << 30)
+
+#define HBA_MEM_CAP_SSS	(1U << 27)
+#define HBA_PxCMD_SUD   (1U << 1)
+#define HBA_PxCMD_POD   (1U << 2) 
+#define HBA_PxCMD_ICC   (1U << 28) 
 
 #define AHCI_DEV_SATA   0x00000101  // SATA drive
 #define AHCI_DEV_SATAPI 0xEB140101  // SATAPI drive
 #define AHCI_DEV_SEMB   0xC33C0101  // Enclosure management bridge
 #define AHCI_DEV_PM     0x96690101  // Port multiplier
 
-#define ATA_STATUS_ERR  0x01 // Indicates an error occurred. Send a new command to clear it (or nuke it with a Software Reset).
-#define ATA_STATUS_DRQ  0x08 // Set when the drive has PIO data to transfer, or is ready to accept PIO data.
-#define ATA_STATUS_SRV  0x10 // Overlapped Mode Service Request.
-#define ATA_STATUS_DF   0x20 // Drive Fault Error (does not set ERR).
-#define ATA_STATUS_RDY  0x40 // Bit is clear when drive is spun down, or after an error. Set otherwise.
-#define ATA_STATUS_BSY  0x80 // Indicates the drive is preparing to send/receive data (wait for it to clear).
-                             // In case of 'hang' (it never clears), do a software reset.
+#define ATA_STATUS_ERR  0x01        // Indicates an error occurred. Send a new command to clear it (or nuke it with a Software Reset).
+#define ATA_STATUS_DRQ  0x08        // Set when the drive has PIO data to transfer, or is ready to accept PIO data.
+#define ATA_STATUS_SRV  0x10        // Overlapped Mode Service Request.
+#define ATA_STATUS_DF   0x20        // Drive Fault Error (does not set ERR).
+#define ATA_STATUS_RDY  0x40        // Bit is clear when drive is spun down, or after an error. Set otherwise.
+#define ATA_STATUS_BSY  0x80        // Indicates the drive is preparing to send/receive data (wait for it to clear).
+                                    // In case of 'hang' (it never clears), do a software reset.
 
 #define CMD_FIS_DEV_LBA (1U << 6)
 
