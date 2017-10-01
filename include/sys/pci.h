@@ -9,6 +9,7 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,uint8_t func, uint8_t offs
 //hba_mem_t * get_ahci_bar_address(uint8_t bus, uint8_t slot);
 uint64_t get_ahci_bar_address(uint8_t bus, uint8_t slot, uint8_t func);
 void check_ahci_device(hba_mem_t *hba_mem);
+uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func);
 
 void stop_cmd(hba_port_t *port);
 void start_cmd(hba_port_t *port);
