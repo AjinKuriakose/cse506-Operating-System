@@ -23,15 +23,10 @@
 #define TRUE	1
 #define FALSE	0
 
-#define AHCI_BASE   0x400000    // QEMU
-#define BUFF        0x900000    // QEMU
+#define AHCI_BASE   0x400000    
+#define BUFF        0x900000    
 
-/*
-#define AHCI_BASE	  0x2000000
-#define BUFF		    0x4000000
-*/
-
-void Sleep() {
+void delay() {
   volatile int spin = 0;
   while (spin < 5000000) {
     spin++;
@@ -173,13 +168,8 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
  */
 void set_ghc_ports(hba_mem_t *abar) {
   abar->ghc |= (1U);
-  Sleep();
-
   abar->ghc |= (1U << 31);
-  Sleep();
-
   abar->ghc |= (1U << 1);
-  Sleep();
 }
 
 void check_ahci_device(hba_mem_t *abar) {
@@ -202,15 +192,22 @@ void check_ahci_device(hba_mem_t *abar) {
           for (int j = 1; j < 101; j++) {
             memset((void *)buf_ptr, j, 4096);
             write_port(&abar->ports[0], j * 8, 0 , 8, (uint16_t *)buf_ptr);
-            Sleep();
           }
 
-          kprintf("Write complete (100 4K Blocks)\n");
+          kprintf("\nWrite complete (100 4K Blocks)\n");
+
+          kprintf("\nReading the written data for verification\n");
+          memset((void *)buf_ptr, 0, 4096);
+          read_port(&abar->ports[0], 1 * 8, 0 ,8, (uint16_t *)buf_ptr);
+          kprintf("Value read from Block   1 : [  %d]\n", *(buf_ptr));
 
           memset((void *)buf_ptr, 0, 4096);
-          Sleep();
-          read_port(&abar->ports[0], 99 * 8, 0 ,8, (uint16_t *)buf_ptr);
-          kprintf("Value read : %d %d %d\n",*(buf_ptr), *(buf_ptr + 513), *(buf_ptr + 4095));
+          read_port(&abar->ports[0], 50 * 8, 0 ,8, (uint16_t *)buf_ptr);
+          kprintf("Value read from Block  50 : [ %d]\n", *(buf_ptr));
+
+          memset((void *)buf_ptr, 0, 4096);
+          read_port(&abar->ports[0], 100 * 8, 0 ,8, (uint16_t *)buf_ptr);
+          kprintf("Value read from Block 100 : [%d]\n", *(buf_ptr));
         }
 
       } else if (dt == AHCI_DEV_SATAPI) {
@@ -236,26 +233,27 @@ void check_ahci_device(hba_mem_t *abar) {
 static int check_type(hba_port_t *port,hba_mem_t *abar) {
 
   set_ghc_ports(abar);
+
   stop_cmd(port);
 
   port_rebase(port, 0);
 
   port->sctl = 0x301;
-  Sleep();
+  delay();
 
   port->sctl = 0x300;
-  Sleep();
+  delay();
 
   if (abar->cap & HBA_MEM_CAP_SSS) {
     abar->ports[0].cmd |= (HBA_PxCMD_SUD | HBA_PxCMD_POD | HBA_PxCMD_ICC);
-    Sleep();
+    delay();
   }
 
   abar->ports[0].serr_rwc = 0xFFFFFFFF;
-  Sleep();
+  delay();
 
   abar->ports[0].is_rwc = 0xFFFFFFFF;
-  Sleep();
+  delay();
 
   start_cmd(port);	// Start command engine
 
@@ -330,17 +328,13 @@ void start_cmd(hba_port_t *port) {
 
   /* Set FRE (bit4) and ST (bit0) */
   port->cmd |= HBA_PxCMD_FRE;
-  Sleep();
-
   port->cmd |= HBA_PxCMD_ST;
-  Sleep();
 }
 
 /* Stop command engine */
 void stop_cmd(hba_port_t *port) {
   /* Clear ST (bit0) */
   port->cmd &= ~HBA_PxCMD_ST;
-  Sleep();
 
   /* Wait until FR (bit14), CR (bit15) are cleared */
   while (1) {
@@ -355,7 +349,6 @@ void stop_cmd(hba_port_t *port) {
 
   /* Clear FRE (bit4) */
   port->cmd &= ~HBA_PxCMD_FRE;
-  Sleep();
 }
 
 uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WORD *buf) {
