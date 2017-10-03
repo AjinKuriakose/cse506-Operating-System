@@ -17,14 +17,15 @@
 #define ATA_CMD_READ_DMA_EX     0x25
 #define ATA_CMD_WRITE_DMA_EX    0x35
 
-#define DWORD	uint32_t
-#define WORD	uint16_t
-#define BYTE	uint8_t
-#define TRUE	1
-#define FALSE	0
+#define DWORD	                  uint32_t
+#define WORD	                  uint16_t
+#define BYTE	                  uint8_t
+#define TRUE	                  1
+#define FALSE	                  0
 
-#define AHCI_BASE   0x400000    
-#define BUFF        0x900000    
+#define ABAR_BASE               0xA6000
+#define AHCI_BASE               0x400000    
+#define BUFF                    0x900000    
 
 void delay() {
   volatile int spin = 0;
@@ -33,7 +34,10 @@ void delay() {
   }
 }
 
-static int check_type(hba_port_t *port, hba_mem_t *abar);
+static int sata_drive_portno = -1;
+static hba_mem_t *ahci_bar_sata;
+
+static int check_type(hba_mem_t *abar, int portno);
 
 static inline void sysOutLong(uint16_t port, uint32_t val) {
   __asm__ __volatile__("outl %0, %1" : : "a"(val), "Nd"(port));
@@ -65,6 +69,7 @@ void pciConfigWriteWord (uint8_t bus, uint8_t slot,
   sysOutLong(0xCF8, address);
   sysOutLong(0xCFC, newVal);
 }
+
 uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
     uint8_t func, uint8_t offset) {
 
@@ -80,15 +85,45 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
       (lfunc << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
 
   /* write out the address */
-  sysOutLong (0xCF8, address);
+  sysOutLong(0xCF8, address);
 
   /* read in the data */
   /* (offset & 2) * 8) = 0 will choose the first word of the 32 bits register */
-  tmp = (uint16_t)((sysInLong (0xCFC) >> ((offset & 2) * 8)) & 0xffff);
+  tmp = (uint16_t)((sysInLong(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
 
   return tmp;
 }
 
+void write_to_disk(hba_mem_t *abar) {
+
+  uint8_t *buf_ptr = (uint8_t *)BUFF;
+
+  for (int j = 1; j < 101; j++) {
+    memset((void *)buf_ptr, j, 4096);
+    write_port(&abar->ports[sata_drive_portno], j * 8, 0, 8, (uint16_t *)buf_ptr);
+  }
+
+  kprintf("\nWrite complete (100 4K Blocks) to port %d\n", sata_drive_portno);
+}
+
+void read_from_disk(hba_mem_t *abar) {
+
+  uint8_t *buf_ptr = (uint8_t *)BUFF;
+
+  kprintf("Reading the written data for verification\n");
+
+  memset((void *)buf_ptr, 0, 4096);
+  read_port(&abar->ports[sata_drive_portno], 1 * 8, 0, 8, (uint16_t *)buf_ptr);
+  kprintf("Value read from Block   1 : [  %d]\n", *(buf_ptr));
+
+  memset((void *)buf_ptr, 0, 4096);
+  read_port(&abar->ports[sata_drive_portno], 50 * 8, 0, 8, (uint16_t *)buf_ptr);
+  kprintf("Value read from Block  50 : [ %d]\n", *(buf_ptr));
+
+  memset((void *)buf_ptr, 0, 4096);
+  read_port(&abar->ports[sata_drive_portno], 100 * 8, 0, 8, (uint16_t *)buf_ptr);
+  kprintf("Value read from Block 100 : [%d]\n", *(buf_ptr));
+}
 
 /*
  * brute force, checking every device
@@ -102,6 +137,15 @@ void checkAllBuses(void) {
     for (device = 0; device < 32; device++) {
       checkDevice(bus, device);
     }
+  }
+
+  /* Write-Read to/from the last found SATA drive */
+  if (sata_drive_portno != -1) {
+
+    start_cmd(&ahci_bar_sata->ports[sata_drive_portno]);	// Start command engine
+
+    write_to_disk(ahci_bar_sata);
+    read_from_disk(ahci_bar_sata);
   }
 }
 
@@ -146,11 +190,10 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
        * writing a new value (which is <1GB) to AHCI bar5
        * register would make AHCI driver to use that address.
        */
-
-      pciConfigWriteWord(bus, slot, func, 0x24, 0xA6000);
+      pciConfigWriteWord(bus, slot, func, 0x24, ABAR_BASE);
       ahci_bar = get_ahci_bar_address(bus, slot, func);
 
-      //kprintf("BAR is : %x\n", ahci_bar);
+      /* kprintf("BAR is : %x\n", ahci_bar); */
       check_ahci_device((hba_mem_t *)ahci_bar);
     }
   }
@@ -160,11 +203,10 @@ uint16_t find_ahci_drive(uint8_t bus, uint8_t slot, uint8_t func) {
 
 /*
  * this function would set the following bits in ghc register
- * 0 - HBA reset.
- *  1 - interrupt enable
+ *  0  - HBA reset.
+ *  1  - interrupt enable
  *  31 - AHCI enable, hba would use ahci mechanisms for communication
  *  more details section 3.1.2 ahci spec.
- *
  */
 void set_ghc_ports(hba_mem_t *abar) {
   abar->ghc |= (1U);
@@ -180,35 +222,13 @@ void check_ahci_device(hba_mem_t *abar) {
 
     if (pi & 1) {
 
-      int dt = check_type(&abar->ports[i], abar);
+      int dt = check_type(abar, i);
       if (dt == AHCI_DEV_SATA) {
 
+        ahci_bar_sata = abar;
+        sata_drive_portno = i;
+
         kprintf("SATA drive found at port %d\n", i);
-        if (i == 0) {
-
-          uint8_t *buf_ptr = (uint8_t *)BUFF;
-          memset((void *)buf_ptr,0,4096);
-
-          for (int j = 1; j < 101; j++) {
-            memset((void *)buf_ptr, j, 4096);
-            write_port(&abar->ports[0], j * 8, 0 , 8, (uint16_t *)buf_ptr);
-          }
-
-          kprintf("\nWrite complete (100 4K Blocks)\n");
-
-          kprintf("\nReading the written data for verification\n");
-          memset((void *)buf_ptr, 0, 4096);
-          read_port(&abar->ports[0], 1 * 8, 0 ,8, (uint16_t *)buf_ptr);
-          kprintf("Value read from Block   1 : [  %d]\n", *(buf_ptr));
-
-          memset((void *)buf_ptr, 0, 4096);
-          read_port(&abar->ports[0], 50 * 8, 0 ,8, (uint16_t *)buf_ptr);
-          kprintf("Value read from Block  50 : [ %d]\n", *(buf_ptr));
-
-          memset((void *)buf_ptr, 0, 4096);
-          read_port(&abar->ports[0], 100 * 8, 0 ,8, (uint16_t *)buf_ptr);
-          kprintf("Value read from Block 100 : [%d]\n", *(buf_ptr));
-        }
 
       } else if (dt == AHCI_DEV_SATAPI) {
         kprintf("SATAPI drive found at port %d\n", i);
@@ -230,34 +250,34 @@ void check_ahci_device(hba_mem_t *abar) {
 }
 
 /* Check device type */
-static int check_type(hba_port_t *port,hba_mem_t *abar) {
+static int check_type(hba_mem_t *abar, int portno) {
 
   set_ghc_ports(abar);
 
-  stop_cmd(port);
+  stop_cmd(&abar->ports[portno]);
 
-  port_rebase(port, 0);
+  port_rebase(&abar->ports[portno], 0);
 
-  port->sctl = 0x301;
+  abar->ports[portno].sctl = 0x301;   // IPM and DET
   delay();
 
-  port->sctl = 0x300;
+  abar->ports[portno].sctl = 0x300;   // IPM and DET
   delay();
 
   if (abar->cap & HBA_MEM_CAP_SSS) {
-    abar->ports[0].cmd |= (HBA_PxCMD_SUD | HBA_PxCMD_POD | HBA_PxCMD_ICC);
+    abar->ports[portno].cmd |= (HBA_PxCMD_SUD | HBA_PxCMD_POD | HBA_PxCMD_ICC);
     delay();
   }
 
-  abar->ports[0].serr_rwc = 0xFFFFFFFF;
+  abar->ports[portno].serr_rwc = 0xFFFFFFFF;
   delay();
 
-  abar->ports[0].is_rwc = 0xFFFFFFFF;
+  abar->ports[portno].is_rwc = 0xFFFFFFFF;
   delay();
 
-  start_cmd(port);	// Start command engine
+  start_cmd(&abar->ports[portno]);	  // Start command engine
 
-  uint32_t ssts = port->ssts;
+  uint32_t ssts = abar->ports[portno].ssts;
   uint8_t ipm   = (ssts >> 8) & 0x0F;
   uint8_t det   = ssts & 0x0F;
 
@@ -267,7 +287,7 @@ static int check_type(hba_port_t *port,hba_mem_t *abar) {
   if (ipm != hba_port_t_IPM_ACTIVE)
     return AHCI_DEV_NULL;
 
-  switch (port->sig) {
+  switch (abar->ports[portno].sig) {
 
     case AHCI_DEV_SATAPI:
       return AHCI_DEV_SATAPI;
@@ -297,13 +317,13 @@ void port_rebase(hba_port_t *port, int portno) {
    * Command list maxim size = 32*32 = 1K per port
    */
   port->clb = AHCI_BASE + (portno << 10);
-  memset((void*)(port->clb), 0, 1024);
+  memset((void *)(port->clb), 0, 1024);
 
   /* FIS offset: 32K+256*portno
    * FIS entry size = 256 bytes per port
    */
   port->fb = AHCI_BASE + (32 << 10) + (portno << 8);
-  memset((void*)(port->fb), 0, 256);
+  memset((void *)(port->fb), 0, 256);
 
   /* Command table offset: 40K + 8K*portno
    * Command table size = 256*32 = 8K per port
@@ -316,7 +336,7 @@ void port_rebase(hba_port_t *port, int portno) {
      * Command table offset: 40K + 8K * portno + cmdheader_index * 256
      */
     cmdheader[i].ctba = AHCI_BASE + (40 << 10) + (portno << 13) + (i << 8);
-    memset((void*)cmdheader[i].ctba, 0, 256);
+    memset((void *)cmdheader[i].ctba, 0, 256);
   }
 }
 
@@ -361,11 +381,11 @@ uint8_t read_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WOR
 
   hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)port->clb;
   cmdheader += slot;
-  cmdheader->cfl = sizeof(fis_reg_h2d_t) / sizeof(DWORD);	// Command FIS size
-  cmdheader->w = 0;		                                    // Read from device
-  cmdheader->prdtl = (WORD)((count-1) >> 4) + 1;	        // PRDT entries count
+  cmdheader->cfl = sizeof(fis_reg_h2d_t) / sizeof(DWORD);	  // Command FIS size
+  cmdheader->w = 0;		                                      // Read from device
+  cmdheader->prdtl = (WORD)((count - 1) >> 4) + 1;	        // PRDT entries count
 
-  hba_cmd_tbl_t *cmdtbl = (hba_cmd_tbl_t*)(cmdheader->ctba);
+  hba_cmd_tbl_t *cmdtbl = (hba_cmd_tbl_t *)(cmdheader->ctba);
   memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t) +
       (cmdheader->prdtl - 1) * sizeof(hba_prdt_entry_t));
 
@@ -447,11 +467,11 @@ uint8_t write_port(hba_port_t *port, DWORD startl, DWORD starth, DWORD count, WO
 
   hba_cmd_header_t *cmdheader = (hba_cmd_header_t *)port->clb;
   cmdheader += slot;
-  cmdheader->cfl = sizeof(fis_reg_h2d_t) / sizeof(DWORD);	// Command FIS size
-  cmdheader->w = 1;		                                    // Write from device
-  cmdheader->prdtl = (WORD)((count-1) >> 4) + 1;	        // PRDT entries count
+  cmdheader->cfl = sizeof(fis_reg_h2d_t) / sizeof(DWORD);	  // Command FIS size
+  cmdheader->w = 1;		                                      // Write from device
+  cmdheader->prdtl = (WORD)((count - 1) >> 4) + 1;	        // PRDT entries count
 
-  hba_cmd_tbl_t *cmdtbl = (hba_cmd_tbl_t*)(cmdheader->ctba);
+  hba_cmd_tbl_t *cmdtbl = (hba_cmd_tbl_t *)(cmdheader->ctba);
   memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t) +
       (cmdheader->prdtl-1) * sizeof(hba_prdt_entry_t));
 
@@ -530,7 +550,7 @@ int find_cmdslot(hba_port_t *m_port) {
   uint8_t cmdslots = 32;
   DWORD slots = (m_port->sact | m_port->ci);
   for (int i = 0; i < cmdslots; i++) {
-    if ((slots&1) == 0)
+    if ((slots & 1) == 0)
       return i;
     slots >>= 1;
   }
