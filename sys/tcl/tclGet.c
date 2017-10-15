@@ -15,10 +15,6 @@
  * express or implied warranty.
  */
 
-//#ifndef lint
-//static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclGet.c,v 1.11 92/02/29 16:13:14 ouster Exp $ SPRITE (Berkeley)";
-//#endif /* not lint */
-
 #include <tcl/tclInt.h>
 
 /*
@@ -56,8 +52,8 @@ Tcl_GetInt(interp, string, intPtr)
 	end++;
     }
     if ((end == string) || (*end != 0)) {
-	//Tcl_AppendResult(interp, "expected integer but got \"", string,
-		//"\"", (char *) NULL);
+	Tcl_AppendResult(interp, "expected integer but got \"", string,
+		"\"", (char *) NULL);
 	return TCL_ERROR;
     }
     *intPtr = i;
@@ -101,8 +97,8 @@ Tcl_GetDouble(interp, string, doublePtr)
 	end++;
     }
     if ((end == string) || (*end != 0)) {
-	//Tcl_AppendResult(interp, "expected floating-point number but got \"",
-		//string, "\"", (char *) NULL);
+	Tcl_AppendResult(interp, "expected floating-point number but got \"",
+		string, "\"", (char *) NULL);
 	return TCL_ERROR;
     }
     *doublePtr = d;
@@ -181,8 +177,8 @@ Tcl_GetBoolean(interp, string, boolPtr)
 	    *boolPtr = 0;
 	}
     } else {
-	//Tcl_AppendResult(interp, "expected boolean value but got \"",
-		//string, "\"", (char *) NULL);
+	Tcl_AppendResult(interp, "expected boolean value but got \"",
+		string, "\"", (char *) NULL);
 	return TCL_ERROR;
     }
 #endif

@@ -18,20 +18,7 @@
 #ifndef _STRING
 #define _STRING
 
-#include "tcl.h"
-
-/*
- * The following #include is needed to define size_t.
- */
-#if 0
-#ifdef sun
-#include <sys/stdtypes.h>
-#endif
-
-#ifdef pyr
-#include <sys/types.h>
-#endif
-#endif
+#include <tcl/tcl.h>
 
 extern int  my_strcmp(const char *f_str, const char *s_str);
 extern char *my_strcpy(char *dest, char *src);

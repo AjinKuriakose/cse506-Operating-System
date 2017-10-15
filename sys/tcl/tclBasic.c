@@ -15,10 +15,6 @@
  * express or implied warranty.
  */
 
-//#ifndef lint
-//static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclBasic.c,v 1.133 92/08/21 15:45:32 ouster Exp $ SPRITE (Berkeley)";
-//#endif
-
 #include <tcl/tclInt.h>
 
 /*
@@ -42,7 +38,7 @@ static CmdInfo builtInCmds[] = {
 
     {"append",		Tcl_AppendCmd},
     {"array",		Tcl_ArrayCmd},
-    /*
+#if 0
     {"break",		Tcl_BreakCmd},
     {"case",		Tcl_CaseCmd},
     {"catch",		Tcl_CatchCmd},
@@ -82,7 +78,7 @@ static CmdInfo builtInCmds[] = {
     {"uplevel",		Tcl_UplevelCmd},
     {"upvar",		Tcl_UpvarCmd},
     {"while",		Tcl_WhileCmd},
-    */
+#endif
     /*
      * Commands in the UNIX core:
      */
@@ -280,10 +276,12 @@ Tcl_DeleteInterp(interp)
 		continue;
 	    }
 	    if (i >= 3) {
-		//fclose(filePtr->f);
-		//if (filePtr->f2 != NULL) {
-		    //fclose(filePtr->f2);
-		//}
+#if 0
+		fclose(filePtr->f);
+		if (filePtr->f2 != NULL) {
+		    fclose(filePtr->f2);
+		}
+#endif
 		if (filePtr->numPids > 0) {
 		    Tcl_DetachPids(filePtr->numPids, filePtr->pidPtr);
 		    ckfree((char *) filePtr->pidPtr);

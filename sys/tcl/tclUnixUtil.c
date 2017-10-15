@@ -20,10 +20,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclUnixUtil.c,v 1.19 93/01/08 08:41:00 ouster Exp $ SPRITE (Berkeley)";
-#endif /* not lint */
-
 #include <tcl/tclInt.h>
 #include <tcl/tclUnix.h>
 
@@ -54,6 +50,7 @@ typedef struct {
 #define WI_READY	1
 #define WI_DETACHED	2
 
+#if 0
 static WaitInfo *waitTable = NULL;
 static int waitTableSize = 0;	/* Total number of entries available in
 				 * waitTable. */
@@ -61,6 +58,7 @@ static int waitTableUsed = 0;	/* Number of entries in waitTable that
 				 * are actually in use right now.  Active
 				 * entries are always at the beginning
 				 * of the table. */
+#endif
 #define WAIT_TABLE_GROW_BY 4
 
 /*
@@ -137,8 +135,8 @@ Tcl_EvalFile(interp, fileName)
 	 * Record information telling where the error occurred.
 	 */
 
-	//sprintf(msg, "\n    (file \"%.150s\" line %d)", fileName,
-		//interp->errorLine);
+	sprintf(msg, "\n    (file \"%.150s\" line %d)", fileName,
+		interp->errorLine);
 	Tcl_AddErrorInfo(interp, msg);
     }
     ckfree(cmdBuffer);
@@ -202,8 +200,8 @@ Tcl_Fork()
 	newSize = waitTableSize + WAIT_TABLE_GROW_BY;
 	newWaitTable = (WaitInfo *) ckalloc((unsigned)
 		(newSize * sizeof(WaitInfo)));
-	//memcpy((VOID *) newWaitTable, (VOID *) waitTable,
-		//(waitTableSize * sizeof(WaitInfo)));
+	memcpy((VOID *) newWaitTable, (VOID *) waitTable,
+		(waitTableSize * sizeof(WaitInfo)));
 	if (waitTable != NULL) {
 	    ckfree((char *) waitTable);
 	}
@@ -397,7 +395,7 @@ Tcl_DetachPids(numPids, pidPtr)
 	    }
 	    goto nextPid;
 	}
-	//panic("Tcl_Detach couldn't find process");
+	panic("Tcl_Detach couldn't find process");
 
 	nextPid:
 	continue;
@@ -497,7 +495,7 @@ Tcl_CreatePipeline(interp, argc, argv, pidArrayPtr, inPipePtr,
     int firstArg, lastArg;	/* Indexes of first and last arguments in
 				 * current command. */
     int lastBar;
-    char *execName;
+    //char *execName;
     int i, j, pid;
 
     if (inPipePtr != NULL) {
@@ -692,7 +690,7 @@ Tcl_CreatePipeline(interp, argc, argv, pidArrayPtr, inPipePtr,
 	}
 	*errFilePtr = open(errName, O_RDONLY, 0);
 	if (*errFilePtr < 0) {
-	    //goto errFileError;
+	    goto errFileError;
 	}
 	if (unlink(errName) == -1) {
 	    Tcl_AppendResult(interp,
@@ -731,7 +729,7 @@ Tcl_CreatePipeline(interp, argc, argv, pidArrayPtr, inPipePtr,
 #endif
 	    outputId = pipeIds[1];
 	}
-	execName = Tcl_TildeSubst(interp, argv[firstArg]);
+	//execName = Tcl_TildeSubst(interp, argv[firstArg]);
 	pid = Tcl_Fork();
 	if (pid == -1) {
 	    //Tcl_AppendResult(interp, "couldn't fork child process: ",
@@ -753,10 +751,10 @@ Tcl_CreatePipeline(interp, argc, argv, pidArrayPtr, inPipePtr,
 		    i++) {
 		close(i);
 	    }
-	    //execvp(execName, &argv[firstArg]);
-	    //sprintf(errSpace, "couldn't find \"%.150s\" to execute\n",
-		    //argv[firstArg]);
-	    //write(2, errSpace, my_strlen(errSpace));
+	    execvp(execName, &argv[firstArg]);
+	    sprintf(errSpace, "couldn't find \"%.150s\" to execute\n",
+		    argv[firstArg]);
+	    write(2, errSpace, my_strlen(errSpace));
 	    _exit(1);
 #endif
 	} else {
@@ -1017,8 +1015,8 @@ TclGetOpenFile(interp, string, filePtrPtr)
 	}
     } else {
 	badId:
-	//Tcl_AppendResult(interp, "bad file identifier \"", string,
-		//"\"", (char *) NULL);
+	Tcl_AppendResult(interp, "bad file identifier \"", string,
+		"\"", (char *) NULL);
 	return TCL_ERROR;
     }
 
@@ -1027,8 +1025,8 @@ TclGetOpenFile(interp, string, filePtrPtr)
 	    TclMakeFileTable(iPtr, fd);
 	} else {
 	    notOpen:
-	    //Tcl_AppendResult(interp, "file \"", string, "\" isn't open",
-		    //(char *) NULL);
+	    Tcl_AppendResult(interp, "file \"", string, "\" isn't open",
+		    (char *) NULL);
 	    return TCL_ERROR;
 	}
     }

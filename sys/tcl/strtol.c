@@ -13,10 +13,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /sprite/src/lib/tcl/compat/RCS/strtol.c,v 1.1 91/09/22 15:42:49 ouster Exp $ SPRITE (Berkeley)";
-#endif /* not lint */
-
 #include <tcl/string.h>
 
 #define isspace(c)  ((c) == ' ')
@@ -44,21 +40,6 @@ static char rcsid[] = "$Header: /sprite/src/lib/tcl/compat/RCS/strtol.c,v 1.1 91
 
 long int
 strtol(char *string, char **endPtr, int base)
-#if 0
-    char *string;		/* String of ASCII digits, possibly
-				 * preceded by white space.  For bases
-				 * greater than 10, either lower- or
-				 * upper-case digits may be used.
-				 */
-    char **endPtr;		/* Where to store address of terminating
-				 * character, or NULL. */
-    int base;			/* Base for conversion.  Must be less
-				 * than 37.  If 0, then the base is chosen
-				 * from the leading characters of string:
-				 * "0x" means hex, "0" means octal, anything
-				 * else means decimal.
-				 */
-#endif
 {
     register char *p;
     int result;

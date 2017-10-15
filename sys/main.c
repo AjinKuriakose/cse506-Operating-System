@@ -15,15 +15,12 @@ extern char kernmem, physbase;
 
 void tcltest() {
 
-  int status;
   Tcl_Interp *myinterp;
-  char *action2 = "puts \"Hello World!\"";
+  char *cmd = "puts \"Hello World from Tcl!\"";
 
   kprintf ("Invoking Tcl interpreter ... \n");
   myinterp = Tcl_CreateInterp();
-  status = Tcl_Eval(myinterp,action2, 0, NULL);
-  status = Tcl_Eval(myinterp,action2, 0, NULL);
-  status = Tcl_Eval(myinterp,action2, 0, NULL);
+  Tcl_Eval(myinterp, cmd, 0, NULL);
 }
 
 void start(uint32_t *modulep, void *physbase, void *physfree)

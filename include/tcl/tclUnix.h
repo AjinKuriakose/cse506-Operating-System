@@ -65,20 +65,6 @@
 #define TCL_PID_T 1
 #define TCL_UID_T 1
 
-//#include "dirent.h"
-//#include <errno.h>
-
-#if 0
-#include <pwd.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <limits.h>
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <sys/stat.h>
-#endif
-
 #if 0
 #if TCL_SYS_TIME_H
 #   include <sys/time.h>

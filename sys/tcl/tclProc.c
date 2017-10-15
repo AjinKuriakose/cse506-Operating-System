@@ -14,10 +14,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclProc.c,v 1.60 92/09/14 15:42:07 ouster Exp $ SPRITE (Berkeley)";
-#endif
-
 #include <tcl/tclInt.h>
 
 /*
@@ -26,7 +22,9 @@ static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclProc.c,v 1.60 92/09/14 
 
 static  int	InterpProc _ANSI_ARGS_((ClientData clientData,
 		    Tcl_Interp *interp, int argc, char **argv));
+#if 0
 static  void	ProcDeleteProc _ANSI_ARGS_((ClientData clientData));
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -63,8 +61,8 @@ Tcl_ProcCmd(dummy, interp, argc, argv)
 					 * prevents compiler warning. */
 
     if (argc != 4) {
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//" name args body\"", (char *) NULL);
+	  Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		  " name args body\"", (char *) NULL);
 	return TCL_ERROR;
     }
 
@@ -99,16 +97,16 @@ Tcl_ProcCmd(dummy, interp, argc, argv)
 	}
 	if (fieldCount > 2) {
 	    ckfree((char *) fieldValues);
-	    //Tcl_AppendResult(interp,
-		    //"too many fields in argument specifier \"",
-		    //argArray[i], "\"", (char *) NULL);
+	    Tcl_AppendResult(interp,
+		    "too many fields in argument specifier \"",
+		    argArray[i], "\"", (char *) NULL);
 	    result = TCL_ERROR;
 	    goto procError;
 	}
 	if ((fieldCount == 0) || (*fieldValues[0] == 0)) {
 	    ckfree((char *) fieldValues);
-	    //Tcl_AppendResult(interp, "procedure \"", argv[1],
-		    //"\" has argument with no name", (char *) NULL);
+	    Tcl_AppendResult(interp, "procedure \"", argv[1],
+		    "\" has argument with no name", (char *) NULL);
 	    result = TCL_ERROR;
 	    goto procError;
 	}
@@ -212,8 +210,8 @@ TclGetFrame(interp, string, framePtrPtr)
 	}
 	if (level < 0) {
 	    levelError:
-	    //Tcl_AppendResult(interp, "bad level \"", string, "\"",
-		    //(char *) NULL);
+	    Tcl_AppendResult(interp, "bad level \"", string, "\"",
+		    (char *) NULL);
 	    return -1;
 	}
     } else if (isdigit(*string)) {
@@ -282,8 +280,8 @@ Tcl_UplevelCmd(dummy, interp, argc, argv)
 
     if (argc < 2) {
 	uplevelSyntax:
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//" ?level? command ?arg ...?\"", (char *) NULL);
+	Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		" ?level? command ?arg ...?\"", (char *) NULL);
 	return TCL_ERROR;
     }
 
@@ -323,7 +321,7 @@ Tcl_UplevelCmd(dummy, interp, argc, argv)
     }
     if (result == TCL_ERROR) {
 	char msg[60];
-	//sprintf(msg, "\n    (\"uplevel\" body line %d)", interp->errorLine);
+	sprintf(msg, "\n    (\"uplevel\" body line %d)", interp->errorLine);
 	Tcl_AddErrorInfo(interp, msg);
     }
 
@@ -490,17 +488,17 @@ InterpProc(clientData, interp, argc, argv)
 	} else if (argPtr->defValue != NULL) {
 	    value = argPtr->defValue;
 	} else {
-	    //Tcl_AppendResult(interp, "no value given for parameter \"",
-		    //argPtr->name, "\" to \"", argv[0], "\"",
-		    //(char *) NULL);
+	    Tcl_AppendResult(interp, "no value given for parameter \"",
+		    argPtr->name, "\" to \"", argv[0], "\"",
+		    (char *) NULL);
 	    result = TCL_ERROR;
 	    goto procDone;
 	}
 	Tcl_SetVar(interp, argPtr->name, value, 0);
     }
     if (argc > 0) {
-	//Tcl_AppendResult(interp, "called \"", argv[0],
-		//"\" with too many arguments", (char *) NULL);
+	Tcl_AppendResult(interp, "called \"", argv[0],
+		"\" with too many arguments", (char *) NULL);
 	result = TCL_ERROR;
 	goto procDone;
     }
@@ -519,8 +517,8 @@ InterpProc(clientData, interp, argc, argv)
 	 * Record information telling where the error occurred.
 	 */
 
-	//sprintf(msg, "\n    (procedure \"%.50s\" line %d)", argv[0],
-		//iPtr->errorLine);
+	sprintf(msg, "\n    (procedure \"%.50s\" line %d)", argv[0],
+		iPtr->errorLine);
 	Tcl_AddErrorInfo(interp, msg);
     } else if (result == TCL_BREAK) {
 	iPtr->result = "invoked \"break\" outside of a loop";
@@ -563,7 +561,7 @@ InterpProc(clientData, interp, argc, argv)
  *
  *----------------------------------------------------------------------
  */
-
+#if 0
 static void
 ProcDeleteProc(clientData)
     ClientData clientData;		/* Procedure to be deleted. */
@@ -580,3 +578,4 @@ ProcDeleteProc(clientData)
     }
     ckfree((char *) procPtr);
 }
+#endif

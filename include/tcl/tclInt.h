@@ -28,8 +28,6 @@
  * needed by stdlib.h in some configurations.
  */
 
-//#include <stdio.h>
-
 #ifndef _TCL
 #include "tcl.h"
 #endif
@@ -40,10 +38,8 @@
 #include "regexp.h"
 #endif
 
-//#include <ctype.h>
 #include "stdlib.h"
 #include "string.h"
-//#include <varargs.h>
 
 /*
  * At present (12/91) not all stdlib.h implementations declare strtod.

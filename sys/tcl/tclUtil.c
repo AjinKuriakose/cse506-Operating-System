@@ -14,10 +14,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclUtil.c,v 1.66 92/10/21 16:12:01 ouster Exp $ SPRITE (Berkeley)";
-#endif
-
 #include <tcl/tclInt.h>
 
 /*
@@ -55,8 +51,10 @@ char *tclRegexpError = NULL;
  * Function prototypes for local procedures in this file:
  */
 
+#if 0
 static void		SetupAppendBuffer _ANSI_ARGS_((Interp *iPtr,
 			    int newSpace));
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -176,9 +174,9 @@ TclFindElement(interp, list, elementPtr, nextPtr, sizePtr, bracePtr)
 			/* null body */
 		    }
 		    Tcl_ResetResult(interp);
-		    //sprintf(interp->result,
-			    //"list element in braces followed by \"%.*s\" instead of space",
-			    //p2-p, p);
+		    sprintf(interp->result,
+			    "list element in braces followed by \"%.*s\" instead of space",
+			    p2-p, p);
 		    return TCL_ERROR;
 		} else if (openBraces != 0) {
 		    openBraces--;
@@ -233,9 +231,9 @@ TclFindElement(interp, list, elementPtr, nextPtr, sizePtr, bracePtr)
 			/* null body */
 		    }
 		    Tcl_ResetResult(interp);
-		    //sprintf(interp->result,
-			    //"list element in quotes followed by \"%.*s\" %s",
-			    //p2-p, p, "instead of space");
+		    sprintf(interp->result,
+			    "list element in quotes followed by \"%.*s\" %s",
+			    p2-p, p, "instead of space");
 		    return TCL_ERROR;
 		}
 		break;
@@ -1045,7 +1043,7 @@ Tcl_AppendResult(interp, p, va_alist)
     char *p;			/* One or more strings to add to the
 				 * result, terminated with NULL. */
 #endif
-    //va_dcl
+    va_dcl
 {
     va_list argList;
     register Interp *iPtr;
@@ -1178,13 +1176,13 @@ Tcl_AppendElement(interp, string, noSep)
  *----------------------------------------------------------------------
  */
 
+#if 0
 static void
 SetupAppendBuffer(iPtr, newSpace)
     register Interp *iPtr;	/* Interpreter whose result is being set up. */
     int newSpace;		/* Make sure that at least this many bytes
 				 * of new information may be added. */
 {
-#if 0
     int totalSpace;
 
     /*
@@ -1228,8 +1226,8 @@ SetupAppendBuffer(iPtr, newSpace)
     }
     Tcl_FreeResult(iPtr);
     iPtr->result = iPtr->appendResult;
-#endif
 }
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -1299,7 +1297,7 @@ Tcl_SetErrorCode(interp, p, va_alist)
     char *p;			/* One or more elements to add to errorCode,
 				 * terminated with NULL. */
 #endif
-//    va_dcl
+    va_dcl
 {
     va_list argList;
     char *string;
@@ -1368,8 +1366,8 @@ TclGetListIndex(interp, string, indexPtr)
     } else if (my_strncmp(string, "end", my_strlen(string)) == 0) {
 	*indexPtr = 1<<30;
     } else {
-	//Tcl_AppendResult(interp, "bad index \"", string,
-		//"\": must be integer or \"end\"", (char *) NULL);
+	Tcl_AppendResult(interp, "bad index \"", string,
+		"\": must be integer or \"end\"", (char *) NULL);
 	return TCL_ERROR;
     }
 #endif

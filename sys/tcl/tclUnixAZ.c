@@ -17,10 +17,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclUnixAZ.c,v 1.40 93/01/28 16:06:35 ouster Exp $ SPRITE (Berkeley)";
-#endif /* not lint */
-
 #include <tcl/tclInt.h>
 #include <tcl/tclUnix.h>
 #include <sys/kprintf.h>
@@ -31,6 +27,7 @@ static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclUnixAZ.c,v 1.40 93/01/2
  * NULL means the cache needs to be refreshed.
  */
 
+#if 0
 static char *currentDir =  NULL;
 
 /*
@@ -40,7 +37,6 @@ static char *currentDir =  NULL;
 static int		CleanupChildren _ANSI_ARGS_((Tcl_Interp *interp,
 			    int numPids, int *pidPtr, int errorId));
 static char *		GetFileType _ANSI_ARGS_((int mode));
-#if 0
 static int		StoreStatData _ANSI_ARGS_((Tcl_Interp *interp,
 			    char *varName, struct stat *statPtr));
 #endif
@@ -309,9 +305,9 @@ Tcl_ExecCmd(dummy, interp, argc, argv)
 	    }
 	    buffer[count] = 0;
 #endif
-	    //Tcl_AppendResult(interp, buffer, (char *) NULL);
+	    Tcl_AppendResult(interp, buffer, (char *) NULL);
 	}
-	//close(outputId);
+	close(outputId);
     }
 
     if (CleanupChildren(interp, numPids, pidPtr, errorId) != TCL_OK) {
@@ -540,7 +536,7 @@ Tcl_FileCmd(dummy, interp, argc, argv)
 	if (stat(fileName, &statBuf) == -1) {
 	    goto badStat;
 	}
-	//sprintf(interp->result, "%ld", statBuf.st_atime);
+	sprintf(interp->result, "%ld", statBuf.st_atime);
 	return TCL_OK;
     } else if ((c == 'i') && (my_strncmp(argv[1], "isdirectory", length) == 0)
 	    && (length >= 3)) {
@@ -558,14 +554,14 @@ Tcl_FileCmd(dummy, interp, argc, argv)
 	statOp = 1;
     } else if ((c == 'l') && (my_strncmp(argv[1], "lstat", length) == 0)) {
 	if (argc != 4) {
-	    //Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		    //" lstat name varName\"", (char *) NULL);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		    " lstat name varName\"", (char *) NULL);
 	    return TCL_ERROR;
 	}
 
 	if (lstat(fileName, &statBuf) == -1) {
-	    //Tcl_AppendResult(interp, "couldn't lstat \"", argv[2],
-		    //"\": ", Tcl_UnixError(interp), (char *) NULL);
+	    Tcl_AppendResult(interp, "couldn't lstat \"", argv[2],
+		    "\": ", Tcl_UnixError(interp), (char *) NULL);
 	    return TCL_ERROR;
 	}
 	return StoreStatData(interp, argv[3], &statBuf);
@@ -577,7 +573,7 @@ Tcl_FileCmd(dummy, interp, argc, argv)
 	if (stat(fileName, &statBuf) == -1) {
 	    goto badStat;
 	}
-	//sprintf(interp->result, "%ld", statBuf.st_mtime);
+	sprintf(interp->result, "%ld", statBuf.st_mtime);
 	return TCL_OK;
     } else if ((c == 'o') && (my_strncmp(argv[1], "owned", length) == 0)) {
 	if (argc != 3) {
@@ -620,20 +616,20 @@ Tcl_FileCmd(dummy, interp, argc, argv)
 	if (stat(fileName, &statBuf) == -1) {
 	    goto badStat;
 	}
-	//sprintf(interp->result, "%ld", statBuf.st_size);
+	sprintf(interp->result, "%ld", statBuf.st_size);
 	return TCL_OK;
     } else if ((c == 's') && (my_strncmp(argv[1], "stat", length) == 0)
 	    && (length >= 2)) {
 	if (argc != 4) {
-	    //Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		    //" stat name varName\"", (char *) NULL);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		    " stat name varName\"", (char *) NULL);
 	    return TCL_ERROR;
 	}
 
 	if (stat(fileName, &statBuf) == -1) {
 	    badStat:
-	    //Tcl_AppendResult(interp, "couldn't stat \"", argv[2],
-		    //"\": ", Tcl_UnixError(interp), (char *) NULL);
+	    Tcl_AppendResult(interp, "couldn't stat \"", argv[2],
+		    "\": ", Tcl_UnixError(interp), (char *) NULL);
 	    return TCL_ERROR;
 	}
 	return StoreStatData(interp, argv[3], &statBuf);
@@ -717,52 +713,52 @@ StoreStatData(interp, varName, statPtr)
 {
     char string[30];
 
-    //sprintf(string, "%d", statPtr->st_dev);
+    sprintf(string, "%d", statPtr->st_dev);
     if (Tcl_SetVar2(interp, varName, "dev", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%d", statPtr->st_ino);
+    sprintf(string, "%d", statPtr->st_ino);
     if (Tcl_SetVar2(interp, varName, "ino", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%d", statPtr->st_mode);
+    sprintf(string, "%d", statPtr->st_mode);
     if (Tcl_SetVar2(interp, varName, "mode", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%d", statPtr->st_nlink);
+    sprintf(string, "%d", statPtr->st_nlink);
     if (Tcl_SetVar2(interp, varName, "nlink", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%d", statPtr->st_uid);
+    sprintf(string, "%d", statPtr->st_uid);
     if (Tcl_SetVar2(interp, varName, "uid", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%d", statPtr->st_gid);
+    sprintf(string, "%d", statPtr->st_gid);
     if (Tcl_SetVar2(interp, varName, "gid", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%ld", statPtr->st_size);
+    sprintf(string, "%ld", statPtr->st_size);
     if (Tcl_SetVar2(interp, varName, "size", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%ld", statPtr->st_atime);
+    sprintf(string, "%ld", statPtr->st_atime);
     if (Tcl_SetVar2(interp, varName, "atime", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%ld", statPtr->st_mtime);
+    sprintf(string, "%ld", statPtr->st_mtime);
     if (Tcl_SetVar2(interp, varName, "mtime", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
     }
-    //sprintf(string, "%ld", statPtr->st_ctime);
+    sprintf(string, "%ld", statPtr->st_ctime);
     if (Tcl_SetVar2(interp, varName, "ctime", string, TCL_LEAVE_ERR_MSG)
 	    == NULL) {
 	return TCL_ERROR;
@@ -792,11 +788,11 @@ StoreStatData(interp, varName, statPtr)
  *----------------------------------------------------------------------
  */
 
+#if 0
 static char *
 GetFileType(mode)
     int mode;
 {
-#if 0
     if (S_ISREG(mode)) {
 	return "file";
     } else if (S_ISDIR(mode)) {
@@ -812,9 +808,9 @@ GetFileType(mode)
     } else if (S_ISSOCK(mode)) {
 	return "socket";
     }
-#endif
     return "unknown";
 }
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -862,14 +858,12 @@ Tcl_FlushCmd(notUsed, interp, argc, argv)
     if (f == NULL) {
 	f = filePtr->f;
     }
-    /*
     if (fflush(f) == EOF) {
 	Tcl_AppendResult(interp, "error flushing \"", argv[1],
 		"\": ", Tcl_UnixError(interp), (char *) NULL);
 	clearerr(f);
 	return TCL_ERROR;
     }
-    */
 #endif
     return TCL_OK;
 }
@@ -970,7 +964,7 @@ Tcl_GetsCmd(notUsed, interp, argc, argv)
     }
 
     if (argc == 3) {
-	//sprintf(interp->result, "%d", totalCount);
+	  sprintf(interp->result, "%d", totalCount);
     }
 #endif
     return TCL_OK;
@@ -1100,13 +1094,13 @@ Tcl_OpenCmd(notUsed, interp, argc, argv)
 	if (filePtr->readable) {
 	    if (outPipe == -1) {
 		if (inPipe != -1) {
-		    //close(inPipe);
+		    close(inPipe);
 		}
 		Tcl_AppendResult(interp, "can't read output from command:",
 			" standard output was redirected", (char *) NULL);
 		goto error;
 	    }
-	    //filePtr->f = fdopen(outPipe, "r");
+	    filePtr->f = fdopen(outPipe, "r");
 	}
 	if (filePtr->writable) {
 	    if (inPipe == -1) {
@@ -1115,9 +1109,9 @@ Tcl_OpenCmd(notUsed, interp, argc, argv)
 		goto error;
 	    }
 	    if (filePtr->f != NULL) {
-		//filePtr->f2 = fdopen(inPipe, "w");
+		filePtr->f2 = fdopen(inPipe, "w");
 	    } else {
-		//filePtr->f = fdopen(inPipe, "w");
+		filePtr->f = fdopen(inPipe, "w");
 	    }
 	}
     }
@@ -1130,10 +1124,10 @@ Tcl_OpenCmd(notUsed, interp, argc, argv)
     fd = fileno(filePtr->f);
     TclMakeFileTable(iPtr, fd);
     if (iPtr->filePtrArray[fd] != NULL) {
-	//panic("Tcl_OpenCmd found file already open");
+	panic("Tcl_OpenCmd found file already open");
     }
     iPtr->filePtrArray[fd] = filePtr;
-    //sprintf(interp->result, "file%d", fd);
+    sprintf(interp->result, "file%d", fd);
     return TCL_OK;
 
     error:
@@ -1150,7 +1144,7 @@ Tcl_OpenCmd(notUsed, interp, argc, argv)
 	ckfree((char *) filePtr->pidPtr);
     }
     if (filePtr->errorId != -1) {
-	//close(filePtr->errorId);
+	close(filePtr->errorId);
     }
     ckfree((char *) filePtr);
     return TCL_ERROR;
@@ -1187,8 +1181,8 @@ Tcl_PwdCmd(dummy, interp, argc, argv)
     char buffer[MAXPATHLEN+1];
 
     if (argc != 1) {
-	//Tcl_AppendResult(interp, "wrong # args: should be \"",
-		//argv[0], "\"", (char *) NULL);
+	Tcl_AppendResult(interp, "wrong # args: should be \"",
+		argv[0], "\"", (char *) NULL);
 	return TCL_ERROR;
     }
     if (currentDir == NULL) {
@@ -1248,19 +1242,19 @@ Tcl_PutsCmd(dummy, interp, argc, argv)
     char **argv;			/* Argument strings. */
 {
     OpenFile *filePtr;
-//    FILE *f;
-    int i, newline;
+    //FILE *f;
+    int i; //, newline;
     char *fileId;
 
     i = 1;
-    newline = 1;
+    //newline = 1;
     if ((argc >= 2) && (my_strcmp(argv[1], "-nonewline") == 0)) {
-	newline = 0;
+	  //newline = 0;
 	i++;
     }
     if ((i < (argc-3)) || (i >= argc)) {
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//"\" ?-nonewline? ?fileId? string", (char *) NULL);
+	  //Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		  //"\" ?-nonewline? ?fileId? string", (char *) NULL);
 	return TCL_ERROR;
     }
 
@@ -1275,7 +1269,7 @@ Tcl_PutsCmd(dummy, interp, argc, argv)
 		    //"\": should be \"nonewline\"", (char *) NULL);
 	    return TCL_ERROR;
 	}
-	newline = 0;
+	//newline = 0;
     }
     if (i == (argc-1)) {
 	fileId = "stdout";
@@ -1292,22 +1286,18 @@ Tcl_PutsCmd(dummy, interp, argc, argv)
 		//"\" wasn't opened for writing", (char *) NULL);
 	return TCL_ERROR;
     }
-//    f = filePtr->f2;
-//    if (f == NULL) {
-//	f = filePtr->f;
-//    }
+  //    f = filePtr->f2;
+  //    if (f == NULL) {
+  //	f = filePtr->f;
+  //    }
 
-    kprintf("%s\n", argv[i]);  /* AMD TODO : Remove this line later */
+    kprintf("%s\n", argv[i]);  /* AMD */
 #if 0
-    /* AMD TODO : change fputc, fputs.. kprintf... */
-
     fputs(argv[i], f);
     if (newline) {
 	fputc('\n', f);
     }
-#endif
 
-#if 0
     if (ferror(f)) {
 	Tcl_AppendResult(interp, "error writing \"", fileId,
 		"\": ", Tcl_UnixError(interp), (char *) NULL);
@@ -1351,9 +1341,9 @@ Tcl_ReadCmd(dummy, interp, argc, argv)
     int newline, i;
 
     if ((argc != 2) && (argc != 3)) {
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//" fileId ?numBytes?\" or \"", argv[0],
-		//" ?-nonewline? fileId\"", (char *) NULL);
+	  Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		  " fileId ?numBytes?\" or \"", argv[0],
+		  " ?-nonewline? fileId\"", (char *) NULL);
 	return TCL_ERROR;
     }
     i = 1;
@@ -1367,8 +1357,8 @@ Tcl_ReadCmd(dummy, interp, argc, argv)
 	return TCL_ERROR;
     }
     if (!filePtr->readable) {
-	//Tcl_AppendResult(interp, "\"", argv[i],
-		//"\" wasn't opened for reading", (char *) NULL);
+	  Tcl_AppendResult(interp, "\"", argv[i],
+		  "\" wasn't opened for reading", (char *) NULL);
 	return TCL_ERROR;
     }
 
@@ -1393,8 +1383,8 @@ Tcl_ReadCmd(dummy, interp, argc, argv)
 	    if (my_strncmp(argv[i+1], "nonewline", my_strlen(argv[i+1])) == 0) {
 		newline = 0;
 	    } else {
-		//Tcl_AppendResult(interp, "bad argument \"", argv[i+1],
-			//"\": should be \"nonewline\"", (char *) NULL);
+		  Tcl_AppendResult(interp, "bad argument \"", argv[i+1],
+			  "\": should be \"nonewline\"", (char *) NULL);
 		return TCL_ERROR;
 	    }
 	}
@@ -1531,8 +1521,8 @@ Tcl_SourceCmd(dummy, interp, argc, argv)
     char **argv;			/* Argument strings. */
 {
     if (argc != 2) {
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//" fileName\"", (char *) NULL);
+	  //Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		  //" fileName\"", (char *) NULL);
 	return TCL_ERROR;
     }
     return Tcl_EvalFile(interp, argv[1]);
@@ -1567,14 +1557,14 @@ Tcl_TellCmd(notUsed, interp, argc, argv)
     OpenFile *filePtr;
 
     if (argc != 2) {
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//" fileId\"", (char *) NULL);
+	  Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		  " fileId\"", (char *) NULL);
 	return TCL_ERROR;
     }
     if (TclGetOpenFile(interp, argv[1], &filePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    //sprintf(interp->result, "%d", ftell(filePtr->f));
+    sprintf(interp->result, "%d", ftell(filePtr->f));
 #endif
     return TCL_OK;
 }
@@ -1637,8 +1627,8 @@ Tcl_TimeCmd(dummy, interp, argc, argv)
 	if (result != TCL_OK) {
 	    if (result == TCL_ERROR) {
 		char msg[60];
-		//sprintf(msg, "\n    (\"time\" body line %d)",
-			//interp->errorLine);
+		sprintf(msg, "\n    (\"time\" body line %d)",
+			interp->errorLine);
 		Tcl_AddErrorInfo(interp, msg);
 	    }
 	    return result;
@@ -1654,7 +1644,7 @@ Tcl_TimeCmd(dummy, interp, argc, argv)
     timePer = (((double) (stop - start))*1000000.0)/CLK_TCK;
 #endif
     Tcl_ResetResult(interp);
-    //sprintf(interp->result, "%.0f microseconds per iteration", timePer/count);
+    sprintf(interp->result, "%.0f microseconds per iteration", timePer/count);
 #endif
     return TCL_OK;
 }
@@ -1680,7 +1670,7 @@ Tcl_TimeCmd(dummy, interp, argc, argv)
  *
  *----------------------------------------------------------------------
  */
-
+#if 0
 static int
 CleanupChildren(interp, numPids, pidPtr, errorId)
     Tcl_Interp *interp;		/* Used for error messages. */
@@ -1698,8 +1688,8 @@ CleanupChildren(interp, numPids, pidPtr, errorId)
     for (i = 0; i < numPids; i++) {
 	pid = Tcl_WaitPids(1, &pidPtr[i], (int *) &waitStatus);
 	if (pid == -1) {
-	    //Tcl_AppendResult(interp, "error waiting for process to exit: ",
-		    //Tcl_UnixError(interp), (char *) NULL);
+	    Tcl_AppendResult(interp, "error waiting for process to exit: ",
+		    Tcl_UnixError(interp), (char *) NULL);
 	    continue;
 	}
 
@@ -1714,32 +1704,32 @@ CleanupChildren(interp, numPids, pidPtr, errorId)
 	    char msg1[20], msg2[20];
 
 	    result = TCL_ERROR;
-	    //sprintf(msg1, "%d", pid);
+	    sprintf(msg1, "%d", pid);
 	    if (WIFEXITED(waitStatus)) {
-		//sprintf(msg2, "%d", WEXITSTATUS(waitStatus));
-		//Tcl_SetErrorCode(interp, "CHILDSTATUS", msg1, msg2,
-		//	(char *) NULL);
+		  sprintf(msg2, "%d", WEXITSTATUS(waitStatus));
+		  Tcl_SetErrorCode(interp, "CHILDSTATUS", msg1, msg2,
+		 	  (char *) NULL);
 	    } else if (WIFSIGNALED(waitStatus)) {
 		char *p;
 	
 		p = Tcl_SignalMsg((int) (WTERMSIG(waitStatus)));
-		//Tcl_SetErrorCode(interp, "CHILDKILLED", msg1,
-		//	Tcl_SignalId((int) (WTERMSIG(waitStatus))), p,
-		//	(char *) NULL);
-		//Tcl_AppendResult(interp, "child killed: ", p, "\n",
-			//(char *) NULL);
+		Tcl_SetErrorCode(interp, "CHILDKILLED", msg1,
+			Tcl_SignalId((int) (WTERMSIG(waitStatus))), p,
+			(char *) NULL);
+		Tcl_AppendResult(interp, "child killed: ", p, "\n",
+			(char *) NULL);
 	    } else if (WIFSTOPPED(waitStatus)) {
 		char *p;
 
 		p = Tcl_SignalMsg((int) (WSTOPSIG(waitStatus)));
-		//Tcl_SetErrorCode(interp, "CHILDSUSP", msg1,
-		//	Tcl_SignalId((int) (WSTOPSIG(waitStatus))), p, (char *) NULL);
-		//Tcl_AppendResult(interp, "child suspended: ", p, "\n",
-			//(char *) NULL);
+		Tcl_SetErrorCode(interp, "CHILDSUSP", msg1,
+			Tcl_SignalId((int) (WSTOPSIG(waitStatus))), p, (char *) NULL);
+		Tcl_AppendResult(interp, "child suspended: ", p, "\n",
+			(char *) NULL);
 	    } else {
-		//Tcl_AppendResult(interp,
-			//"child wait status didn't make sense\n",
-			//(char *) NULL);
+		Tcl_AppendResult(interp,
+			"child wait status didn't make sense\n",
+			(char *) NULL);
 	    }
 	}
     }
@@ -1771,9 +1761,9 @@ CleanupChildren(interp, numPids, pidPtr, errorId)
 	    }
 	    buffer[count] = 0;
 #endif
-	    //Tcl_AppendResult(interp, buffer, (char *) NULL);
+	    Tcl_AppendResult(interp, buffer, (char *) NULL);
 	}
-	//close(errorId);
+	close(errorId);
     }
 
     /*
@@ -1790,3 +1780,4 @@ CleanupChildren(interp, numPids, pidPtr, errorId)
 #endif
     return TCL_OK;
 }
+#endif

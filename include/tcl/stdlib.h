@@ -23,10 +23,9 @@
 #ifndef _STDLIB
 #define _STDLIB
 
-#include "tcl.h"
+#include <tcl/tcl.h>
 #include <sys/defs.h>
 
-//typedef int pid_t;
 typedef int uid_t;
 typedef int ino_t;
 

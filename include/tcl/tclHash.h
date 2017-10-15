@@ -20,7 +20,7 @@
 #define _TCLHASH
 
 #ifndef _TCL
-#include "tcl.h"
+#include <tcl/tcl.h>
 #endif
 
 /*

@@ -15,10 +15,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclParse.c,v 1.25 93/01/06 15:23:03 ouster Exp $ SPRITE (Berkeley)";
-#endif
-
 #include <tcl/tclInt.h>
 
 /*
@@ -99,8 +95,8 @@ char tclTypeTable[] = {
  * Function prototypes for procedures local to this file:
  */
 
-static char *	QuoteEnd _ANSI_ARGS_((char *string, int term));
-static char *	VarNameEnd _ANSI_ARGS_((char *string));
+//static char *	QuoteEnd _ANSI_ARGS_((char *string, int term));
+//static char *	VarNameEnd _ANSI_ARGS_((char *string));
 
 /*
  *----------------------------------------------------------------------
@@ -850,7 +846,7 @@ TclExpandParseValue(pvPtr, needed)
      * mark new buffer as malloc-ed.
      */
 
-    //memcpy((VOID *) new, (VOID *) pvPtr->buffer, pvPtr->next - pvPtr->buffer);
+    memcpy((VOID *) new, (VOID *) pvPtr->buffer, pvPtr->next - pvPtr->buffer);
     pvPtr->next = new + (pvPtr->next - pvPtr->buffer);
     if (pvPtr->clientData != 0) {
 	ckfree(pvPtr->buffer);
@@ -1005,6 +1001,7 @@ TclWordEnd(start, nested)
  *----------------------------------------------------------------------
  */
 
+#if 0
 static char *
 QuoteEnd(string, term)
     char *string;		/* Pointer to character just after opening
@@ -1012,7 +1009,6 @@ QuoteEnd(string, term)
     int term;			/* This character will terminate the
 				 * quoted string (e.g. '"' or ')'). */
 {
-#if 0
     register char *p = string;
     int count;
 
@@ -1041,9 +1037,9 @@ QuoteEnd(string, term)
 	}
     }
     return p-1;
-#endif
     return NULL;
 }
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -1065,11 +1061,11 @@ QuoteEnd(string, term)
  *----------------------------------------------------------------------
  */
 
+#if 0
 static char *
 VarNameEnd(string)
     char *string;		/* Pointer to dollar-sign character. */
 {
-#if 0
     register char *p = string+1;
 
     if (*p == '{') {
@@ -1085,9 +1081,9 @@ VarNameEnd(string)
 	return QuoteEnd(p+1, ')');
     }
     return p-1;
-#endif
     return NULL;
 }
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -1189,8 +1185,8 @@ Tcl_ParseVar(interp, string, termPtr)
 	    if (TclParseQuotes(interp, string+1, ')', 0, &end, &pv)
 		    != TCL_OK) {
 		char msg[100];
-		//sprintf(msg, "\n    (parsing index for array \"%.*s\")",
-			//string-name1, name1);
+		sprintf(msg, "\n    (parsing index for array \"%.*s\")",
+			string-name1, name1);
 		Tcl_AddErrorInfo(interp, msg);
 		result = NULL;
 		name2 = pv.buffer;

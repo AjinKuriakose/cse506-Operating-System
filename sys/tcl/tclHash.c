@@ -14,10 +14,6 @@
  * express or implied warranty.
  */
 
-//#ifndef lint
-//static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclHash.c,v 1.10 92/08/21 14:13:20 ouster Exp $ SPRITE (Berkeley)";
-//#endif /* not lint */
-
 #include <tcl/tclInt.h>
 
 /*
@@ -344,7 +340,6 @@ Tcl_HashStats(tablePtr)
      */
 
     result = (char *) ckalloc((unsigned) ((NUM_COUNTERS*60) + 300));
-    /*
     sprintf(result, "%d entries in table, %d buckets\n",
 	    tablePtr->numEntries, tablePtr->numBuckets);
     p = result + my_strlen(result);
@@ -357,7 +352,6 @@ Tcl_HashStats(tablePtr)
 	    NUM_COUNTERS, overflow);
     p += my_strlen(p);
     sprintf(p, "average search distance for entry: %.1f", average);
-    */
     return result;
 #endif
     return NULL;

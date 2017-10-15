@@ -14,10 +14,6 @@
  * express or implied warranty.
  */
 
-#ifndef lint
-static char rcsid[] = "$Header: /user6/ouster/tcl/RCS/tclGlob.c,v 1.26 92/12/23 11:33:18 ouster Exp $ SPRITE (Berkeley)";
-#endif /* not lint */
-
 #include <tcl/tclInt.h>
 #include <tcl/tclUnix.h>
 
@@ -42,11 +38,13 @@ typedef struct {
  * Declarations for procedures local to this file:
  */
 
+#if 0
 static void		AppendResult _ANSI_ARGS_((Tcl_Interp *interp,
 			    char *dir, char *separator, char *name,
 			    int nameLength));
 static int		DoGlob _ANSI_ARGS_((Tcl_Interp *interp, char *dir,
 			    char *rem));
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -66,6 +64,7 @@ static int		DoGlob _ANSI_ARGS_((Tcl_Interp *interp, char *dir,
  *----------------------------------------------------------------------
  */
 
+#if 0
 static void
 AppendResult(interp, dir, separator, name, nameLength)
     Tcl_Interp *interp;		/* Interpreter whose result should be
@@ -78,7 +77,6 @@ AppendResult(interp, dir, separator, name, nameLength)
 				 * necessarily null-terminated!). */
     int nameLength;		/* Number of characters in name. */
 {
-#if 0
     int dirFlags, nameFlags;
     char *p, saved;
 
@@ -97,9 +95,9 @@ AppendResult(interp, dir, separator, name, nameLength)
     Tcl_ScanElement(name, &nameFlags);
     if ((dirFlags == 0) && (nameFlags == 0)) {
 	if (*interp->result != 0) {
-	    //Tcl_AppendResult(interp, " ", dir, separator, name, (char *) NULL);
+	    Tcl_AppendResult(interp, " ", dir, separator, name, (char *) NULL);
 	} else {
-	    //Tcl_AppendResult(interp, dir, separator, name, (char *) NULL);
+	    Tcl_AppendResult(interp, dir, separator, name, (char *) NULL);
 	}
 	name[nameLength] = saved;
 	return;
@@ -113,12 +111,12 @@ AppendResult(interp, dir, separator, name, nameLength)
 
     p = (char *) ckalloc((unsigned) (my_strlen(dir) + my_strlen(separator)
 	    + nameLength + 1));
-    //sprintf(p, "%s%s%s", dir, separator, name);
+    sprintf(p, "%s%s%s", dir, separator, name);
     name[nameLength] = saved;
     Tcl_AppendElement(interp, p, 0);
     ckfree(p);
-#endif
 }
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -142,6 +140,7 @@ AppendResult(interp, dir, separator, name, nameLength)
  *----------------------------------------------------------------------
  */
 
+#if 0
 static int
 DoGlob(interp, dir, rem)
     Tcl_Interp *interp;			/* Interpreter to use for error
@@ -152,7 +151,6 @@ DoGlob(interp, dir, rem)
 					 * globbing chars. */
     char *rem;				/* Path to glob-expand. */
 {
-#if 0
     /*
      * When this procedure is entered, the name to be globbed may
      * already have been partly expanded by ancestor invocations of
@@ -287,8 +285,8 @@ DoGlob(interp, dir, rem)
 	d = opendir(dirName);
 	if (d == NULL) {
 	    Tcl_ResetResult(interp);
-	    //Tcl_AppendResult(interp, "couldn't read directory \"",
-		    //dirName, "\": ", Tcl_UnixError(interp), (char *) NULL);
+	    Tcl_AppendResult(interp, "couldn't read directory \"",
+		    dirName, "\": ", Tcl_UnixError(interp), (char *) NULL);
 	    return TCL_ERROR;
 	}
 	l1 = my_strlen(dir);
@@ -326,7 +324,7 @@ DoGlob(interp, dir, rem)
 		    } else {
 			newDir = (char *) ckalloc((unsigned) (l1+nameLength+2));
 		    }
-		    //sprintf(newDir, "%s%s%s", dir, separator, entryPtr->d_name);
+		    sprintf(newDir, "%s%s%s", dir, separator, entryPtr->d_name);
 		    result = DoGlob(interp, newDir, p+1);
 		    if (newDir != static1) {
 			ckfree(newDir);
@@ -364,7 +362,7 @@ DoGlob(interp, dir, rem)
 	} else {
 	    newDir = (char *) ckalloc((unsigned) l2);
 	}
-	//sprintf(newDir, "%s%s%.*s", dir, separator, p-rem, rem);
+	sprintf(newDir, "%s%s%.*s", dir, separator, p-rem, rem);
 	result = DoGlob(interp, newDir, p+1);
 	if (newDir != static1) {
 	    ckfree(newDir);
@@ -373,9 +371,9 @@ DoGlob(interp, dir, rem)
 	    return TCL_ERROR;
 	}
     }
-#endif
     return TCL_OK;
 }
+#endif
 
 /*
  *----------------------------------------------------------------------
@@ -446,7 +444,7 @@ Tcl_TildeSubst(interp, name)
 	if (length >= curSize) {
 	    length = curSize-1;
 	}
-	//memcpy((VOID *) curBuf, (VOID *) (name+1), length);
+	memcpy((VOID *) curBuf, (VOID *) (name+1), length);
 	curBuf[length] = '\0';
 	pwPtr = getpwnam(curBuf);
 	if (pwPtr == NULL) {
@@ -482,7 +480,7 @@ Tcl_TildeSubst(interp, name)
     my_strcpy(curBuf, dir);
     strcat(curBuf, p);
     if (fromPw) {
-	//endpwent();
+	endpwent();
     }
     return curBuf;
 #endif
@@ -519,8 +517,8 @@ Tcl_GlobCmd(dummy, interp, argc, argv)
 
     if (argc < 2) {
 	notEnoughArgs:
-	//Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
-		//" ?-nocomplain? name ?name ...?\"", (char *) NULL);
+	Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		" ?-nocomplain? name ?name ...?\"", (char *) NULL);
 	return TCL_ERROR;
     }
     noComplain = 0;
@@ -558,13 +556,13 @@ Tcl_GlobCmd(dummy, interp, argc, argv)
     if ((*interp->result == 0) && !noComplain) {
 	char *sep = "";
 
-	//Tcl_AppendResult(interp, "no files matched glob pattern",
-		//(argc == 2) ? " \"" : "s \"", (char *) NULL);
+	Tcl_AppendResult(interp, "no files matched glob pattern",
+		(argc == 2) ? " \"" : "s \"", (char *) NULL);
 	for (i = 1; i < argc; i++) {
-	    //Tcl_AppendResult(interp, sep, argv[i], (char *) NULL);
+	    Tcl_AppendResult(interp, sep, argv[i], (char *) NULL);
 	    sep = " ";
 	}
-	//Tcl_AppendResult(interp, "\"", (char *) NULL);
+	Tcl_AppendResult(interp, "\"", (char *) NULL);
 	return TCL_ERROR;
     }
 #endif

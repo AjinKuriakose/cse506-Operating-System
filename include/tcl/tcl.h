@@ -19,7 +19,7 @@
 #ifndef _TCL
 #define _TCL
 
-#include "stdlib.h"
+#include <tcl/stdlib.h>
 
 #define TCL_VERSION "6.7"
 #define TCL_MAJOR_VERSION 6
@@ -70,9 +70,9 @@
  * without the rest of Sprite).
  */
 
-#ifndef NULL
-#define NULL 0
-#endif
+//#ifndef NULL
+//#define NULL 0
+//#endif
 
 #ifndef _CLIENTDATA
 typedef int *ClientData;
