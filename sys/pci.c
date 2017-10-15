@@ -115,14 +115,17 @@ void read_from_disk(hba_mem_t *abar) {
   memset((void *)buf_ptr, 0, 4096);
   read_port(&abar->ports[sata_drive_portno], 1 * 8, 0, 8, (uint16_t *)buf_ptr);
   kprintf("Value read from Block   1 : [  %d]\n", *(buf_ptr));
+  kprintf("Value read from Block   1 : [  %d]\n", *(buf_ptr+ 4095));
 
   memset((void *)buf_ptr, 0, 4096);
   read_port(&abar->ports[sata_drive_portno], 50 * 8, 0, 8, (uint16_t *)buf_ptr);
   kprintf("Value read from Block  50 : [ %d]\n", *(buf_ptr));
+  kprintf("Value read from Block  50 : [ %d]\n", *(buf_ptr + 4095));
 
   memset((void *)buf_ptr, 0, 4096);
   read_port(&abar->ports[sata_drive_portno], 100 * 8, 0, 8, (uint16_t *)buf_ptr);
   kprintf("Value read from Block 100 : [%d]\n", *(buf_ptr));
+  kprintf("Value read from Block 100 : [%d]\n", *(buf_ptr + 4095));
 }
 
 /*
@@ -142,7 +145,33 @@ void checkAllBuses(void) {
   /* Write-Read to/from the last found SATA drive */
   if (sata_drive_portno != -1) {
 
-    start_cmd(&ahci_bar_sata->ports[sata_drive_portno]);	// Start command engine
+    hba_mem_t *abar = ahci_bar_sata;
+    int portno = sata_drive_portno;
+
+    set_ghc_ports(abar);
+
+    stop_cmd(&abar->ports[portno]);
+
+    port_rebase(&abar->ports[portno], portno);
+
+    abar->ports[portno].sctl = 0x301;   // IPM and DET
+    delay();
+
+    abar->ports[portno].sctl = 0x300;   // IPM and DET
+    delay();
+
+    if (abar->cap & HBA_MEM_CAP_SSS) {
+      abar->ports[portno].cmd |= (HBA_PxCMD_SUD | HBA_PxCMD_POD | HBA_PxCMD_ICC);
+      delay();
+    }
+
+    abar->ports[portno].serr_rwc = 0xFFFFFFFF;
+    delay();
+
+    abar->ports[portno].is_rwc = 0xFFFFFFFF;
+    delay();
+
+    start_cmd(&abar->ports[portno]);	  // Start command engine
 
     write_to_disk(ahci_bar_sata);
     read_from_disk(ahci_bar_sata);
@@ -228,19 +257,19 @@ void check_ahci_device(hba_mem_t *abar) {
         ahci_bar_sata = abar;
         sata_drive_portno = i;
 
-        kprintf("SATA drive found at port %d\n", i);
+        kprintf("SATA drive found at port: %d\n", i);
 
       } else if (dt == AHCI_DEV_SATAPI) {
-        kprintf("SATAPI drive found at port %d\n", i);
+        kprintf("SATAPI drive found at port: %d\n", i);
 
       } else if (dt == AHCI_DEV_SEMB) {
-        kprintf("SEMB drive found at port %d\n", i);
+        kprintf("SEMB drive found at port: %d\n", i);
 
       } else if (dt == AHCI_DEV_PM) {
-        kprintf("PM drive found at port %d\n", i);
+        kprintf("PM drive found at port: %d\n", i);
 
       } else {
-        /* kprintf("No drive found at port %d\n", i); */
+        /* kprintf("No drive found at port: %d\n", i); */
       }
     }
 
@@ -256,7 +285,7 @@ static int check_type(hba_mem_t *abar, int portno) {
 
   stop_cmd(&abar->ports[portno]);
 
-  port_rebase(&abar->ports[portno], 0);
+  port_rebase(&abar->ports[portno], portno);
 
   abar->ports[portno].sctl = 0x301;   // IPM and DET
   delay();
