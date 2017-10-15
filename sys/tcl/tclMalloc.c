@@ -1,11 +1,21 @@
 #include <tcl/stdlib.h>
-//#include <stdlib.h>
+#include <sys/kprintf.h>
+
+extern uint32_t *loader_stack;
 
 void *Tcl_Malloc(int size) {
 
-  /* AMD TODO : Implement malloc */
-  //return malloc(size);
+  static void *physfree = NULL;
+  static int i = 0;
 
-  return NULL;
+  if (i == 0) {
+    physfree = (uint64_t *)(uint64_t)loader_stack[4];
+  }
+
+  void *tmp = physfree;  
+  physfree += size;
+
+  i++;
+  return tmp;
 }
 
