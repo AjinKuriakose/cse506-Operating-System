@@ -1,7 +1,7 @@
 include Makefile.config
 
 CC=gcc
-CFLAGS=-O1 -std=c99 -Wall -Werror -fPIC -march=amdfam10 -g3 -Wno-deprecated-declarations -D_XOPEN_SOURCE=600
+CFLAGS=-O1 -std=c99 -Wall -fPIC -march=amdfam10 -g3 -Wno-deprecated-declarations -D_XOPEN_SOURCE=600
 CFLAGS_FULL=-nostdinc -Iinclude -msoft-float -mno-sse -mno-red-zone -fno-builtin -fno-stack-protector
 LD=ld
 LDLAGS=-nostdlib
@@ -13,6 +13,7 @@ ROOTLIB=$(ROOTFS)/lib
 ROOTBOOT=$(ROOTFS)/boot
 
 KERN_SRCS:=$(wildcard sys/*.c sys/*.s sys/*/*.c sys/*/*.s)
+#TCL_SRCS:=$(wildcard tcl/*.c tcl/*.s)
 BIN_SRCS:=$(wildcard bin/*/*.c)
 LIBC_SRCS:=$(wildcard libc/*.c libc/*.s libc/*/*.c libc/*/*.s)
 LD_SRCS:=$(wildcard ld/*.c)
@@ -98,5 +99,5 @@ clean:
 
 SUBMITTO=/submit
 submit: clean $(USER)-data.img
-	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ LICENSE README Makefile Makefile.config sys bin crt libc include $(ROOTFS) $(USER)-data.img
+	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ LICENSE README Makefile Makefile.config sys tcl bin crt libc include $(ROOTFS) $(USER)-data.img
 	mv -v $(USER).tgz $(SUBMITTO)/$(USER)-$(ASSIGNMENT)=`date +%F=%T`.tgz
