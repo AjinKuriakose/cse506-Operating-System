@@ -7,9 +7,13 @@
 #include <sys/ahci.h>
 #include <sys/pci.h>
 #include <tcl/tcl.h>
+#include <sys/pmm.h>
 
 #define INITIAL_STACK_SIZE 4096
+
 uint8_t initial_stack[INITIAL_STACK_SIZE]__attribute__((aligned(16)));
+phys_block_t phys_blocks[MAX_NUM_PHYS_BLOCKS];
+
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 
@@ -25,6 +29,10 @@ void tcltest() {
 
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
+  
+  init_pmm(modulep, physbase, physfree);
+
+#if 0 
   struct smap_t {
     uint64_t base, length;
     uint32_t type;
@@ -35,7 +43,10 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
       kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
     }
   }
+#endif
+
   kprintf("physfree %p\n", (uint64_t)physfree);
+  kprintf("physbase %p\n", (uint64_t)physbase);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   
   init_idt();
