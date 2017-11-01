@@ -8,6 +8,7 @@
 #include <sys/pci.h>
 #include <tcl/tcl.h>
 #include <sys/pmm.h>
+#include <sys/vmm.h>
 
 #define INITIAL_STACK_SIZE 4096
 
@@ -31,6 +32,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 {
   
   init_pmm(modulep, physbase, physfree);
+  //init_paging((uint64_t)physbase, (uint64_t)physfree);
+  init_paging(0, (uint64_t)physfree);
 
 #if 0 
   struct smap_t {
@@ -45,6 +48,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   }
 #endif
 
+#if 0
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("physbase %p\n", (uint64_t)physbase);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
@@ -58,7 +62,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   tcltest();
   checkAllBuses();  
-
+#endif
   while(1) __asm__ volatile ("hlt");
 }
 

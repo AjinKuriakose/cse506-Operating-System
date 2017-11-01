@@ -104,7 +104,7 @@ void update_phys_blocks(uint64_t start_addr, uint64_t end_addr) {
 void mark_kernel_blocks(void *physbase, void *physfree) {
   
   uint32_t i = 0;
-  uint32_t start_index = (uint64_t)physbase/ BLOCK_SIZE;
+  uint32_t start_index = (uint64_t)physbase / BLOCK_SIZE;
   uint32_t end_index = (uint64_t)physfree / BLOCK_SIZE;
   if ((uint64_t)physfree && !((uint64_t)physfree % BLOCK_SIZE))
     end_index--;
@@ -139,6 +139,7 @@ void init_pmm(uint32_t *modulep, void *physbase, void *physfree) {
     }
   }
 
-  mark_kernel_blocks(physbase, physfree); 
+  //mark_kernel_blocks(physbase, physfree); 
+  mark_kernel_blocks(0 , physfree); 
 }
 
