@@ -10,10 +10,10 @@
 
 #define PAGE_SIZE    4096
 
-#define PAGE_PML4_INDEX(x)  ((x >> 39) & 0x1FF)
-#define PAGE_PDP_INDEX(x)   ((x >> 30) & 0x1FF)
-#define PAGE_PD_INDEX(x)    ((x >> 21) & 0x1FF)
-#define PAGE_PT_INDEX(x)    ((x >> 12) & 0x1FF)
+#define PAGE_PML4_INDEX(x)  (((x) >> 39) & 0x1FF)
+#define PAGE_PDP_INDEX(x)   (((x) >> 30) & 0x1FF)
+#define PAGE_PD_INDEX(x)    (((x) >> 21) & 0x1FF)
+#define PAGE_PT_INDEX(x)    (((x) >> 12) & 0x1FF)
 #define PAGE_OFFSET(x)      (x & 0xFFF)
 
 #define PTE_PRESENT   0x1
@@ -56,38 +56,29 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
   pd_t    *pd; 
   pt_t    *pt; 
 
-  uint64_t v_addr = (uint64_t)&kernmem;
-  uint64_t p_free = physfree;
   uint64_t p_base = physbase;
-
-  uint64_t pml4_index = PAGE_PML4_INDEX(v_addr);
-  uint64_t pdp_index  = PAGE_PDP_INDEX(v_addr);
-  uint64_t pd_index   = PAGE_PD_INDEX(v_addr);
+  uint64_t p_free = physfree;
+  uint64_t v_addr = (uint64_t)&kernmem;
 
   /* Allocate memory for pml4 table */
   pml4 = (pml4_t *)alloc_block();
 
   /* Allocate and insert pdp table entry in pml4 table */
   pdp = (pdp_t *)alloc_block();
-  pdp = (pdp_t *)((uint64_t)pdp | (PTE_PRESENT | PTE_WRITABLE | PTE_USER));
-  pml4->pml4_entries[pml4_index] = (uint64_t)pdp;
+  pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | (PTE_PRESENT | PTE_WRITABLE | PTE_USER));
   
   /* Allocate and insert page directory entry in pdp table */
   pd = (pd_t *)alloc_block();
-  pd = (pd_t *)((uint64_t)pd | (PTE_PRESENT | PTE_WRITABLE | PTE_USER));
-  pdp->pdp_entries[pdp_index] = (uint64_t)pd;
+  pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | (PTE_PRESENT | PTE_WRITABLE | PTE_USER));
 
   /* Allocate and insert page table entry in page directory */
   pt = (pt_t *)alloc_block();
-  pt = (pt_t *)((uint64_t)pt | (PTE_PRESENT | PTE_WRITABLE | PTE_USER));
-  pd->pd_entries[pd_index] = (uint64_t)pt;
+  pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | (PTE_PRESENT | PTE_WRITABLE | PTE_USER));
 
-  for (; p_base < p_free; p_base += 4096, v_addr += 4096) {
-
-    uint64_t pt_index = PAGE_PT_INDEX(v_addr);
-    uint64_t entry = p_base;
-    entry |= (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
-    pt->pt_entries[pt_index] = entry;
+  while (p_base < p_free) {
+    pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_base | (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
+    p_base += 4096;
+    v_addr += 4096;
   }
 
   enable_paging(pml4);
