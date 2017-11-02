@@ -35,6 +35,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //init_paging((uint64_t)physbase, (uint64_t)physfree);
   init_paging(0, (uint64_t)physfree);
 
+
 #if 0 
   struct smap_t {
     uint64_t base, length;
@@ -48,7 +49,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   }
 #endif
 
-#if 0
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("physbase %p\n", (uint64_t)physbase);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
@@ -60,9 +60,11 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
     "sti;"
   );
 
+#if 0
   tcltest();
   checkAllBuses();  
 #endif
+
   while(1) __asm__ volatile ("hlt");
 }
 
@@ -71,7 +73,7 @@ void boot(void)
   // note: function changes rsp, local stack variables can't be practically used
   register char *temp1, *temp2;
 
-  for(temp1=(char *)0xb8000, temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2, temp1 += 2) {
+  for(temp1=(char *)VIDEO_VIRT_MEM_BEGIN, temp2 = (char*)(VIDEO_VIRT_MEM_BEGIN + 1); temp2 < (char*)VIDEO_VIRT_MEM_BEGIN+160*25; temp2 += 2, temp1 += 2) {
 	*temp2 = 7 /* white */;
 	*temp1 =' ';
   }
@@ -89,7 +91,7 @@ void boot(void)
     (uint64_t*)(uint64_t)loader_stack[4]
   );
   for(
-    temp1 = "!!!!! start() returned !!!!!", temp2 = (char*)0xb8000;
+    temp1 = "!!!!! start() returned !!!!!", temp2 = (char*)VIDEO_VIRT_MEM_BEGIN;
     *temp1;
     temp1 += 1, temp2 += 2
   ) *temp2 = *temp1;

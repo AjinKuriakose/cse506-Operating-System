@@ -143,7 +143,7 @@ void display_glyph(unsigned char glyph, int is_ctrl_char) {
   unsigned char sbuff[6] = {0};
   unsigned char *c;
   int i = 0;
-  char *temp = (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH * SCREEN_HEIGHT - 10;
+  char *temp = (char *)VIDEO_VIRT_MEM_BEGIN + SCREEN_WIDTH * SCREEN_HEIGHT - 10;
   clear_chars(temp, 10);
   
   sbuff[0] = '[';

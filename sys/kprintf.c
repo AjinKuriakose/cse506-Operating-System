@@ -6,11 +6,11 @@ void display(const char *fmt) {
   static int row = 1;
   static int col = 1;
   char *c;
-  static char *temp = (char *)VIDEO_MEM_BEGIN;
+  static char *temp = (char *)VIDEO_VIRT_MEM_BEGIN;
 
   for (c = (char *)fmt; *c; c += 1, temp += CHAR_WIDTH) {
     if (row > 23) {
-      memcpy((char *)VIDEO_MEM_BEGIN, (char *)VIDEO_MEM_BEGIN + SCREEN_WIDTH, 3620);
+      memcpy((char *)VIDEO_VIRT_MEM_BEGIN, (char *)VIDEO_VIRT_MEM_BEGIN + SCREEN_WIDTH, 3620);
       temp -= SCREEN_WIDTH;
       clear_chars(temp, SCREEN_WIDTH);
       row = 23;
