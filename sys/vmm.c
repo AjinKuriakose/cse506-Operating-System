@@ -8,8 +8,6 @@
 #define PD_SIZE      512
 #define PT_SIZE      512
 
-#define PAGE_SIZE    4096
-
 #define PAGE_PML4_INDEX(x)            ((x >> 39) & 0x1FF)
 #define PAGE_PDP_INDEX(x)             ((x >> 30) & 0x1FF)
 #define PAGE_PD_INDEX(x)              ((x >> 21) & 0x1FF)
@@ -22,6 +20,12 @@
 #define PTE_USER      0x4
 
 extern char kernmem;
+
+/* Virtual address to be returned for the next page alloc request after validation */
+uint64_t    virt_addr;
+
+/* Last valid virtual address as per the mapping done in create_full_virt_phys_map */
+uint64_t    virt_addr_end;
 
 typedef struct pml4_t {
     uint64_t pml4_entries[PML4_SIZE];
@@ -56,6 +60,11 @@ void page_fault_handler() {
   kprintf("Inside page_fault_handler\n");
 }
 
+/*
+ * Map the given virtual and physical addresses
+ * PDP, PD and PT entries corresponding to the virtual address
+ * are created if they are not already present
+ */
 void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
 
   pdp_t   *pdp; 
@@ -72,7 +81,7 @@ void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
   if (pdp_addr & PTE_PRESENT)
     pdp = (pdp_t *)PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr);
   else
-    pdp = (pdp_t *)alloc_block();
+    pdp = (pdp_t *)pmm_alloc_block();
     pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
 
   /* Get pdp entry using virtual address. If not present, create */
@@ -80,7 +89,7 @@ void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
   if (pd_addr & PTE_PRESENT)
     pd = (pd_t *)PAGE_GET_PHYSICAL_ADDRESS(&pd_addr);
   else
-    pd = (pd_t *)alloc_block();
+    pd = (pd_t *)pmm_alloc_block();
     pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
    
   /* Get pd entry using virtual address. If not present, create */
@@ -88,11 +97,38 @@ void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
   if (pt_addr & PTE_PRESENT)
     pt = (pt_t *)PAGE_GET_PHYSICAL_ADDRESS(&pt_addr);
   else
-    pt = (pt_t *)alloc_block();
+    pt = (pt_t *)pmm_alloc_block();
     pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
 
   /* Update pt entry with the provided physical address */
   pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
+}
+
+void create_video_memory_map() {
+
+  virt_phys_map(VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
+}
+
+/* 
+ * Create the complete virtual to physical address mappings
+ * Page tables populated for all the available physical memory
+ * Call virt_phys_map for mapping the virtual and physical addresses.
+ */
+void create_full_virt_phys_map() {
+  uint64_t v_addr = VIRT_ADDR_BASE;
+  uint64_t p_addr = pmm_alloc_block();
+  virt_addr       = VIRT_ADDR_BASE;
+  virt_addr_end   = VIRT_ADDR_BASE;
+
+  while (p_addr != -1) {
+    virt_phys_map(v_addr, p_addr);
+
+    v_addr += VIRT_PAGE_SIZE;
+    p_addr = pmm_alloc_block();
+  }
+
+  virt_addr_end   = v_addr;
+  kprintf("AMD : V_ADDR_BEG [%p], V_ADDR_END [%p]\n", virt_addr, virt_addr_end);
 }
 
 void init_paging(uint64_t physbase, uint64_t physfree) {
@@ -107,46 +143,54 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
   uint64_t  set_flags_PWU = (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
 
   /* Allocate memory for pml4 table */
-  pml4 = (pml4_t *)alloc_block();
+  pml4 = (pml4_t *)pmm_alloc_block();
 
   /* Allocate and insert pdp table entry in pml4 table */
-  pdp = (pdp_t *)alloc_block();
+  pdp = (pdp_t *)pmm_alloc_block();
   pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
   
   /* Allocate and insert page directory entry in pdp table */
-  pd = (pd_t *)alloc_block();
+  pd = (pd_t *)pmm_alloc_block();
   pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
 
   /* Allocate and insert page table entry in page directory */
-  pt = (pt_t *)alloc_block();
+  pt = (pt_t *)pmm_alloc_block();
   pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
 
   while (p_base < p_free) {
     pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_base | set_flags_PWU;
-    p_base += 4096;
-    v_addr += 4096;
+    p_base += PHYS_BLOCK_SIZE;
+    v_addr += VIRT_PAGE_SIZE;
   }
 
-  virt_phys_map(VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
+  create_video_memory_map();
+
+  create_full_virt_phys_map();
 
   enable_paging(pml4);
 }
 
-#if 0
-void vmm_alloc_page(uint64_t pt_entry) {
+/* Return the address of a page(virtual address)
+ * The actual physical block allocation is already done
+ * by create_full_virt_phys_map(). 
+ * So, simply return the address of the next page
+ */
+uint64_t vmm_alloc_page() {
 
-  /* allocate a physical memory block */
-  uint64_t block = alloc_block();
-  //if(!block)
+  uint64_t  v_addr = -1;
 
-  /* map this block to a page */
+  /* allocate a virtual page */
+  if (virt_addr < virt_addr_end) {
+    v_addr = virt_addr;
+    virt_addr += VIRT_PAGE_SIZE;
+  }
 
-
+  return v_addr;
 }
 
-void vmm_dealloc_page(uint64_t entry) {
-
-  dealloc_block();
+#if 0
+void vmm_dealloc_page(uint64_t v_addr) {
 
 }
 #endif
+

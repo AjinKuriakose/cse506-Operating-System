@@ -2,12 +2,9 @@
 #include <sys/pmm.h>
 #include <sys/kprintf.h>
 
-#define BLOCK_SIZE  4096
-
 phys_block_t *free_list = NULL;
 phys_block_t *used_list = NULL;
 phys_block_t *free_list_tail = NULL; /* Connect e820 returned phys mem chunks */
-
 
 void print_list(phys_block_t *list) {
   int i = 0;
@@ -18,7 +15,7 @@ void print_list(phys_block_t *list) {
   kprintf("i = %d\n", i);
 }
 
-uint64_t alloc_block() {
+uint64_t pmm_alloc_block() {
 
   uint32_t block_index; 
 
@@ -34,12 +31,12 @@ uint64_t alloc_block() {
 
   /* Getting the index of free block using array base address */
   block_index = free_block - phys_blocks;
-  return (uint64_t)(block_index * BLOCK_SIZE);
+  return (uint64_t)(block_index * PHYS_BLOCK_SIZE);
 }
 
-void dealloc_block(uint64_t phys_addr) {
+void pmm_dealloc_block(uint64_t phys_addr) {
 
-  uint32_t index = phys_addr / BLOCK_SIZE;
+  uint32_t index = phys_addr / PHYS_BLOCK_SIZE;
   
   if (used_list == &phys_blocks[index]) {
     used_list = used_list->next;
@@ -69,9 +66,9 @@ void dealloc_block(uint64_t phys_addr) {
 void update_phys_blocks(uint64_t start_addr, uint64_t end_addr) {
 
   uint32_t i = 0;
-  uint32_t start_index = start_addr / BLOCK_SIZE;
-  uint32_t end_index = end_addr / BLOCK_SIZE;
-  if (end_addr && !(end_addr % BLOCK_SIZE))
+  uint32_t start_index = start_addr / PHYS_BLOCK_SIZE;
+  uint32_t end_index = end_addr / PHYS_BLOCK_SIZE;
+  if (end_addr && !(end_addr % PHYS_BLOCK_SIZE))
     end_index--;
 
   /* while connecting chunks, tail is updated to the first block 
@@ -104,9 +101,9 @@ void update_phys_blocks(uint64_t start_addr, uint64_t end_addr) {
 void mark_kernel_blocks(void *physbase, void *physfree) {
   
   uint32_t i = 0;
-  uint32_t start_index = (uint64_t)physbase / BLOCK_SIZE;
-  uint32_t end_index = (uint64_t)physfree / BLOCK_SIZE;
-  if ((uint64_t)physfree && !((uint64_t)physfree % BLOCK_SIZE))
+  uint32_t start_index = (uint64_t)physbase / PHYS_BLOCK_SIZE;
+  uint32_t end_index = (uint64_t)physfree / PHYS_BLOCK_SIZE;
+  if ((uint64_t)physfree && !((uint64_t)physfree % PHYS_BLOCK_SIZE))
     end_index--;
 
   while (phys_blocks[i].next != &phys_blocks[start_index]) {
@@ -120,7 +117,6 @@ void mark_kernel_blocks(void *physbase, void *physfree) {
 
 /*
  * initialize physical memory manager.
- * 
  */
 void init_pmm(uint32_t *modulep, void *physbase, void *physfree) {
 
@@ -134,12 +130,11 @@ void init_pmm(uint32_t *modulep, void *physbase, void *physfree) {
   for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
     if (smap->type == 1 /* memory */ && smap->length != 0) {
 		  i++;	
-      //kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
+      kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
       update_phys_blocks(smap->base, smap->base + smap->length);
     }
   }
 
-  //mark_kernel_blocks(physbase, physfree); 
-  mark_kernel_blocks(0 , physfree); 
+  mark_kernel_blocks(physbase, physfree); 
 }
 
