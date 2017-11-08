@@ -3,11 +3,6 @@
 #include <sys/pmm.h>
 #include <sys/kprintf.h>
 
-#define PML4_SIZE    512
-#define PDP_SIZE     512
-#define PD_SIZE      512
-#define PT_SIZE      512
-
 #define PAGE_PML4_INDEX(x)            ((x >> 39) & 0x1FF)
 #define PAGE_PDP_INDEX(x)             ((x >> 30) & 0x1FF)
 #define PAGE_PD_INDEX(x)              ((x >> 21) & 0x1FF)
@@ -18,6 +13,7 @@
 #define PTE_PRESENT   0x1
 #define PTE_WRITABLE  0x2
 #define PTE_USER      0x4
+#define PWU_FLAG      (PTE_PRESENT | PTE_WRITABLE | PTE_USER)
 
 extern char kernmem;
 
@@ -26,22 +22,6 @@ uint64_t    virt_addr;
 
 /* Last valid virtual address as per the mapping done in create_full_virt_phys_map */
 uint64_t    virt_addr_end;
-
-typedef struct pml4_t {
-    uint64_t pml4_entries[PML4_SIZE];
-} pml4_t;
-
-typedef struct pdp_t {
-    uint64_t pdp_entries[PDP_SIZE];
-} pdp_t;
-
-typedef struct pd_t {
-    uint64_t pd_entries[PD_SIZE];
-} pd_t;
-
-typedef struct pt_t {
-    uint64_t pt_entries[PT_SIZE];
-} pt_t;
 
 uint64_t current_cr3;
 pml4_t  *pml4; 
@@ -115,8 +95,10 @@ void create_video_memory_map() {
  * Call virt_phys_map for mapping the virtual and physical addresses.
  */
 void create_full_virt_phys_map() {
+
   uint64_t v_addr = VIRT_ADDR_BASE;
   uint64_t p_addr = pmm_alloc_block();
+
   virt_addr       = VIRT_ADDR_BASE;
   virt_addr_end   = VIRT_ADDR_BASE;
 
@@ -133,12 +115,26 @@ void create_full_virt_phys_map() {
 
 void init_paging(uint64_t physbase, uint64_t physfree) {
 
+  setup_four_level_paging(physbase, physfree);
+
+  create_video_memory_map();
+
+  create_full_virt_phys_map();
+
+  enable_paging(pml4);
+}
+
+/*
+ * Allocate the initial four level
+ * paging tables. PML4, PDP, PD and PT
+ * Then remap kernel to higher range address
+ */
+void setup_four_level_paging(uint64_t physbase, uint64_t physfree) {
+
   pdp_t   *pdp; 
   pd_t    *pd; 
   pt_t    *pt; 
 
-  uint64_t  p_base = physbase;
-  uint64_t  p_free = physfree;
   uint64_t  v_addr = (uint64_t)&kernmem;
   uint64_t  set_flags_PWU = (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
 
@@ -157,17 +153,25 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
   pt = (pt_t *)pmm_alloc_block();
   pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
 
+  remap_kernel(pt, physbase, physfree);
+  
+}
+
+/*
+ * Remapping kernel to higher order address
+ * starting from physbase - physfree
+ *
+ */
+void remap_kernel(pt_t *pt, uint64_t p_base, uint64_t p_free){
+
+  uint64_t  v_addr = (uint64_t)&kernmem;
+  
   while (p_base < p_free) {
-    pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_base | set_flags_PWU;
+    pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_base | PWU_FLAG;
     p_base += PHYS_BLOCK_SIZE;
     v_addr += VIRT_PAGE_SIZE;
   }
 
-  create_video_memory_map();
-
-  create_full_virt_phys_map();
-
-  enable_paging(pml4);
 }
 
 /* Return the address of a page(virtual address)
@@ -187,10 +191,4 @@ uint64_t vmm_alloc_page() {
 
   return v_addr;
 }
-
-#if 0
-void vmm_dealloc_page(uint64_t v_addr) {
-
-}
-#endif
 
