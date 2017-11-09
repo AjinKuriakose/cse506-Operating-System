@@ -46,6 +46,9 @@ typedef struct pt_t {
 uint64_t current_cr3;
 pml4_t  *pml4; 
 
+/*
+ * Sets the pml4 address into cr3 and enable paging
+ */
 void enable_paging(pml4_t *pml4) {
 
   __asm__ volatile("movq %0, %%cr3":: "r"(pml4));
@@ -78,27 +81,30 @@ void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
 
   /* Get pml4 entry using virtual address. If not present, create */
   pdp_addr = pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)];
-  if (pdp_addr & PTE_PRESENT)
+  if (pdp_addr & PTE_PRESENT) {
     pdp = (pdp_t *)PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr);
-  else
+  } else {
     pdp = (pdp_t *)pmm_alloc_block();
     pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
+  }
 
   /* Get pdp entry using virtual address. If not present, create */
   pd_addr = pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)];
-  if (pd_addr & PTE_PRESENT)
+  if (pd_addr & PTE_PRESENT) {
     pd = (pd_t *)PAGE_GET_PHYSICAL_ADDRESS(&pd_addr);
-  else
+  } else {
     pd = (pd_t *)pmm_alloc_block();
     pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
+  }
    
   /* Get pd entry using virtual address. If not present, create */
   pt_addr = pd->pd_entries[PAGE_PD_INDEX(v_addr)];
-  if (pt_addr & PTE_PRESENT)
+  if (pt_addr & PTE_PRESENT) {
     pt = (pt_t *)PAGE_GET_PHYSICAL_ADDRESS(&pt_addr);
-  else
+  } else {
     pt = (pt_t *)pmm_alloc_block();
     pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
+  }
 
   /* Update pt entry with the provided physical address */
   pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
@@ -112,7 +118,7 @@ void create_video_memory_map() {
 /* 
  * Create the complete virtual to physical address mappings
  * Page tables populated for all the available physical memory
- * Call virt_phys_map for mapping the virtual and physical addresses.
+ * virt_phys_map does the actual mapping of virtual and physical addresses.
  */
 void create_full_virt_phys_map() {
   uint64_t v_addr = VIRT_ADDR_BASE;
@@ -127,10 +133,11 @@ void create_full_virt_phys_map() {
     p_addr = pmm_alloc_block();
   }
 
-  virt_addr_end   = v_addr;
-  kprintf("AMD : V_ADDR_BEG [%p], V_ADDR_END [%p]\n", virt_addr, virt_addr_end);
+  virt_addr_end = v_addr;
+  kprintf("Virtual Address Range [%p - %p]\n", virt_addr, virt_addr_end);
 }
 
+/* Initialize IA-32 paging mechanism */
 void init_paging(uint64_t physbase, uint64_t physfree) {
 
   pdp_t   *pdp; 
@@ -163,10 +170,13 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
     v_addr += VIRT_PAGE_SIZE;
   }
 
+  /* Video memory virtual address to physical address mapping */
   create_video_memory_map();
 
+  /* Complete virtual addresses to physical addresses mapping */
   create_full_virt_phys_map();
 
+  /* Lets's do it */
   enable_paging(pml4);
 }
 

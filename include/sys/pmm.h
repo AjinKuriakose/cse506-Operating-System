@@ -11,7 +11,8 @@ typedef struct phys_block_t {
 
 extern phys_block_t phys_blocks[MAX_NUM_PHYS_BLOCKS];
 
-void print_list(phys_block_t *list);
+uint32_t get_num_free_blocks();
+uint32_t get_num_used_blocks();
 uint64_t pmm_alloc_block();
 void pmm_dealloc_block(uint64_t phys_addr);
 void update_phys_blocks(uint64_t start_addr, uint64_t end_addr);

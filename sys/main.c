@@ -9,7 +9,6 @@
 #include <tcl/tcl.h>
 #include <sys/pmm.h>
 #include <sys/vmm.h>
-#include <sys/task.h>
 
 #define INITIAL_STACK_SIZE 4096
 
@@ -39,26 +38,12 @@ void doIt() {
 
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
-  
   init_pmm(modulep, physbase, physfree);
-  init_paging((uint64_t)physbase, (uint64_t)physfree);
-
-#if 0 
-  struct smap_t {
-    uint64_t base, length;
-    uint32_t type;
-  }__attribute__((packed)) *smap;
-  while(modulep[0] != 0x9001) modulep += modulep[1]+2;
-  for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
-    if (smap->type == 1 /* memory */ && smap->length != 0) {
-      kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
-    }
-  }
-#endif
+  init_paging(0, (uint64_t)physfree);
 
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("physbase %p\n", (uint64_t)physbase);
-  kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+  kprintf("tarfs in [%p - %p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   
   init_idt();
   pic_offset_init(0x20,0x28);
@@ -72,6 +57,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   checkAllBuses();  
 #endif
 
+  /* TODO : context switching.. needs renaming */
 	doIt();
 
   while(1) __asm__ volatile ("hlt");
@@ -79,7 +65,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
 void boot(void)
 {
-  // note: function changes rsp, local stack variables can't be practically used
+  /* Note: function changes rsp, local stack variables can't be practically used */
   register char *temp1, *temp2;
 
   for(temp1=(char *)VIDEO_VIRT_MEM_BEGIN, temp2 = (char*)(VIDEO_VIRT_MEM_BEGIN + 1); temp2 < (char*)VIDEO_VIRT_MEM_BEGIN+160*25; temp2 += 2, temp1 += 2) {
