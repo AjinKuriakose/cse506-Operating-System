@@ -9,6 +9,7 @@
 #include <tcl/tcl.h>
 #include <sys/pmm.h>
 #include <sys/vmm.h>
+#include <sys/task.h>
 
 #define INITIAL_STACK_SIZE 4096
 
@@ -26,14 +27,6 @@ void tcltest() {
   kprintf ("Invoking Tcl interpreter ... \n");
   myinterp = Tcl_CreateInterp();
   Tcl_Eval(myinterp, cmd, 0, NULL);
-}
- 
-void doIt() {
-#if 0
-    kprintf("Switching to otherTask... \n");
-    yield();
-    kprintf("Returned to mainTask!\n");
-#endif
 }
 
 void start(uint32_t *modulep, void *physbase, void *physfree)
@@ -58,6 +51,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 #endif
 
   /* TODO : context switching.. needs renaming */
+  initTasking();
 	doIt();
 
   while(1) __asm__ volatile ("hlt");
