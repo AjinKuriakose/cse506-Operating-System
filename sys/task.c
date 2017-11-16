@@ -2,6 +2,7 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
 #include <sys/vmm.h>
+#include <sys/gdt.h>
  
 static Task *runningTask;
 static Task mainTask;
@@ -19,10 +20,31 @@ void Sleep() {
               }
 }
 
+void dummy() {
+  kprintf("Inside Dummy....\n");
+
+  //__asm__ volatile("pushq %rbx");   // OK (Normal operation)
+  //__asm__ volatile("sti");          // NOK - Reboot (Privileged operation)
+  //__asm__ volatile("hlt");          // NOK - Reboot (Privileged operation)
+  while(1);
+}
+ 
+void switch_to_user_mode() {
+
+  uint64_t cs = get_user_cs() | 0x3;
+  uint64_t ds = get_user_ds() | 0x3;
+
+  kprintf("cs : [%p]\n", cs);
+  kprintf("ds : [%p]\n", ds);
+  kprintf("get_user_cs : [%p], get_user_ds : [%p]\n", get_user_cs(), get_user_ds());
+  switchring3(dummy, cs, ds);
+}
+
 void task1Main() {
     while(1) {
         kprintf("Thread ####1\n");
         Sleep();
+        set_tss_rsp((void *)task1.ctx.rsp);
 				yield();
     }
 }
@@ -31,7 +53,10 @@ void task2Main() {
     while(1) {
         kprintf("Thread ####2\n");
         Sleep();
-				yield();
+        set_tss_rsp((void *)task1.ctx.rsp);
+        switch_to_user_mode();
+//        while(1);
+//				yield();
     }
 }
 /*

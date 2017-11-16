@@ -13,7 +13,6 @@ ROOTLIB=$(ROOTFS)/lib
 ROOTBOOT=$(ROOTFS)/boot
 
 KERN_SRCS:=$(wildcard sys/*.c sys/*.s sys/*/*.c sys/*/*.s)
-#TCL_SRCS:=$(wildcard tcl/*.c tcl/*.s)
 BIN_SRCS:=$(wildcard bin/*/*.c)
 LIBC_SRCS:=$(wildcard libc/*.c libc/*.s libc/*/*.c libc/*/*.s)
 LD_SRCS:=$(wildcard ld/*.c)
@@ -99,5 +98,5 @@ clean:
 
 SUBMITTO=/submit
 submit: clean $(USER)-data.img
-	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ LICENSE README Makefile Makefile.config sys tcl bin crt libc include $(ROOTFS) $(USER)-data.img
+	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ --ignore-failed-read LICENSE README Makefile Makefile.config sys bin crt libc include $(ROOTFS) $(USER)-data.img
 	mv -v $(USER).tgz $(SUBMITTO)/$(USER)-$(ASSIGNMENT)=`date +%F=%T`.tgz
