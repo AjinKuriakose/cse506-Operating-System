@@ -10,8 +10,10 @@
 #include <sys/pmm.h>
 #include <sys/vmm.h>
 #include <sys/task.h>
+#include <sys/utils.h>
 
 #define INITIAL_STACK_SIZE 4096
+#define ASCII_TO_NUM(num) (num - 48)
 
 uint8_t initial_stack[INITIAL_STACK_SIZE]__attribute__((aligned(16)));
 phys_block_t phys_blocks[MAX_NUM_PHYS_BLOCKS];
@@ -29,6 +31,54 @@ void tcltest() {
   Tcl_Eval(myinterp, cmd, 0, NULL);
 }
 
+/* TODO : This is for POC purpose. Need to move out and/or change later */
+uint64_t get_size_tar_octal(char *data, size_t size) {
+  char *curr = (char *)data + size;
+  char *ptr = curr;
+  uint64_t sum = 0;
+  uint64_t multiply = 1;
+
+  while (ptr >= (char *) data) {
+    if ((*ptr) == 0 || (*ptr) == ' ') {
+      curr = ptr - 1;
+    }
+    ptr--;
+  }
+
+  while (curr >= (char *) data) {
+    sum += ASCII_TO_NUM(*curr) * multiply;
+    multiply *= 8;
+    curr--;
+  }
+
+  return sum;
+}
+
+/* TODO : This is for POC purpose. Need to move out and/or change later */
+void browse_tarfs() {
+  uint64_t align_512  = 0;
+  uint64_t total_size = 0;
+  struct posix_header_ustar *hdr = (struct posix_header_ustar *)&_binary_tarfs_start;
+
+  while ((char *)hdr < &_binary_tarfs_end) {
+    uint64_t file_size = get_size_tar_octal(hdr->size, 12);
+    uint64_t pad_size  = get_size_tar_octal(hdr->pad, 12);
+
+    total_size = sizeof(*hdr) + file_size + pad_size;
+
+    /* Skipping the entries with empty names. TODO: find out why they are present (Piazza 429) */
+    if (strlen(hdr->name))
+      kprintf("tarfs content : name = %s, size = %d\n", hdr->name, file_size);
+
+    if (total_size % 512)
+      align_512 = 512 - (total_size % 512);
+    else
+      align_512 = 0;
+      
+    hdr = (struct posix_header_ustar *)((char *)hdr + total_size + align_512);
+  }
+}
+
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
   init_pmm(modulep, physbase, physfree);
@@ -38,6 +88,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physbase %p\n", (uint64_t)physbase);
   kprintf("tarfs in [%p - %p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   
+  browse_tarfs();
+
   init_idt();
   pic_offset_init(0x20,0x28);
   __asm__ volatile (
