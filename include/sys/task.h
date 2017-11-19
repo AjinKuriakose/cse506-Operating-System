@@ -35,6 +35,8 @@ extern void createTaskNw(Task*, void(*)());
 extern void yield(); 
 extern void switchTask(Task *old, Task *new); 
 extern void switchring3(void *, uint64_t, uint64_t); 
+//extern void init_syscall(uint64_t, uint64_t); 
+//extern void test_syscall(); 
 //void switchTask(Task *from, Task *to); 
 void doIt();
 #endif /* __TASK_H__ */
