@@ -12,6 +12,7 @@
 #include <sys/task.h>
 #include <sys/utils.h>
 #include <sys/terminal.h>
+#include <sys/syscall.h>
 
 #define INITIAL_STACK_SIZE 4096
 #define ASCII_TO_NUM(num) (num - 48)
@@ -104,6 +105,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 #endif
 
   init_terminal();
+
+  /* setting up syscall & related functions */
+  init_syscall();
 
   /* TODO : context switching.. needs renaming */
   initTasking();
