@@ -10,6 +10,7 @@ static Task mainTask;
 static Task task1;
 static Task task2;
 
+//char ch = 'x';
 /*
  * just for testing 
  * TODO:not required. just to verify switching print statement
@@ -21,18 +22,49 @@ void Sleep() {
               }
 }
 
+/*
+ * 
+ * TODO: syscall from our libc code. 
+ * this should never be inside /sys code. Move later.
+ */
+#define __NR_write      1
+
+long syscall(int syscall_number, ...) {
+  long ret;
+  __asm__ volatile(
+  "mov    %%rdi,%%rax;"
+  "mov    %%rsi,%%rdi;"
+  "mov    %%rdx,%%rsi;"
+  "mov    %%rcx,%%rdx;"
+  "mov    %%r8,%%r10;"
+  "mov    %%r9,%%r8;"
+  "mov    0x8(%%rsp),%%r9;"
+  "syscall;"
+  "cmp    $0xfffffffffffff001,%%rax;"
+  :"=r"(ret)
+  );
+  /* not sure if rax has be updated manually from ring0 */
+  return ret;
+}
+uint64_t write(int fd, const void *c, size_t size) {
+    return syscall(__NR_write, fd, c, size);
+}
+
+/* till this part, code from libc */
+
 void ring3func() {
 
-  int syscall_no = 0;
-  kprintf("Inside user land function Dummy....\n");
-  /* save the required syscall number in rax register */
-   __asm__ volatile("" ::"a"(syscall_no));
-  __asm__ volatile("syscall");
+ // int syscall_no = 0;
+  kprintf("Inside user land function Calling write here.\n");
+
+  char ch;
+  ch = 'x';
+  write(1, &ch, 1);
 
   kprintf("Returned to userland ring3 from ring0 after sysret\n");
-   __asm__ volatile("" ::"a"(syscall_no+1));
-  __asm__ volatile("syscall");
-  kprintf("Ring3 statement.\n");
+  // __asm__ volatile("" ::"a"(syscall_no+1));
+  //__asm__ volatile("syscall");
+  kprintf("Ring 3 : while 1.\n");
   while(1);
 
 }

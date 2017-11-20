@@ -37,6 +37,7 @@ void syscall_handler() {
   
   /* restoring rcx register value, rip <-- rcx upon sysretq */
   __asm__ volatile("mov %0, %%rcx" ::"a"(rcx));
+  __asm__ volatile("add $0x8, %rsp"); 
   __asm__ volatile("sysretq"); 
 
 }
@@ -75,6 +76,9 @@ static inline void enable_syscall_instr() {
  */
 void sys_write() {
   kprintf("\nsys_write dummy funtion. Ring 0 \n");
+  char *ptr;
+  __asm__ volatile("mov %%rsi, %0" :"=a"(ptr));
+//  kprintf("hellon %c\n", *ptr);
 }
 void sys_read() {
   kprintf("\nsys_read dummy funtion. Ring 0\n");
