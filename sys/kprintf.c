@@ -9,11 +9,11 @@ void display(const char *fmt) {
   static char *temp = (char *)VIDEO_VIRT_MEM_BEGIN;
 
   for (c = (char *)fmt; *c; c += 1, temp += CHAR_WIDTH) {
-    if (row > 23) {
-      memcpy((char *)VIDEO_VIRT_MEM_BEGIN, (char *)VIDEO_VIRT_MEM_BEGIN + SCREEN_WIDTH, 3620);
+    if (row > 17) {
+      memcpy((char *)VIDEO_VIRT_MEM_BEGIN, (char *)VIDEO_VIRT_MEM_BEGIN + SCREEN_WIDTH, 2660);
       temp -= SCREEN_WIDTH;
       clear_chars(temp, SCREEN_WIDTH);
-      row = 23;
+      row = 17;
     }
 
     if (*c == '\n') {

@@ -11,6 +11,7 @@
 #include <sys/vmm.h>
 #include <sys/task.h>
 #include <sys/utils.h>
+#include <sys/terminal.h>
 
 #define INITIAL_STACK_SIZE 4096
 #define ASCII_TO_NUM(num) (num - 48)
@@ -102,6 +103,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   checkAllBuses();  
 #endif
 
+  init_terminal();
+
   /* TODO : context switching.. needs renaming */
   initTasking();
 	doIt();
@@ -118,6 +121,12 @@ void boot(void)
 	*temp2 = 7 /* white */;
 	*temp1 =' ';
   }
+
+  /* Seperation Indication */ 
+  for(temp1=(char *)VIDEO_VIRT_MEM_BEGIN+160*17; temp1 < (char*)VIDEO_VIRT_MEM_BEGIN+160*18; temp1 += 2) {
+	*temp1 ='=';
+  }
+
   __asm__ volatile (
     "cli;"
     "movq %%rsp, %0;"

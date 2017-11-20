@@ -2,7 +2,7 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
 #include <sys/utils.h>
-
+#include <sys/terminal.h>
 /*
  * scancode reference: http://www.osdever.net/bkerndev/Docs/keyboard.htm
  *
@@ -124,14 +124,18 @@ void key_handler() {
     }
      
     if (flag & FLAG_CTRL) {
-      display_glyph(scancode_arr_upper[scode], 1);
+      display_glyph(scancode_arr_upper[scode], KEYCODE_CTRL);
     } else if (flag & FLAG_SHIFT) {
-      display_glyph(scancode_arr_upper[scode], 0);
+      display_glyph(scancode_arr_upper[scode], KEYCODE_NORMAL);
     } else {
       if (scode == 0x1C) {
-        display_glyph('M', 1);
+        /* Enter pressed */
+        display_glyph('M', KEYCODE_CTRL);
+      } else if (scode == 0x0E) {
+        /* Backspace pressed */
+        display_glyph(' ', KEYCODE_BACKSPACE);
       } else {
-        display_glyph(scancode_arr[scode], 0);
+        display_glyph(scancode_arr[scode], KEYCODE_NORMAL);
       }
     }
 
@@ -139,7 +143,7 @@ void key_handler() {
   }
 }
 
-void display_glyph(unsigned char glyph, int is_ctrl_char) {
+void display_glyph(unsigned char glyph, int flags) {
   unsigned char sbuff[6] = {0};
   unsigned char *c;
   int i = 0;
@@ -148,7 +152,7 @@ void display_glyph(unsigned char glyph, int is_ctrl_char) {
   
   sbuff[0] = '[';
 
-  if (is_ctrl_char)
+  if (flags == KEYCODE_CTRL)
     sbuff[1] = '^';
   else
     sbuff[1] = ' ';
@@ -160,5 +164,7 @@ void display_glyph(unsigned char glyph, int is_ctrl_char) {
   for (c = sbuff; i < 5; c += 1, i++, temp += CHAR_WIDTH) {
       *temp = *c;
   }
+
+  handle_keyboard_input(glyph, flags);
 }
 
