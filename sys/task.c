@@ -23,17 +23,18 @@ void Sleep() {
 
 void ring3func() {
 
+  int syscall_no = 0;
   kprintf("Inside user land function Dummy....\n");
-  while(1) {
+  /* save the required syscall number in rax register */
+   __asm__ volatile("" ::"a"(syscall_no));
   __asm__ volatile("syscall");
+
   kprintf("Returned to userland ring3 from ring0 after sysret\n");
+   __asm__ volatile("" ::"a"(syscall_no+1));
   __asm__ volatile("syscall");
-  kprintf("---------------ring3----------------------\n");
-  __asm__ volatile("syscall");
-  kprintf("---------------ring3----------------------\n");
+  kprintf("Ring3 statement.\n");
   while(1);
-  Sleep();
-  }
+
 }
 void switch_to_user_mode() {
   uint64_t cs = get_user_cs() | 0x3;

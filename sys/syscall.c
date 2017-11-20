@@ -3,20 +3,39 @@
 #include <sys/kprintf.h>
 #include <sys/vmm.h>
 #include <sys/gdt.h>
- 
 
-#define MSR_LSTAR   0xc0000082 /* long mode SYSCALL target */
-#define MSR_STAR    0xc0000081 /* legacy mode SYSCALL target */
+ 
+#define MSR_LSTAR   0xc0000082 
+#define MSR_STAR    0xc0000081
+
+#define __NR_syscall_max     50 
+#define __NR_read            0
+#define __NR_write           1
+
+typedef void (*sys_call_ptr_t) (void);
+sys_call_ptr_t sys_call_table[__NR_syscall_max];
+
+
 
 /*
  * TODO: not saving rsp now.
  * save if required later.
+ * saving rcx register. When sysretq is invoked, rip would be 
+ * loaded with rcx value.
  */
-void kernel_testfun() {
+void syscall_handler() {
+
   uint64_t rcx; 
+  uint64_t __NR_syscall;
+
+  /* get the syscall number from rax register */
+  /*reading the value of rax first. else the next statement will overwrite it. */
+  __asm__ volatile("" :"=a"(__NR_syscall));
   __asm__ volatile("mov %%rcx, %0" :"=a"(rcx));
 
-  kprintf("Hi from ring 0\n");
+  (*sys_call_table[__NR_syscall])();
+  
+  /* restoring rcx register value, rip <-- rcx upon sysretq */
   __asm__ volatile("mov %0, %%rcx" ::"a"(rcx));
   __asm__ volatile("sysretq"); 
 
@@ -42,11 +61,34 @@ static inline void __wrmsr(unsigned int msr, uint32_t low, uint32_t high) {
 
 // setting the 0th(SCE) bit of IA32_EFER to enable syscall instruction.
 static inline void enable_syscall_instr() {
+
 	__asm__ __volatile__("xor %rcx, %rcx; \
 											 mov $0xC0000080, %rcx; \
 												rdmsr; \
 											 or $0x1, %rax; \
 											wrmsr");
+}
+
+/*TODO: move syscall functions somewhere else
+ * as of now adding here itself
+ *
+ */
+void sys_write() {
+  kprintf("\nsys_write dummy funtion. Ring 0 \n");
+}
+void sys_read() {
+  kprintf("\nsys_read dummy funtion. Ring 0\n");
+}
+
+/*
+ * setting up syscall table init 
+ */
+void setup_sys_call_table() {
+
+  sys_call_table[__NR_read] = sys_read;  
+  sys_call_table[__NR_write] = sys_write;  
+  /* add remaining syscalls here..*/
+
 }
 
 /*
@@ -62,8 +104,12 @@ void init_syscall() {
 
   uint64_t star_reg_value = ((uint64_t)0x1b << 48) | ((uint64_t)0x8 << 32);
 
-  __wrmsr(MSR_LSTAR, get_low_dword((uint64_t)kernel_testfun), get_high_dword((uint64_t)kernel_testfun)); 
+  __wrmsr(MSR_LSTAR, get_low_dword((uint64_t)syscall_handler), get_high_dword((uint64_t)syscall_handler)); 
+
   __wrmsr(MSR_STAR, get_low_dword(star_reg_value), get_high_dword(star_reg_value)); 
 
 	enable_syscall_instr();
+  
+  setup_sys_call_table();
+
 }
