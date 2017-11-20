@@ -54,12 +54,10 @@ uint64_t write(int fd, const void *c, size_t size) {
 
 void ring3func() {
 
- // int syscall_no = 0;
   kprintf("Inside user land function Calling write here.\n");
 
-  char ch;
-  ch = 'x';
-  write(1, &ch, 1);
+  char ch[20]="String from Ring 3";
+  write(1, &ch, 18);
 
   kprintf("Returned to userland ring3 from ring0 after sysret\n");
   // __asm__ volatile("" ::"a"(syscall_no+1));

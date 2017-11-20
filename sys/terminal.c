@@ -33,7 +33,7 @@ void clear_terminal() {
 
 void terminal_display(const char *fmt) {
   int row = 18;
-  int col = 1;
+  int col = 4;
   char *c;
   char *temp = (char *)VIDEO_VIRT_MEM_BEGIN + 160*18;
 
@@ -100,4 +100,15 @@ void handle_keyboard_input(unsigned char glyph, int flags) {
       terminal_display(terminal.buffer);
     }
   }
+}
+
+void write_to_terminal(const char *buff, int size) {
+
+  int i = 0;
+  while (size > 0) {
+    terminal.buffer[terminal.buffer_offset-1] = buff[i++];
+    terminal.buffer_offset++;
+    size--;
+  }
+  terminal_display(terminal.buffer); 
 }

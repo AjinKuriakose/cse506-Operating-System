@@ -13,10 +13,13 @@ typedef struct terminal_t {
   uint16_t  buffer_offset;
 } terminal_t;
 
+extern terminal_t terminal;
+
 void init_terminal();
 void terminal_display(const char *fmt);
 int read_from_terminal();
-int write_to_terminal();
+void write_to_terminal(const char *buff, int size);
+//int write_to_terminal(const char *buff);
 void handle_keyboard_input(unsigned char glyph, int flags);
 
 #endif

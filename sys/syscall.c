@@ -3,6 +3,8 @@
 #include <sys/kprintf.h>
 #include <sys/vmm.h>
 #include <sys/gdt.h>
+#include <sys/utils.h>
+#include <sys/terminal.h>
 
  
 #define MSR_LSTAR   0xc0000082 
@@ -15,7 +17,43 @@
 typedef void (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
 
+typedef struct sycall_args_t {
 
+  uint64_t rdi;
+  uint64_t rsi;
+  uint64_t rdx;
+  uint64_t r10;
+  uint64_t r8;
+  uint64_t r9;
+
+  uint64_t rcx;
+  uint64_t __NR_syscall;
+
+}syscall_args_t;
+
+static syscall_args_t syscall_args;
+
+void get_syscall_args() {
+
+  __asm__ __volatile__(
+      "pushq %r9;"
+      "pushq %r8;"
+      "pushq %r10;"
+      "pushq %rdx;"
+      "pushq %rsi;"
+      "pushq %rdi;"
+      "pushq %rcx;"
+      );
+
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.rcx));
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.rdi));
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.rsi));
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.rdx));
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.r10));
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.r8));
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.r9));
+
+}
 
 /*
  * TODO: not saving rsp now.
@@ -25,18 +63,16 @@ sys_call_ptr_t sys_call_table[__NR_syscall_max];
  */
 void syscall_handler() {
 
-  uint64_t rcx; 
-  uint64_t __NR_syscall;
+  __asm__ __volatile__(
+      "pushq %rax;");
+  __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.__NR_syscall));
+  
+  get_syscall_args();
 
-  /* get the syscall number from rax register */
-  /*reading the value of rax first. else the next statement will overwrite it. */
-  __asm__ volatile("" :"=a"(__NR_syscall));
-  __asm__ volatile("mov %%rcx, %0" :"=a"(rcx));
-
-  (*sys_call_table[__NR_syscall])();
+  (*sys_call_table[syscall_args.__NR_syscall])();
   
   /* restoring rcx register value, rip <-- rcx upon sysretq */
-  __asm__ volatile("mov %0, %%rcx" ::"a"(rcx));
+  __asm__ volatile("mov %0, %%rcx" ::"a"(syscall_args.rcx));
   __asm__ volatile("add $0x8, %rsp"); 
   __asm__ volatile("sysretq"); 
 
@@ -75,12 +111,36 @@ static inline void enable_syscall_instr() {
  *
  */
 void sys_write() {
-  kprintf("\nsys_write dummy funtion. Ring 0 \n");
-  char *ptr;
-  __asm__ volatile("mov %%rsi, %0" :"=a"(ptr));
-//  kprintf("hellon %c\n", *ptr);
+
+  uint64_t fd;
+  void *ptr;
+  uint64_t size;
+  char buff[512];
+
+  ptr = (void*)syscall_args.rsi;
+  fd = syscall_args.rdi;
+  size = syscall_args.rdx;
+
+  memcpy(buff, ptr, size);
+  write_to_terminal(buff, size);  
+  
+  kprintf("%d %d Inside sys_write handler\n", fd, size);
+  kprintf("\n");
 }
+
 void sys_read() {
+  uint64_t fd;
+  void *ptr;
+  uint64_t size;
+  char buff[512];
+
+
+  ptr = (void*)syscall_args.rsi;
+  fd = syscall_args.rdi;
+  size = syscall_args.rdx;
+
+  memcpy(buff, ptr, size);
+  kprintf("hellon %d %s %d\n", fd, buff, size);
   kprintf("\nsys_read dummy funtion. Ring 0\n");
 }
 
