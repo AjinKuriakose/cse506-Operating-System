@@ -3,7 +3,8 @@
 #include <sys/kprintf.h>
 #include <sys/vmm.h>
 #include <sys/gdt.h>
- 
+#include <sys/utils.h>
+
 static Task *runningTask;
 static Task mainTask;
 
@@ -56,8 +57,8 @@ void ring3func() {
 
   kprintf("Inside user land function Calling write here.\n");
 
-  char ch[20]="String from Ring 3";
-  write(1, &ch, 18);
+  char ch[20]="String from Ring 3\n";
+  write(1, &ch, strlen(ch));
 
   kprintf("Returned to userland ring3 from ring0 after sysret\n");
   // __asm__ volatile("" ::"a"(syscall_no+1));

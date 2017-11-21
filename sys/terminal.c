@@ -65,7 +65,10 @@ void terminal_display(const char *fmt) {
 
 static void process_terminal_buffer() {
 
-  /* TODO : Send the buffer content to the foreground process */
+  /* TODO : Send the buffer content to the foreground process. This is just a demo implementation */
+  terminal.buffer[terminal.buffer_offset - 1] = '\n';
+  terminal.buffer[terminal.buffer_offset] = '\0';
+  write_to_terminal(&terminal.buffer[2], strlen(&terminal.buffer[2]));
 }
 
 void handle_keyboard_input(unsigned char glyph, int flags) {
@@ -106,9 +109,7 @@ void write_to_terminal(const char *buff, int size) {
 
   int i = 0;
   while (size > 0) {
-    terminal.buffer[terminal.buffer_offset-1] = buff[i++];
-    terminal.buffer_offset++;
+    kprintf("%c", buff[i++]);
     size--;
   }
-  terminal_display(terminal.buffer); 
 }
