@@ -1,6 +1,6 @@
 .section .text
-.global switchTask
-switchTask:
+.global switch_task
+switch_task:
 
 #TODO: remove these. use incase 
 # we need to save inside structure.

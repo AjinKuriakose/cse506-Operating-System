@@ -5,26 +5,24 @@
 #include <sys/gdt.h>
 #include <sys/utils.h>
 
-static Task *runningTask;
-static Task mainTask;
+static task_struct_t *running_task;
+static task_struct_t main_task;
 
-static Task task1;
-static Task task2;
+static task_struct_t task1;
+static task_struct_t task2;
 
-//char ch = 'x';
 /*
  * just for testing 
  * TODO:not required. just to verify switching print statement
  */
 void Sleep() {
-    volatile int spin = 0;
-      while (spin < 50000000) {
-            spin++;
-              }
+  volatile int spin = 0;
+  while (spin < 50000000) {
+    spin++;
+  }
 }
 
 /*
- * 
  * TODO: syscall from our libc code. 
  * this should never be inside /sys code. Move later.
  */
@@ -102,24 +100,24 @@ void task2Main() {
  * task1 & task2 are in a cycle.
  * TODO: not pusing cr3 & EFLAGS now. may need later.
  */
-void initTasking() {
+void init_tasking() {
     // Get EFLAGS and CR3
-    //__asm__ volatile("mov %%cr3, %%eax; mov %%eax, %0;":"=m"(mainTask.ctx.cr3)::"%eax");
-    // __asm__ volatile("mov %%cr3, %0": "=r"(mainTask.ctx.cr3));
-    //__asm__ volatile("pushfl; movq (%%esp), %%eax; movq %%eax, %0; popfl;":"=m"(mainTask.ctx.eflags)::"%eax");
+    //__asm__ volatile("mov %%cr3, %%eax; mov %%eax, %0;":"=m"(main_task.ctx.cr3)::"%eax");
+    // __asm__ volatile("mov %%cr3, %0": "=r"(main_task.ctx.cr3));
+    //__asm__ volatile("pushfl; movq (%%esp), %%eax; movq %%eax, %0; popfl;":"=m"(main_task.ctx.eflags)::"%eax");
  
-    //createTask(&task1, task1Main, mainTask.ctx.eflags, (uint64_t*)mainTask.ctx.cr3);
-    createTaskNw(&task1, task1Main);
-    createTaskNw(&task2, task2Main);
+    //create_task(&task1, task1Main, main_task.ctx.eflags, (uint64_t*)main_task.ctx.cr3);
+    create_task_nw(&task1, task1Main);
+    create_task_nw(&task2, task2Main);
 
-    mainTask.next = &task1;
+    main_task.next = &task1;
     task1.next = &task2;
     task2.next = &task1;
  
-    runningTask = &mainTask;
+    running_task = &main_task;
 }
  
-void createTaskNw(Task *task, void (*main)()) {
+void create_task_nw(task_struct_t *task, void (*main)()) {
     task->ctx.rsp = (uint64_t) &(task->kstack[4016]);;
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
@@ -131,10 +129,11 @@ void createTaskNw(Task *task, void (*main)()) {
 }
  
 void yield() {
-    Task *last = runningTask;
-    runningTask = runningTask->next;
-    switchTask(last, runningTask);
+    task_struct_t *last = running_task;
+    running_task = running_task->next;
+    switch_task(last, running_task);
 }
+
 /*
  * call from main.c comes here in doIt
  * This can be moved to main.c itself

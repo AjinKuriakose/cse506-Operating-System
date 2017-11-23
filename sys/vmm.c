@@ -13,18 +13,16 @@
 #define PTE_PRESENT   0x1
 #define PTE_WRITABLE  0x2
 #define PTE_USER      0x4
-#define PWU_FLAG      (PTE_PRESENT | PTE_WRITABLE | PTE_USER)
+#define PWU_FLAG      (PTE_PRESENT | PTE_WRITABLE | PTE_USER) /* User Pages */
+#define PWS_FLAG      (PTE_PRESENT | PTE_WRITABLE)            /* Supervisor Pages */
 
 extern char kernmem;
 
 /* Virtual address to be returned for the next page alloc request after validation */
-uint64_t    virt_addr;
-
-/* Last valid virtual address as per the mapping done in create_full_virt_phys_map */
-uint64_t    virt_addr_end;
+uint64_t    virt_addr = VIRT_ADDR_BASE;
 
 uint64_t current_cr3;
-pml4_t  *pml4; 
+pml4_t  *pml4;   /* TODO : Update pml4 upon process switch */
 
 /*
  * Sets the pml4 address into cr3 and enable paging
@@ -95,30 +93,6 @@ void create_video_memory_map() {
   virt_phys_map(VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
 }
 
-/* 
- * Create the complete virtual to physical address mappings
- * Page tables populated for all the available physical memory
- * virt_phys_map does the actual mapping of virtual and physical addresses.
- */
-void create_full_virt_phys_map() {
-
-  uint64_t v_addr = VIRT_ADDR_BASE;
-  uint64_t p_addr = pmm_alloc_block();
-
-  virt_addr       = VIRT_ADDR_BASE;
-  virt_addr_end   = VIRT_ADDR_BASE;
-
-  while (p_addr != -1) {
-    virt_phys_map(v_addr, p_addr);
-
-    v_addr += VIRT_PAGE_SIZE;
-    p_addr = pmm_alloc_block();
-  }
-
-  virt_addr_end = v_addr;
-  kprintf("Virtual Address Range [%p - %p]\n", virt_addr, virt_addr_end);
-}
-
 /* Initialize IA-32 paging mechanism */
 void init_paging(uint64_t physbase, uint64_t physfree) {
 
@@ -126,9 +100,6 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
 
   /* Video memory virtual address to physical address mapping */
   create_video_memory_map();
-
-  /* Complete virtual addresses to physical addresses mapping */
-  create_full_virt_phys_map();
 
   /* Lets's do it */
   enable_paging(pml4);
@@ -175,25 +146,26 @@ void remap_kernel(pt_t *pt, uint64_t p_base, uint64_t p_free){
   uint64_t  v_addr = (uint64_t)&kernmem;
   
   while (p_base < p_free) {
-    pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_base | PWU_FLAG;
+    pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_base | PWU_FLAG; /* TODO : Need to use PWS_FLAG */
     p_base += PHYS_BLOCK_SIZE;
     v_addr += VIRT_PAGE_SIZE;
   }
 }
 
 /* Return the address of a page(virtual address)
- * The actual physical block allocation is already done
- * by create_full_virt_phys_map(). 
- * So, simply return the address of the next page
  */
 uint64_t vmm_alloc_page() {
 
-  uint64_t  v_addr = -1;
-
-  /* allocate a virtual page */
-  if (virt_addr < virt_addr_end) {
+  uint64_t v_addr = -1;
+  uint64_t p_addr = pmm_alloc_block();
+  if (p_addr != -1) {
     v_addr = virt_addr;
+    virt_phys_map(v_addr, p_addr);
     virt_addr += VIRT_PAGE_SIZE;
+
+  } else {
+    /* No more physical memory available */
+    kprintf("No Memory Available !!!\n");
   }
 
   return v_addr;

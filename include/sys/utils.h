@@ -9,6 +9,8 @@ void memcpy(void *dest, const void *src, int n);
 void convert(char *a, unsigned long n, int base, int i);
 void reverse(char *a);
 void int2char(int num, char *input);
+int strcmp(const char *f_str, const char *s_str);
+int strncmp(const char *f_str, const char *s_str, int n);
 
 #endif
 

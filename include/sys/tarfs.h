@@ -1,6 +1,10 @@
 #ifndef _TARFS_H
 #define _TARFS_H
 
+#include <sys/elf64.h>
+
+#define ASCII_TO_NUM(num) (num - 48)
+
 extern char _binary_tarfs_start;
 extern char _binary_tarfs_end;
 
@@ -23,5 +27,8 @@ struct posix_header_ustar {
   char prefix[155];
   char pad[12];
 };
+
+void browse_tarfs();
+Elf64_Ehdr *get_elf_header(char *bin_filename);
 
 #endif
