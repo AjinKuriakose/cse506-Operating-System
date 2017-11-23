@@ -33,5 +33,7 @@ void remap_kernel(pt_t *pt, uint64_t p_base, uint64_t p_free);
 uint64_t vmm_alloc_page();
 void vmm_dealloc_page(uint64_t v_addr);
 void identity_map(uint64_t);
+void alloc_segment_mem(uint64_t v_addr);
+
 #endif
 

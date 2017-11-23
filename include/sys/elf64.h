@@ -5,6 +5,9 @@
 #include <sys/task.h>
 
 #define EI_NIDENT 16
+#define PF_X      0x1
+#define PF_W      0x2
+#define PF_R      0x4
 
 typedef uint64_t Elf64_Addr;
 typedef uint16_t Elf64_Half;

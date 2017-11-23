@@ -19,21 +19,29 @@
 extern char kernmem;
 
 /* Virtual address to be returned for the next page alloc request after validation */
-uint64_t    virt_addr = VIRT_ADDR_BASE;
+uint64_t virt_addr = VIRT_ADDR_BASE;
 
-uint64_t current_cr3;
-pml4_t  *pml4;   /* TODO : Update pml4 upon process switch */
+pml4_t *pml4;
+
+void set_cr3(pml4_t *pml4) {
+  __asm__ volatile("movq %0, %%cr3"::"r"(pml4));
+}
+
+pml4_t *get_cr3() {
+  pml4_t *current_cr3;
+  __asm__ volatile("mov %%cr3, %0":"=r"(current_cr3));
+
+  return current_cr3;
+}
 
 /*
- * Sets the pml4 address into cr3 and enable paging
+ * Enable paging by updating cr0
  */
-void enable_paging(pml4_t *pml4) {
-
-  __asm__ volatile("movq %0, %%cr3":: "r"(pml4));
+void enable_paging() {
   uint64_t cr0;
-  __asm__ volatile("mov %%cr0, %0": "=r"(cr0));
+  __asm__ volatile("mov %%cr0, %0":"=r"(cr0));
   cr0 |= 0x80000000; /* Enable paging */
-  __asm__ volatile("mov %0, %%cr0":: "r"(cr0));
+  __asm__ volatile("mov %0, %%cr0"::"r"(cr0));
 }
 
 void page_fault_handler() {
@@ -46,7 +54,7 @@ void page_fault_handler() {
  * PDP, PD and PT entries corresponding to the virtual address
  * are created if they are not already present
  */
-void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
+void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
 
   pdp_t   *pdp; 
   pd_t    *pd; 
@@ -90,7 +98,7 @@ void virt_phys_map(uint64_t v_addr, uint64_t p_addr) {
 
 void create_video_memory_map() {
 
-  virt_phys_map(VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
+  virt_phys_map(pml4, VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
 }
 
 /* Initialize IA-32 paging mechanism */
@@ -101,8 +109,10 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
   /* Video memory virtual address to physical address mapping */
   create_video_memory_map();
 
+  set_cr3(pml4);
+
   /* Lets's do it */
-  enable_paging(pml4);
+  enable_paging();
 }
 
 /*
@@ -160,7 +170,7 @@ uint64_t vmm_alloc_page() {
   uint64_t p_addr = pmm_alloc_block();
   if (p_addr != -1) {
     v_addr = virt_addr;
-    virt_phys_map(v_addr, p_addr);
+    virt_phys_map(get_cr3(), v_addr, p_addr);
     virt_addr += VIRT_PAGE_SIZE;
 
   } else {
@@ -169,5 +179,16 @@ uint64_t vmm_alloc_page() {
   }
 
   return v_addr;
+}
+
+void alloc_segment_mem(uint64_t v_addr) {
+  uint64_t  p_addr = pmm_alloc_block();
+  if (p_addr != -1) {
+    virt_phys_map(get_cr3(), v_addr, p_addr);
+
+  } else {
+    /* No more physical memory available */
+    kprintf("No Memory Available !!!\n");
+  }
 }
 

@@ -23,6 +23,7 @@ typedef struct vma_struct_t {
   uint64_t vma_end;
   struct vma_struct_t *vma_next;
   struct mm_struct_t *vma_mm;
+  uint64_t flags;
 } vma_struct_t;
 
 typedef struct mm_struct_t {
