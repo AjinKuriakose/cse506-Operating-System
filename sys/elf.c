@@ -36,6 +36,17 @@ int load_binary(task_struct_t *task, char *bin_filename) {
 
     /* Load => Text or Data or BSS segment */
     if (prog_header->p_type == 1) {
+#if 0
+      kprintf("AMD : start = %p\n", prog_header->p_vaddr);
+      kprintf("AMD : end   = %p\n", prog_header->p_vaddr + prog_header->p_memsz);
+      uint64_t segment_size = prog_header->p_memsz;
+      uint32_t num_pages_required = (segment_size + VIRT_PAGE_SIZE) / VIRT_PAGE_SIZE;
+      kprintf("AMD : num pages = %d\n", num_pages_required);
+      if (prog_header->p_flags == (PF_R | PF_X))
+        kprintf("AMD : Text\n");
+      if (prog_header->p_flags == (PF_R | PF_W))
+        kprintf("AMD : Data\n");
+#endif
       vma_struct_t *vma = (vma_struct_t *)vmm_alloc_page();
       vma->vma_start = prog_header->p_vaddr;
       vma->vma_end = prog_header->p_vaddr + prog_header->p_memsz;
@@ -82,3 +93,4 @@ int load_binary(task_struct_t *task, char *bin_filename) {
 
   return 0;
 }
+

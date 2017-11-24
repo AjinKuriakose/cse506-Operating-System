@@ -63,6 +63,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   /* TODO : context switching.. */
   init_tasking();
+
+  execute_user_process("bin/helloworld");
+
 	doIt();
 
   while(1) __asm__ volatile ("hlt");

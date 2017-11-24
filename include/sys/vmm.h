@@ -26,14 +26,18 @@ typedef struct pt_t {
       uint64_t pt_entries[PT_SIZE];
 } pt_t;
 
+uint8_t get_is_paging_enabled();
+pml4_t *get_kernel_pml4();
 void init_paging(uint64_t physbase, uint64_t physfree);
 void setup_four_level_paging(uint64_t physbase, uint64_t physfree);
 void remap_kernel(pt_t *pt, uint64_t p_base, uint64_t p_free);
 
 uint64_t vmm_alloc_page();
 void vmm_dealloc_page(uint64_t v_addr);
-void identity_map(uint64_t);
+void identity_mapping();
 void alloc_segment_mem(uint64_t v_addr);
+void set_cr3(pml4_t *pml4);
+pml4_t *get_cr3();
 
 #endif
 

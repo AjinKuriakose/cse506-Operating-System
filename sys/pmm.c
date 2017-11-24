@@ -1,11 +1,18 @@
 #include <sys/defs.h>
 #include <sys/pmm.h>
+#include <sys/vmm.h>
 #include <sys/kprintf.h>
 #include <sys/utils.h>
 
 phys_block_t *free_list = NULL;
 phys_block_t *used_list = NULL;
 phys_block_t *free_list_tail = NULL; /* Connect e820 returned phys mem chunks */
+
+uint64_t phys_mem_end;
+
+uint64_t get_phys_mem_end() {
+  return phys_mem_end;
+}
 
 /* Stats : Return the number of physical memory bloks in the list */
 static uint32_t get_num_blocks(phys_block_t *list) {
@@ -61,7 +68,10 @@ uint64_t pmm_alloc_block() {
   phys_addr = (uint64_t)(block_index * PHYS_BLOCK_SIZE);
 
   /* Clean the physical block of memory */
-  memset((void *)phys_addr, 0, PHYS_BLOCK_SIZE);
+  if (get_is_paging_enabled()) 
+    memset((void *)(phys_addr | VIRT_ADDR_BASE), 0, PHYS_BLOCK_SIZE);
+  else
+    memset((void *)phys_addr, 0, PHYS_BLOCK_SIZE);
   
   return phys_addr;
 }
@@ -198,6 +208,7 @@ void init_pmm(uint32_t *modulep, void *physbase, void *physfree) {
 		  i++;	
       kprintf("Available Physical Memory [%p - %p]\n", smap->base, smap->base + smap->length);
       update_phys_blocks(smap->base, smap->base + smap->length);
+      phys_mem_end = smap->base + smap->length;
     }
   }
 

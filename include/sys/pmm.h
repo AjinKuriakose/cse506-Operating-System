@@ -11,6 +11,7 @@ typedef struct phys_block_t {
 
 extern phys_block_t phys_blocks[MAX_NUM_PHYS_BLOCKS];
 
+uint64_t get_phys_mem_end();
 uint32_t get_num_free_blocks();
 uint32_t get_num_used_blocks();
 uint64_t pmm_alloc_block();

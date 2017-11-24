@@ -2,7 +2,9 @@
 #define __TASK_H__
 
 #include <sys/defs.h> 
- 
+
+#define MAX_NUM_PROCESSES 100
+
 extern void init_tasking();
 /*
  * not using these members except rsp as we are pushing registers.
@@ -61,5 +63,6 @@ extern void yield();
 extern void switch_task(task_struct_t *old, task_struct_t *new); 
 extern void switchring3(void *, uint64_t, uint64_t); 
 void doIt();
+void execute_user_process(char *bin_filename);
 
 #endif /* __TASK_H__ */

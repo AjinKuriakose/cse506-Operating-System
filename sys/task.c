@@ -2,8 +2,10 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
 #include <sys/vmm.h>
+#include <sys/pmm.h>
 #include <sys/gdt.h>
 #include <sys/utils.h>
+#include <sys/elf64.h>
 
 static task_struct_t *running_task;
 static task_struct_t main_task;
@@ -42,11 +44,13 @@ long syscall(int syscall_number, ...) {
   "cmp    $0xfffffffffffff001,%%rax;"
   :"=r"(ret)
   );
+
   /* not sure if rax has be updated manually from ring0 */
   return ret;
 }
+
 uint64_t write(int fd, const void *c, size_t size) {
-    return syscall(__NR_write, fd, c, size);
+  return syscall(__NR_write, fd, c, size);
 }
 
 /* till this part, code from libc */
@@ -62,8 +66,8 @@ void ring3func() {
   // __asm__ volatile("" ::"a"(syscall_no+1));
   //__asm__ volatile("syscall");
   kprintf("Ring 3 : while 1.\n");
-  while(1);
 
+  while(1);
 }
 void switch_to_user_mode() {
   uint64_t cs = get_user_cs() | 0x3;
@@ -141,5 +145,32 @@ void yield() {
  */
 void doIt() {
     yield();
+}
+
+void execute_user_process(char *bin_filename) {
+  /*
+  context     ctx;
+  char        kstack[4096];
+  struct task_struct_t *next;
+  uint64_t    pid;
+  uint64_t    ppid;
+  uint64_t    rip;
+  uint64_t    cr3;
+  char        name[32];
+  mm_struct_t *mm;
+  */
+//  task_struct_t *task = &task2;
+  
+  pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
+  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
+  new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
+
+  set_cr3(pml4);
+  while(1);
+
+//  task->mm = (mm_struct_t *)vmm_alloc_page();
+
+//  load_binary(&task2, bin_filename);
 }
 

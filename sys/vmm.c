@@ -21,7 +21,17 @@ extern char kernmem;
 /* Virtual address to be returned for the next page alloc request after validation */
 uint64_t virt_addr = VIRT_ADDR_BASE;
 
+uint8_t is_paging_enabled = 0;
+
 pml4_t *pml4;
+
+uint8_t get_is_paging_enabled() {
+  return is_paging_enabled;
+}
+
+void set_is_paging_enabled() {
+  is_paging_enabled = 1;
+}
 
 void set_cr3(pml4_t *pml4) {
   __asm__ volatile("movq %0, %%cr3"::"r"(pml4));
@@ -34,6 +44,10 @@ pml4_t *get_cr3() {
   return current_cr3;
 }
 
+pml4_t *get_kernel_pml4() {
+  return pml4;
+}
+
 /*
  * Enable paging by updating cr0
  */
@@ -42,6 +56,8 @@ void enable_paging() {
   __asm__ volatile("mov %%cr0, %0":"=r"(cr0));
   cr0 |= 0x80000000; /* Enable paging */
   __asm__ volatile("mov %0, %%cr0"::"r"(cr0));
+
+  set_is_paging_enabled();
 }
 
 void page_fault_handler() {
@@ -108,6 +124,8 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
 
   /* Video memory virtual address to physical address mapping */
   create_video_memory_map();
+
+  identity_mapping();
 
   set_cr3(pml4);
 
@@ -190,5 +208,17 @@ void alloc_segment_mem(uint64_t v_addr) {
     /* No more physical memory available */
     kprintf("No Memory Available !!!\n");
   }
+}
+
+void identity_mapping() {
+
+	uint64_t p_addr = 0x0;
+	uint64_t v_addr = VIRT_ADDR_BASE;
+	while (p_addr < get_phys_mem_end()) {
+
+  	virt_phys_map(pml4, v_addr, p_addr);
+		v_addr += VIRT_PAGE_SIZE;
+		p_addr += PHYS_BLOCK_SIZE;
+	}
 }
 
