@@ -65,10 +65,30 @@ void syscall_handler() {
 
   __asm__ __volatile__(
       "pushq %rax;");
+
   __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.__NR_syscall));
   
+
   get_syscall_args();
 
+  //sys_call_ptr_t sys_call = sys_call_table[syscall_args.__NR_syscall];
+  //sys_call_ptr_t sys_call = sys_call_table[syscall_args.__NR_syscall];
+
+#if 0
+  __asm__ __volatile__(
+      "pushq %r9;"
+      "pushq %r8;"
+      "pushq %r10;"
+      "pushq %rdx;"
+      "pushq %rsi;"
+      "pushq %rdi;"
+      "pushq %rcx;"
+      );
+
+  __asm__ __volatile__("mov %0, %%rax;callq %%rax;"::"a"(sys_call));
+#endif
+
+//  (*sys_call)();
   (*sys_call_table[syscall_args.__NR_syscall])();
   
   /* restoring rcx register value, rip <-- rcx upon sysretq */

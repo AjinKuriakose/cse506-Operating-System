@@ -67,7 +67,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   execute_user_process("bin/helloworld");
   //execute_user_process("bin/sbush");
 
-//	doIt();
+doIt();
 
   while(1) __asm__ volatile ("hlt");
 }
