@@ -70,7 +70,7 @@ void page_fault_handler() {
  * PDP, PD and PT entries corresponding to the virtual address
  * are created if they are not already present
  */
-void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
+void virt_phys_map_before_paging(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
 
   pdp_t   *pdp; 
   pd_t    *pd; 
@@ -112,9 +112,52 @@ void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
   pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
 }
 
+void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
+
+  pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pdp_t   *pdp; 
+  pd_t    *pd; 
+  pt_t    *pt; 
+
+  uint64_t  pdp_addr; 
+  uint64_t  pd_addr; 
+  uint64_t  pt_addr; 
+  uint64_t  set_flags_PWU = (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
+
+  /* Get pml4 entry using virtual address. If not present, create */
+  pdp_addr = pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)];
+  if (pdp_addr & PTE_PRESENT) {
+    pdp = (pdp_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr) | VIRT_ADDR_BASE);
+  } else {
+    pdp = (pdp_t *)(pmm_alloc_block() | VIRT_ADDR_BASE);
+    pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
+  }
+
+  /* Get pdp entry using virtual address. If not present, create */
+  pd_addr = pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)];
+  if (pd_addr & PTE_PRESENT) {
+    pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr) | VIRT_ADDR_BASE);
+  } else {
+    pd = (pd_t *)(pmm_alloc_block() | VIRT_ADDR_BASE);
+    pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
+  }
+   
+  /* Get pd entry using virtual address. If not present, create */
+  pt_addr = pd->pd_entries[PAGE_PD_INDEX(v_addr)];
+  if (pt_addr & PTE_PRESENT) {
+    pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr) | VIRT_ADDR_BASE);
+  } else {
+    pt = (pt_t *)(pmm_alloc_block() | VIRT_ADDR_BASE);
+    pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
+  }
+
+  /* Update pt entry with the provided physical address */
+  pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
+}
+
 void create_video_memory_map() {
 
-  virt_phys_map(pml4, VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
+  virt_phys_map_before_paging(pml4, VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
 }
 
 /* Initialize IA-32 paging mechanism */
@@ -216,7 +259,7 @@ void identity_mapping() {
 	uint64_t v_addr = VIRT_ADDR_BASE;
 	while (p_addr < get_phys_mem_end()) {
 
-  	virt_phys_map(pml4, v_addr, p_addr);
+  	virt_phys_map_before_paging(pml4, v_addr, p_addr);
 		v_addr += VIRT_PAGE_SIZE;
 		p_addr += PHYS_BLOCK_SIZE;
 	}

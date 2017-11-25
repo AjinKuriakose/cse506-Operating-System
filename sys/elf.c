@@ -3,10 +3,13 @@
 #include <sys/tarfs.h>
 #include <sys/kprintf.h>
 #include <sys/vmm.h>
+#include <sys/utils.h>
 
 int load_binary(task_struct_t *task, char *bin_filename) {
 
   Elf64_Ehdr *elf_header = get_elf_header(bin_filename);
+  kprintf("elf header.. %p\n", elf_header);
+  kprintf("binar header.. %p\n", &_binary_tarfs_start);
   Elf64_Phdr *prog_header = (Elf64_Phdr *)((char *)elf_header + elf_header->e_phoff);
 
   /* TODO : Remove these prints after development */
@@ -72,11 +75,27 @@ int load_binary(task_struct_t *task, char *bin_filename) {
         num_pages_required--;
       }
 
+      kprintf("AMD : start = %p\n", prog_header->p_vaddr);
+      kprintf("AMD : end   = %p\n", prog_header->p_vaddr + prog_header->p_memsz);
+      kprintf("AMD : num pages = %d\n", num_pages_required);
+      if (prog_header->p_flags == (PF_R | PF_X))
+        kprintf("AMD : Text\n");
+      if (prog_header->p_flags == (PF_R | PF_W))
+        kprintf("AMD : Data\n");
+
       if (prog_header->p_flags == (PF_R | PF_X)) {
         /* Text Segment */
         mm->code_start = vma->vma_start;
         mm->code_end   = vma->vma_end;
-
+        kprintf("tarfs..... %p\n",(&_binary_tarfs_start + prog_header->p_offset));
+        kprintf("pgm offsett..... %p %p\n",elf_header+ prog_header->p_offset, prog_header->p_filesz);
+        
+//        alloc_segment_mem((uint64_t)elf_header + prog_header->p_offset);
+        //memcpy((void *)0x4000E8, (void *)((uint64_t)elf_header + prog_header->p_offset), prog_header->p_filesz);
+        //memcpy((void *)0x4000E8, (void *)0x4000E8, 1);
+        while(1);
+        memcpy((void *)0x4000E8, (void *)0x4000E8, 1);
+        while(1);
       } else if (prog_header->p_flags == (PF_R | PF_W)) {
         /* Data Segment */
         mm->data_start = vma->vma_start;
@@ -90,6 +109,7 @@ int load_binary(task_struct_t *task, char *bin_filename) {
 
 
   task->rip = elf_header->e_entry;
+  kprintf("hello .. %p\n",task->rip);
 
   return 0;
 }
