@@ -38,6 +38,7 @@ void identity_mapping();
 void alloc_segment_mem(uint64_t v_addr);
 void set_cr3(pml4_t *pml4);
 pml4_t *get_cr3();
+void page_fault_handler();
 
 #endif
 

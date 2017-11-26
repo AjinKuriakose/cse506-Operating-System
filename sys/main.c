@@ -67,7 +67,13 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   execute_user_process("bin/helloworld");
   //execute_user_process("bin/sbush");
 
-//	doIt();
+  /* Page fault (err_code = 2, read access on non-present page) TODO : Remove */
+  memset((void *)0x88888, 0, 1);
+
+  /* Page fault (err_code = 2, write access on non-present page) TODO : Remove */
+  memcpy((void *)0x88888, (void *)0x99999, 1);
+
+	//doIt();
 
   while(1) __asm__ volatile ("hlt");
 }

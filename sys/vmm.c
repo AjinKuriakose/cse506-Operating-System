@@ -44,6 +44,13 @@ pml4_t *get_cr3() {
   return current_cr3;
 }
 
+static uint64_t get_cr2() {
+  uint64_t cr2;
+  __asm__ volatile("mov %%cr2, %0":"=r"(cr2));
+
+  return cr2;
+}
+
 pml4_t *get_kernel_pml4() {
   return pml4;
 }
@@ -62,7 +69,15 @@ void enable_paging() {
 
 void page_fault_handler() {
 
-  kprintf("Inside page_fault_handler\n");
+  /* TODO : Enhance the page fault handling and remove print statements */
+  uint64_t error_code;
+  __asm__ volatile("movq 136(%%rsp), %0":"=r"(error_code));
+
+  uint64_t faulting_address = get_cr2();
+  kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
+
+  /* Create mapping for the faulting address */
+  alloc_segment_mem(faulting_address);
 }
 
 /*
