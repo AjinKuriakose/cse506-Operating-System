@@ -44,6 +44,11 @@ void memcpy(void *dest, const void *src, int n) {
 
 /* number base converter, int to oct, hex etc */
 void convert(char *a, unsigned long n, int base, int i) {
+  if (n == 0 && i == 0) {
+    a[i] = 48;
+    return;
+  }
+
   int rem = n % base;
   if (n == 0)
     return;
