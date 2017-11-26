@@ -69,14 +69,14 @@ void ring3func() {
 
   while(1);
 }
+
 void switch_to_user_mode() {
   uint64_t cs = get_user_cs() | 0x3;
   uint64_t ds = get_user_ds() | 0x3;
 
   //switchring3(ring3func, cs, ds);
-  switchring3((void *)0x4000B0, cs, ds);
+  switchring3((void *)0x400000, cs, ds);
 }
-
 
 void task1Main() {
     while(1) {
@@ -163,23 +163,16 @@ void execute_user_process(char *bin_filename) {
   task_struct_t *task = &task2;
   
   pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
-  //pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
-  //pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
-  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4);
-  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4());
+  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-  new_pml4->pml4_entries[0] = kern_pml4->pml4_entries[0];
-//  kprintf("block is task %p\n", get_kernel_pml4()->pml4_entries[511]);
-
- // kprintf("%p \n", kern_pml4->pml4_entries[511]);
-  //kprintf("%x new----- \n", *pml4);
 
   set_cr3(pml4);
+
   task->mm = (mm_struct_t *)vmm_alloc_page();
 //  while(1);
-  alloc_segment_mem(0x4000B0);
+  alloc_segment_mem(0x400000);
 //
-//  while(1);
   load_binary(task, bin_filename);
 }
 

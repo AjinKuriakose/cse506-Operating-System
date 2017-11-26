@@ -68,11 +68,10 @@ uint64_t pmm_alloc_block() {
   phys_addr = (uint64_t)(block_index * PHYS_BLOCK_SIZE);
 
   /* Clean the physical block of memory */
-//  if (!get_is_paging_enabled()) 
+  if (get_is_paging_enabled()) 
+    memset((void *)(phys_addr | VIRT_ADDR_BASE), 0, PHYS_BLOCK_SIZE);
+  else
     memset((void *)phys_addr, 0, PHYS_BLOCK_SIZE);
-    //memset((void *)(phys_addr | VIRT_ADDR_BASE), 0, PHYS_BLOCK_SIZE);
-  //else
-   // memset((void *)phys_addr, 0, PHYS_BLOCK_SIZE);
   
   return phys_addr;
 }

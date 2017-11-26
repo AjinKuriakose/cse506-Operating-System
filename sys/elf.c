@@ -90,14 +90,10 @@ int load_binary(task_struct_t *task, char *bin_filename) {
         kprintf("tarfs..... %p\n",(&_binary_tarfs_start + prog_header->p_offset));
         kprintf("pgm offsett..... %p %p\n",elf_header+ prog_header->p_offset, prog_header->p_filesz);
         
-///        alloc_segment_mem((uint64_t)elf_header + prog_header->p_offset);
-        memset((void *)0x4000B0, 0, 4096);
-//
-        memcpy((void *)0x4000B0, (void *)((uint64_t)elf_header + prog_header->p_offset+1), prog_header->p_filesz);
+//        alloc_segment_mem((uint64_t)elf_header + prog_header->p_offset);
+        //memcpy((void *)0x4000E8, (void *)((uint64_t)elf_header + prog_header->p_offset), prog_header->p_filesz);
         //memcpy((void *)0x4000E8, (void *)0x4000E8, 1);
-//        while(1);
-//        memcpy((void *)0x4000E8, (void *)0x4000E8, 1);
-//        while(1);
+        memcpy((void *)0x400000, (void *)0x400000, 1);
       } else if (prog_header->p_flags == (PF_R | PF_W)) {
         /* Data Segment */
         mm->data_start = vma->vma_start;
@@ -108,11 +104,11 @@ int load_binary(task_struct_t *task, char *bin_filename) {
     prog_header++;
     e_phnum--;
   }
-//  while(1);
+
 
   task->rip = elf_header->e_entry;
   kprintf("hello .. %p\n",task->rip);
- // while(1);
+
   return 0;
 }
 

@@ -34,7 +34,7 @@ void set_is_paging_enabled() {
 }
 
 void set_cr3(pml4_t *pml4) {
-  __asm__ volatile("movq %0, %%cr3"::"r"((uint64_t)pml4));
+  __asm__ volatile("movq %0, %%cr3"::"r"(pml4));
 }
 
 pml4_t *get_cr3() {
@@ -114,7 +114,7 @@ void virt_phys_map_before_paging(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr)
 
 void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
 
-  //pml4 = (pml4_t *)((uint64_t)pml4);
+  pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pdp_t   *pdp; 
   pd_t    *pd; 
   pt_t    *pt; 
@@ -127,44 +127,40 @@ void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
   /* Get pml4 entry using virtual address. If not present, create */
   pdp_addr = pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)];
   if (pdp_addr & PTE_PRESENT) {
-    //pdp = (pdp_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr) | VIRT_ADDR_BASE);
     pdp = (pdp_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr));
   } else {
-    //pdp = (pdp_t *)(pmm_alloc_block() | VIRT_ADDR_BASE);
     pdp = (pdp_t *)(pmm_alloc_block());
     pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
   }
 
   /* Get pdp entry using virtual address. If not present, create */
+  pdp = (pdp_t *)((uint64_t)pdp | VIRT_ADDR_BASE);
   pd_addr = pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)];
   if (pd_addr & PTE_PRESENT) {
-    //pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr) | VIRT_ADDR_BASE);
     pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr));
   } else {
-    //pd = (pd_t *)(pmm_alloc_block() | VIRT_ADDR_BASE);
     pd = (pd_t *)(pmm_alloc_block());
     pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
   }
    
   /* Get pd entry using virtual address. If not present, create */
+  pd = (pd_t *)((uint64_t)pd | VIRT_ADDR_BASE);
   pt_addr = pd->pd_entries[PAGE_PD_INDEX(v_addr)];
   if (pt_addr & PTE_PRESENT) {
-    //pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr) | VIRT_ADDR_BASE);
     pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr));
   } else {
-    //pt = (pt_t *)(pmm_alloc_block() | VIRT_ADDR_BASE);
     pt = (pt_t *)(pmm_alloc_block());
     pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
   }
 
   /* Update pt entry with the provided physical address */
+  pt = (pt_t *)((uint64_t)pt | VIRT_ADDR_BASE);
   pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
 }
 
 void create_video_memory_map() {
 
-  //virt_phys_map_before_paging(pml4, VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
-  virt_phys_map(pml4, VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
+  virt_phys_map_before_paging(pml4, VIDEO_VIRT_MEM_BEGIN, VIDEO_PHYS_MEM_BEGIN);
 }
 
 /* Initialize IA-32 paging mechanism */
@@ -177,13 +173,10 @@ void init_paging(uint64_t physbase, uint64_t physfree) {
 
   identity_mapping();
 
-  kprintf("block is before cr3set %p\n", pml4->pml4_entries[511]);
   set_cr3(pml4);
 
   /* Lets's do it */
-  kprintf("block is %p\n", pml4->pml4_entries[511]);
   enable_paging();
-  kprintf("block is %p\n", pml4->pml4_entries[511]);
 }
 
 /*
@@ -205,9 +198,8 @@ void setup_four_level_paging(uint64_t physbase, uint64_t physfree) {
 
   /* Allocate and insert pdp table entry in pml4 table */
   pdp = (pdp_t *)pmm_alloc_block();
-  kprintf("block is %d %p\n", PAGE_PML4_INDEX(v_addr), ((uint64_t)pdp | set_flags_PWU));
   pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
-  kprintf("block is %p\n", pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)]);
+  
   /* Allocate and insert page directory entry in pdp table */
   pd = (pd_t *)pmm_alloc_block();
   pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
@@ -267,12 +259,10 @@ void alloc_segment_mem(uint64_t v_addr) {
 void identity_mapping() {
 
 	uint64_t p_addr = 0x0;
-	//uint64_t v_addr = VIRT_ADDR_BASE;
-	uint64_t v_addr = 0x0;
+	uint64_t v_addr = VIRT_ADDR_BASE;
 	while (p_addr < get_phys_mem_end()) {
 
-  	//virt_phys_map_before_paging(pml4, v_addr, p_addr);
-    virt_phys_map(pml4, v_addr, p_addr);
+  	virt_phys_map_before_paging(pml4, v_addr, p_addr);
 		v_addr += VIRT_PAGE_SIZE;
 		p_addr += PHYS_BLOCK_SIZE;
 	}
