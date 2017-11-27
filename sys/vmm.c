@@ -16,6 +16,9 @@
 #define PWU_FLAG      (PTE_PRESENT | PTE_WRITABLE | PTE_USER) /* User Pages */
 #define PWS_FLAG      (PTE_PRESENT | PTE_WRITABLE)            /* Supervisor Pages */
 
+#define INVALID_ADDRESS   (~0)
+#define MARK_PAGE_ABSENT  1
+
 extern char kernmem;
 
 /* Virtual address to be returned for the next page alloc request after validation */
@@ -78,6 +81,57 @@ void page_fault_handler() {
 
   /* Create mapping for the faulting address */
   alloc_segment_mem(faulting_address);
+}
+
+/*
+ * Returns the physical address corresponding to the given virtual address
+ * Also marks the page as absent if mark_as_absent is set
+ */
+static uint64_t get_physical_addr(pml4_t *pml4, uint64_t v_addr, uint8_t mark_as_absent) {
+
+  pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pdp_t   *pdp;
+  pd_t    *pd;
+  pt_t    *pt;
+
+  uint64_t  pdp_addr;
+  uint64_t  pd_addr;
+  uint64_t  pt_addr;
+
+  /* Get pml4 entry using virtual address */
+  pdp_addr = pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)];
+  if (pdp_addr & PTE_PRESENT) {
+    pdp = (pdp_t *)PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr);
+  } else {
+    return INVALID_ADDRESS;
+  }
+
+  /* Get pdp entry using virtual address */
+  pdp = (pdp_t *)((uint64_t)pdp | VIRT_ADDR_BASE);
+  pd_addr = pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)];
+  if (pd_addr & PTE_PRESENT) {
+    pd = (pd_t *)PAGE_GET_PHYSICAL_ADDRESS(&pd_addr);
+  } else {
+    return INVALID_ADDRESS;
+  }
+
+  /* Get pd entry using virtual address */
+  pd = (pd_t *)((uint64_t)pd | VIRT_ADDR_BASE);
+  pt_addr = pd->pd_entries[PAGE_PD_INDEX(v_addr)];
+  if (pt_addr & PTE_PRESENT) {
+    pt = (pt_t *)PAGE_GET_PHYSICAL_ADDRESS(&pt_addr);
+  } else {
+    return INVALID_ADDRESS;
+  }
+
+  pt = (pt_t *)((uint64_t)pt | VIRT_ADDR_BASE);
+  if (mark_as_absent) {
+    /* Set as absent */
+    pt->pt_entries[PAGE_PT_INDEX(v_addr)] &= ~PTE_PRESENT;
+  }
+
+  /* Return the stored physical address. Last 3 bits are flags and hence ignored */
+  return pt->pt_entries[PAGE_PT_INDEX(v_addr)] & ~7;
 }
 
 /*
@@ -241,7 +295,8 @@ void remap_kernel(pt_t *pt, uint64_t p_base, uint64_t p_free){
   }
 }
 
-/* Return the address of a page(virtual address)
+/*
+ * Returns the address of a page(virtual address)
  */
 uint64_t vmm_alloc_page() {
 
@@ -258,6 +313,17 @@ uint64_t vmm_alloc_page() {
   }
 
   return v_addr;
+}
+
+/*
+ * Deallocate a previously allocated page
+ */
+void vmm_dealloc_page(uint64_t v_addr) {
+
+  uint64_t p_addr = get_physical_addr(get_cr3(), v_addr, MARK_PAGE_ABSENT);
+  if (p_addr != INVALID_ADDRESS) {
+    pmm_dealloc_block(p_addr);
+  }
 }
 
 void alloc_segment_mem(uint64_t v_addr) {
