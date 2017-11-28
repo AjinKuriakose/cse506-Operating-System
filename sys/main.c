@@ -73,7 +73,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   /* Page fault (err_code = 2, write access on non-present page) TODO : Remove */
   memcpy((void *)0x88888, (void *)0x99999, 1);
 
-	//doIt();
+	doIt();
 
   while(1) __asm__ volatile ("hlt");
 }

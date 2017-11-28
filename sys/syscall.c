@@ -13,6 +13,7 @@
 #define __NR_syscall_max     50 
 #define __NR_read            0
 #define __NR_write           1
+#define __NR_exit            60 
 
 typedef void (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
@@ -68,7 +69,6 @@ void syscall_handler() {
   __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.__NR_syscall));
   
   get_syscall_args();
-
   (*sys_call_table[syscall_args.__NR_syscall])();
   
   /* restoring rcx register value, rip <-- rcx upon sysretq */
@@ -112,19 +112,21 @@ static inline void enable_syscall_instr() {
  */
 void sys_write() {
 
-  uint64_t fd;
+  //uint64_t fd;
   void *ptr;
   uint64_t size;
   char buff[512];
-
+  static int count = 1;
   ptr = (void*)syscall_args.rsi;
-  fd = syscall_args.rdi;
+  //fd = syscall_args.rdi;
   size = syscall_args.rdx;
 
   memcpy(buff, ptr, size);
   write_to_terminal(buff, size);  
   
-  kprintf("%d %d Inside sys_write handler\n", fd, size);
+  //kprintf("%d %d Inside sys_write handler\n", fd, size);
+  kprintf("count = %d\n", count);
+  count++;
   kprintf("\n");
 }
 
@@ -144,6 +146,10 @@ void sys_read() {
   kprintf("\nsys_read dummy funtion. Ring 0\n");
 }
 
+void sys_exit() {
+  kprintf(" Done !\n");
+  while(1);
+}
 /*
  * setting up syscall table init 
  */
@@ -151,6 +157,7 @@ void setup_sys_call_table() {
 
   sys_call_table[__NR_read] = sys_read;  
   sys_call_table[__NR_write] = sys_write;  
+  sys_call_table[__NR_exit] = sys_exit;  
   /* add remaining syscalls here..*/
 
 }
