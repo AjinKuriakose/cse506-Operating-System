@@ -104,6 +104,12 @@ void handle_keyboard_input(unsigned char glyph, int flags) {
     }
   }
 }
+void Sleep_t() {
+    volatile int spin = 0;
+      while (spin < 100000) {
+            spin++;
+              }
+}
 
 void write_to_terminal(const char *buff, int size) {
 
@@ -112,4 +118,6 @@ void write_to_terminal(const char *buff, int size) {
     kprintf("%c", buff[i++]);
     size--;
   }
+  Sleep_t();
+
 }

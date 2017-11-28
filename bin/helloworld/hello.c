@@ -1,6 +1,3 @@
-int global_var1[100000];
-int global_var2 = 2;
-
 long syscall(int syscall_number, ...) {
   long ret;
   __asm__(
@@ -23,13 +20,16 @@ int write(int fd, const void *c, int size) {
   return syscall(1, fd, c, size);
 }
 
+int exit() {
+  return syscall(60);
+}
 int main() {
 
-  char *buff = "manu";
-  int a[10];
-  a[0] = 4;
-
-  write(1, buff, a[0]);
-
+  char ch[7] = "manu123";
+  while(1) {
+    write(1, &ch, 7);
+    exit();
+    //while(1);
+  }
   return 0;
 }

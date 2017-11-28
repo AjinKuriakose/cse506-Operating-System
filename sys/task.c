@@ -75,7 +75,7 @@ void switch_to_user_mode() {
   uint64_t ds = get_user_ds() | 0x3;
 
   //switchring3(ring3func, cs, ds);
-  switchring3((void *)0x400000, cs, ds);
+  switchring3((void *)0x4000B0, cs, ds);
 }
 
 void task1Main() {
