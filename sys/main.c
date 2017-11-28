@@ -56,6 +56,10 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   checkAllBuses();  
 #endif
 
+  /* Parse and construct tree from tarfs contents */
+  init_tarfs_tree();
+
+  /* Initialize terminal */
   init_terminal();
 
   /* setting up syscall & related functions */
