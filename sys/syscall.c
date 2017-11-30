@@ -70,6 +70,7 @@ void syscall_handler() {
   
   get_syscall_args();
   (*sys_call_table[syscall_args.__NR_syscall])();
+  yield();
   
   /* restoring rcx register value, rip <-- rcx upon sysretq */
   __asm__ volatile("mov %0, %%rcx" ::"a"(syscall_args.rcx));
@@ -125,7 +126,7 @@ void sys_write() {
   write_to_terminal(buff, size);  
   
   //kprintf("%d %d Inside sys_write handler\n", fd, size);
-  kprintf("count = %d\n", count);
+  //kprintf("count = %d\n", count);
   count++;
   kprintf("\n");
 }
@@ -147,7 +148,7 @@ void sys_read() {
 }
 
 void sys_exit() {
-  kprintf(" Done !\n");
+  kprintf(" Done from exit() !\n");
   while(1);
 }
 /*

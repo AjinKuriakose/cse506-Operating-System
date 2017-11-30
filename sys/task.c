@@ -19,7 +19,7 @@ static task_struct_t task2;
  */
 void Sleep() {
   volatile int spin = 0;
-  while (spin < 50000000) {
+  while (spin < 90000000) {
     spin++;
   }
 }
@@ -79,9 +79,13 @@ void switch_to_user_mode() {
 }
 
 void task1Main() {
+    static int c = 0;
     while(1) {
-        kprintf("Thread ####1\n");
+        kprintf("Thread1 #### %d\n", c);
+        c++;
         Sleep();
+    //    yield();
+        switch_to_user_mode();
         set_tss_rsp((void *)task1.ctx.rsp);
 				yield();
     }
@@ -89,7 +93,7 @@ void task1Main() {
  
 void task2Main() {
     while(1) {
-        kprintf("Thread ####2\n");
+        kprintf("Thread2 ####2\n");
         Sleep();
         set_tss_rsp((void *)task1.ctx.rsp);
         switch_to_user_mode();
@@ -107,7 +111,7 @@ void task2Main() {
  */
 void init_tasking() {
     // Get EFLAGS and CR3
-    //__asm__ volatile("mov %%cr3, %%eax; mov %%eax, %0;":"=m"(main_task.ctx.cr3)::"%eax");
+    //__asm__ volatile("mov %%cr3, %%rax; mov %%rax, %0;":"=m"(main_task.ctx.cr3)::"%rax");
     // __asm__ volatile("mov %%cr3, %0": "=r"(main_task.ctx.cr3));
     //__asm__ volatile("pushfl; movq (%%esp), %%eax; movq %%eax, %0; popfl;":"=m"(main_task.ctx.eflags)::"%eax");
  
@@ -131,8 +135,47 @@ void create_task_nw(task_struct_t *task, void (*main)()) {
      */
     uint64_t *tmp_ptr = (uint64_t *)&(task->kstack[4088]);
     *tmp_ptr = (uint64_t) main;
+     __asm__ volatile("mov %%cr3, %0": "=r"(task->cr3));
 }
- 
+
+void switch_task(task_struct_t *old, task_struct_t *new) {
+
+	__asm__ volatile(
+		"pushq %r15;"
+    "pushq %r14;"
+    "pushq %r13;"
+    "pushq %r12;"
+    "pushq %rbx;"
+    "pushq %rbp;"
+
+    "pushq %rax;"
+    "pushq %rcx;"
+    "pushq %rdx;"
+
+    "mov %rsp, (%rdi);"
+    "mov (%rsi), %rsp;"
+
+    "popq %rdx;"
+    "popq %rcx;"
+    "popq %rax;"
+
+    "popq %rbp;"
+    "popq %rbx;"
+    "popq %r12;"
+    "popq %r13;"
+    "popq %r14;"
+    "popq %r15;"
+
+    );
+
+  __asm__ __volatile__ (
+          "movq %0, %%cr3;"
+              ::"r"(new->cr3)
+                );
+  __asm__ __volatile__ ("ret;");
+
+}
+
 void yield() {
     task_struct_t *last = running_task;
     running_task = running_task->next;
@@ -148,31 +191,47 @@ void doIt() {
     yield();
 }
 
+static inline void invlpg(void* m)
+{
+      /* http://wiki.osdev.org/Inline_Assembly/Examples#INVLPG */
+      __asm__ __volatile__ ( "invlpg (%0)" : : "b"(m) : "memory" );
+}
+
 void execute_user_process(char *bin_filename) {
-  /*
-  context     ctx;
-  char        kstack[4096];
-  struct task_struct_t *next;
-  uint64_t    pid;
-  uint64_t    ppid;
-  uint64_t    rip;
-  uint64_t    cr3;
-  char        name[32];
-  mm_struct_t *mm;
-  */
   task_struct_t *task = &task2;
   
   pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
   pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-
+  invlpg((void*)0x400000);
   set_cr3(pml4);
-
+ // memset((void *)0x500000, 5, 10);
+  //  memcpy((void *)0x400000, (void*)0x500000, 1);
+   // kprintf(" value %x\n", *(char *)0x400000);
   task->mm = (mm_struct_t *)vmm_alloc_page();
-//  while(1);
-  alloc_segment_mem(0x400000);
-//
+  task->cr3 = (uint64_t) pml4;
+//  alloc_segment_mem(0x400000);
+  
+  load_binary(task, bin_filename);
+}
+
+void execute_user_process2(char *bin_filename) {
+  task_struct_t *task = &task1;
+  
+  pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
+  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
+  new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
+  invlpg((void*)0x400000);
+  set_cr3(pml4);
+ // memset((void *)0x500000, 5, 10);
+  //  memcpy((void *)0x400000, (void*)0x500000, 1);
+   // kprintf(" value %x\n", *(char *)0x400000);
+  task->mm = (mm_struct_t *)vmm_alloc_page();
+  task->cr3 = (uint64_t) pml4;
+//  alloc_segment_mem(0x400000);
+  
   load_binary(task, bin_filename);
 }
 

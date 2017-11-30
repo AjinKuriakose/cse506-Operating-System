@@ -1,6 +1,7 @@
 #include <sys/timer.h>
 #include <sys/kprintf.h>
 #include <sys/utils.h>
+#include <sys/task.h>
 
 void display_time(int secs) {
   int buff_len = 0;
@@ -27,6 +28,7 @@ void print_timer() {
   if (count == 18) {
     sec += 1;
     display_time(sec);
+//    yield();
     count = 0;
   }
 }

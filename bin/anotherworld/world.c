@@ -25,12 +25,11 @@ int exit() {
 }
 int main() {
 
-  char ch[7] = "manu123";
-  char ab[7] = "manu999";
-  
+  char ch[10] = "AnotherPgm";
+  char ab[8] = "program2";
   while(1) {
-    write(1, &ch, 7);
-    write(1, &ab, 7);
+    write(1, &ch, 10);
+    write(1, &ab, 8);
     exit();
     //while(1);
   }

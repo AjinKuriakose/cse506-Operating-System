@@ -64,5 +64,7 @@ extern void switch_task(task_struct_t *old, task_struct_t *new);
 extern void switchring3(void *, uint64_t, uint64_t); 
 void doIt();
 void execute_user_process(char *bin_filename);
+//TODO: remove the following function later
+void execute_user_process2(char *bin_filename);
 
 #endif /* __TASK_H__ */

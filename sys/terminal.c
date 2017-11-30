@@ -106,7 +106,7 @@ void handle_keyboard_input(unsigned char glyph, int flags) {
 }
 void Sleep_t() {
     volatile int spin = 0;
-      while (spin < 100000) {
+      while (spin < 40000000) {
             spin++;
               }
 }

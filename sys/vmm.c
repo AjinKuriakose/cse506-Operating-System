@@ -78,7 +78,6 @@ void page_fault_handler() {
 
   uint64_t faulting_address = get_cr2();
   kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
-
   /* Create mapping for the faulting address */
   alloc_segment_mem(faulting_address);
 }

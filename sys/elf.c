@@ -91,7 +91,9 @@ int load_binary(task_struct_t *task, char *bin_filename) {
  //       kprintf("pgm offsett..... %p %p\n",elf_header+ prog_header->p_offset, prog_header->p_filesz);
         
 //        alloc_segment_mem((uint64_t)elf_header + prog_header->p_offset);  
-        memcpy((void *)0x400000, (void *)((uint64_t)elf_header + prog_header->p_offset), prog_header->p_filesz);
+//        memset((void*)0x400000, 0,10);
+        //memcpy((void *)0x500000, (void *)((uint64_t)elf_header + prog_header->p_offset), prog_header->p_filesz);
+        memcpy((void *)prog_header->p_vaddr, (void *)((uint64_t)elf_header + prog_header->p_offset), prog_header->p_filesz);
    //     memcpy((void *)0x400000, (void *)0x400000, 1);
       } else if (prog_header->p_flags == (PF_R | PF_W)) {
         /* Data Segment */
