@@ -25,11 +25,7 @@ void dump_tarfs_tree(file_t *temp, int level) {
       kprintf("   ");
     }
 
-    if (temp->file_type == FILE_TYPE_DIR) {
-      kprintf("%s\n", temp->file_name);
-    } else if (temp->file_type == FILE_TYPE_FILE) {
-      kprintf("%s\n", temp->file_name);
-    }
+    kprintf("%s\n", temp->file_name);
 
     int i = 0;
     while (i < temp->num_children) {
