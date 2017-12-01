@@ -64,14 +64,21 @@ void get_syscall_args() {
  */
 void syscall_handler() {
 
-  __asm__ __volatile__(
-      "pushq %rax;");
+  __asm__ __volatile__("pushq %rax;");
   __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.__NR_syscall));
   
   get_syscall_args();
+  /* not sure if doing right..above two operations would happen in userstack */
+  __asm__ __volatile__("movq %%rsp, %0"  : "=a"(get_current_running_task()->ursp));
+  __asm__ __volatile__("movq %0, %%rsp" :: "a"(get_current_running_task()->ctx.rsp));
+
+
   (*sys_call_table[syscall_args.__NR_syscall])();
+
   yield();
   
+  __asm__ __volatile__("movq %%rsp, %0" : "=a"(get_current_running_task()->ctx.rsp));
+  __asm__ __volatile__("movq %0, %%rsp" :: "a"(get_current_running_task()->ursp));
   /* restoring rcx register value, rip <-- rcx upon sysretq */
   __asm__ volatile("mov %0, %%rcx" ::"a"(syscall_args.rcx));
   __asm__ volatile("add $0x8, %rsp"); 
@@ -128,6 +135,7 @@ void sys_write() {
   //kprintf("%d %d Inside sys_write handler\n", fd, size);
   //kprintf("count = %d\n", count);
   count++;
+  kprintf("\n");
   kprintf("\n");
 }
 

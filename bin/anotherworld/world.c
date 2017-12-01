@@ -25,13 +25,17 @@ int exit() {
 }
 int main() {
 
-  char ch[10] = "AnotherPgm";
-  char ab[8] = "program2";
-  while(1) {
-    write(1, &ch, 10);
-    write(1, &ab, 8);
-    exit();
+  char ch[7] = "amd_123";
+//  char ab[7] = "amd_999";
+  int i =0;
+  while(i<5) {
+    write(1, &ch, 7);
+//    while(1);
+//    write(1, &ab, 7);
+ //   exit();
     //while(1);
+    i++;
   }
+  exit();
   return 0;
 }

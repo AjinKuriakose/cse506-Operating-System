@@ -51,6 +51,7 @@ typedef struct task_struct_t {
   uint64_t    ppid;
   uint64_t    rip;
   uint64_t    cr3;
+  uint64_t    ursp; //to save user stack address
   char        name[32];
   mm_struct_t *mm;
 } task_struct_t;
@@ -61,10 +62,11 @@ extern void create_task_nw(task_struct_t *, void(*)());
  
 extern void yield(); 
 extern void switch_task(task_struct_t *old, task_struct_t *new); 
-extern void switchring3(void *, uint64_t, uint64_t); 
+extern void switchring3(void *, uint64_t, uint64_t, uint64_t); 
 void doIt();
 void execute_user_process(char *bin_filename);
 //TODO: remove the following function later
 void execute_user_process2(char *bin_filename);
 
+task_struct_t *get_current_running_task();
 #endif /* __TASK_H__ */

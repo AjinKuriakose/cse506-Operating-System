@@ -13,6 +13,9 @@ static task_struct_t main_task;
 static task_struct_t task1;
 static task_struct_t task2;
 
+task_struct_t *get_current_running_task() {
+  return running_task;
+}
 /*
  * just for testing 
  * TODO:not required. just to verify switching print statement
@@ -75,7 +78,7 @@ void switch_to_user_mode() {
   uint64_t ds = get_user_ds() | 0x3;
 
   //switchring3(ring3func, cs, ds);
-  switchring3((void *)0x4000B0, cs, ds);
+  switchring3((void *)0x4000B0, cs, ds,0x900000);
 }
 
 void task1Main() {
@@ -85,8 +88,8 @@ void task1Main() {
         c++;
         Sleep();
     //    yield();
-        switch_to_user_mode();
         set_tss_rsp((void *)task1.ctx.rsp);
+        switch_to_user_mode();
 				yield();
     }
 }
@@ -95,7 +98,7 @@ void task2Main() {
     while(1) {
         kprintf("Thread2 ####2\n");
         Sleep();
-        set_tss_rsp((void *)task1.ctx.rsp);
+        set_tss_rsp((void *)task2.ctx.rsp);
         switch_to_user_mode();
         kprintf("dwInside Dummy....\n");
 				yield();
@@ -128,6 +131,7 @@ void init_tasking() {
  
 void create_task_nw(task_struct_t *task, void (*main)()) {
     task->ctx.rsp = (uint64_t) &(task->kstack[4016]);;
+    task->ursp = 0x900000;
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
      * save a 64 bit address in the stack, first creating a
@@ -206,12 +210,13 @@ void execute_user_process(char *bin_filename) {
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
   invlpg((void*)0x400000);
   set_cr3(pml4);
- // memset((void *)0x500000, 5, 10);
+  memset((void *)0x500000, 5, 10);
   //  memcpy((void *)0x400000, (void*)0x500000, 1);
    // kprintf(" value %x\n", *(char *)0x400000);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
 //  alloc_segment_mem(0x400000);
+  alloc_segment_mem(0x8FBF6B);
   
   load_binary(task, bin_filename);
 }
@@ -225,12 +230,12 @@ void execute_user_process2(char *bin_filename) {
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
   invlpg((void*)0x400000);
   set_cr3(pml4);
- // memset((void *)0x500000, 5, 10);
+  memset((void *)0x500000, 5, 10);
   //  memcpy((void *)0x400000, (void*)0x500000, 1);
    // kprintf(" value %x\n", *(char *)0x400000);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
-//  alloc_segment_mem(0x400000);
+  alloc_segment_mem(0x8FBF6B);
   
   load_binary(task, bin_filename);
 }
