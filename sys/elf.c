@@ -68,8 +68,12 @@ int load_binary(task_struct_t *task, char *bin_filename) {
       uint64_t v_addr = prog_header->p_vaddr;
       uint64_t segment_size = prog_header->p_memsz;
       uint32_t num_pages_required = (segment_size + VIRT_PAGE_SIZE) / VIRT_PAGE_SIZE;
+      uint32_t page_align_offset = v_addr % VIRT_PAGE_SIZE;
+      if (page_align_offset) {
+        /* v_addr might not be 4K aligned */
+        v_addr = v_addr - page_align_offset;
+      }
       while (num_pages_required) {
-        /* TODO : v_addr might not be 4K aligned. change if required */
         alloc_segment_mem(v_addr);
         v_addr += VIRT_PAGE_SIZE;
         num_pages_required--;

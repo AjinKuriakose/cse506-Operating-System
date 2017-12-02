@@ -13,9 +13,28 @@ static task_struct_t main_task;
 static task_struct_t task1;
 static task_struct_t task2;
 
+static uint8_t pid[MAX_NUM_PROCESSES] = {0};
+
+/* Allocate an available process id */
+uint32_t allocate_pid() {
+  uint8_t pid_index = 0;
+  while (pid_index < MAX_NUM_PROCESSES) {
+    if (pid[pid_index] == 0) {
+      pid[pid_index] = 1;
+      return pid_index;
+    }
+
+    pid_index++;
+  }
+
+  return INVALID_PID;
+}
+
+/* Returns the current running task reference */
 task_struct_t *get_current_running_task() {
   return running_task;
 }
+
 /*
  * just for testing 
  * TODO:not required. just to verify switching print statement
@@ -78,31 +97,35 @@ void switch_to_user_mode() {
   uint64_t ds = get_user_ds() | 0x3;
 
   //switchring3(ring3func, cs, ds);
-  switchring3((void *)0x4000B0, cs, ds,0x900000);
+  /* TODO : Replace 0x4000F0 with correct value read from sbush elf */
+  switchring3((void *)0x4000F0, cs, ds, 0x900000);
 }
 
-void task1Main() {
+void idle_func() {
     static int c = 0;
     while(1) {
-        kprintf("Thread1 #### %d\n", c);
+        kprintf("Idle Func #### %d\n", c);
         c++;
         Sleep();
-    //    yield();
         set_tss_rsp((void *)task1.ctx.rsp);
-        switch_to_user_mode();
+       // switch_to_user_mode();
 				yield();
     }
 }
  
-void task2Main() {
+void init_sbush_proc() {
+    
+    switch_to_user_mode();
+    /*
     while(1) {
-        kprintf("Thread2 ####2\n");
+        kprintf("Init sbush proc ####\n");
         Sleep();
         set_tss_rsp((void *)task2.ctx.rsp);
         switch_to_user_mode();
         kprintf("dwInside Dummy....\n");
 				yield();
     }
+    */
 }
 
 /*
@@ -118,9 +141,8 @@ void init_tasking() {
     // __asm__ volatile("mov %%cr3, %0": "=r"(main_task.ctx.cr3));
     //__asm__ volatile("pushfl; movq (%%esp), %%eax; movq %%eax, %0; popfl;":"=m"(main_task.ctx.eflags)::"%eax");
  
-    //create_task(&task1, task1Main, main_task.ctx.eflags, (uint64_t*)main_task.ctx.cr3);
-    create_task_nw(&task1, task1Main);
-    create_task_nw(&task2, task2Main);
+    create_task(&task1, idle_func);
+    create_task(&task2, init_sbush_proc);
 
     main_task.next = &task1;
     task1.next = &task2;
@@ -129,7 +151,7 @@ void init_tasking() {
     running_task = &main_task;
 }
  
-void create_task_nw(task_struct_t *task, void (*main)()) {
+void create_task(task_struct_t *task, void (*main)()) {
     task->ctx.rsp = (uint64_t) &(task->kstack[4016]);;
     task->ursp = 0x900000;
     /* placing main's address, func pointer in the stack
@@ -201,27 +223,7 @@ static inline void invlpg(void* m)
       __asm__ __volatile__ ( "invlpg (%0)" : : "b"(m) : "memory" );
 }
 
-void execute_user_process(char *bin_filename) {
-  task_struct_t *task = &task2;
-  
-  pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
-  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
-  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
-  new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-  invlpg((void*)0x400000);
-  set_cr3(pml4);
-  memset((void *)0x500000, 5, 10);
-  //  memcpy((void *)0x400000, (void*)0x500000, 1);
-   // kprintf(" value %x\n", *(char *)0x400000);
-  task->mm = (mm_struct_t *)vmm_alloc_page();
-  task->cr3 = (uint64_t) pml4;
-//  alloc_segment_mem(0x400000);
-  alloc_segment_mem(0x8FBF6B);
-  
-  load_binary(task, bin_filename);
-}
-
-void execute_user_process2(char *bin_filename) {
+void start_init_process() {
   task_struct_t *task = &task1;
   
   pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
@@ -230,13 +232,33 @@ void execute_user_process2(char *bin_filename) {
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
   invlpg((void*)0x400000);
   set_cr3(pml4);
-  memset((void *)0x500000, 5, 10);
-  //  memcpy((void *)0x400000, (void*)0x500000, 1);
-   // kprintf(" value %x\n", *(char *)0x400000);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
   alloc_segment_mem(0x8FBF6B);
   
+  task->task_state = TASK_STATE_RUNNING;
+  task->pid  = allocate_pid();
+  task->ppid = 0;
+  strcpy(task->name, "init");
+}
+
+void start_sbush_process(char *bin_filename) {
+  task_struct_t *task = &task2;
+  
+  pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
+  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
+  new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
+  invlpg((void*)0x400000);
+  set_cr3(pml4);
+  task->mm = (mm_struct_t *)vmm_alloc_page();
+  task->cr3 = (uint64_t) pml4;
+  alloc_segment_mem(0x8FBF6B);
+  
+  task->task_state = TASK_STATE_RUNNING;
+  task->pid  = allocate_pid();
+  task->ppid = 0;
+  strcpy(task->name, "sbush");
   load_binary(task, bin_filename);
 }
 

@@ -3,7 +3,11 @@
 
 #include <sys/defs.h> 
 
-#define MAX_NUM_PROCESSES 100
+#define MAX_NUM_PROCESSES   50
+
+#define TASK_STATE_READY    1
+#define TASK_STATE_RUNNING  2
+#define INVALID_PID         0xFF
 
 extern void init_tasking();
 /*
@@ -54,19 +58,18 @@ typedef struct task_struct_t {
   uint64_t    ursp; //to save user stack address
   char        name[32];
   mm_struct_t *mm;
+  uint8_t     task_state;
 } task_struct_t;
 
 extern void init_tasking();
-//extern void create_task(task_struct_t *, void(*)(), uint64_t, uint64_t *);
-extern void create_task_nw(task_struct_t *, void(*)());
+extern void create_task(task_struct_t *, void(*)());
  
 extern void yield(); 
 extern void switch_task(task_struct_t *old, task_struct_t *new); 
 extern void switchring3(void *, uint64_t, uint64_t, uint64_t); 
 void doIt();
-void execute_user_process(char *bin_filename);
-//TODO: remove the following function later
-void execute_user_process2(char *bin_filename);
+void start_init_process();
+void start_sbush_process(char *bin_filename);
 
 task_struct_t *get_current_running_task();
 #endif /* __TASK_H__ */

@@ -44,7 +44,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   /* TODO : Remove this in the end, this is just for POC */
   browse_tarfs();
 
-//  while(1);
   init_idt();
   pic_offset_init(0x20,0x28);
   __asm__ volatile (
@@ -65,20 +64,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   /* setting up syscall & related functions */
   init_syscall();
 
-  /* TODO : context switching.. */
   init_tasking();
-  //memcpy((void *)0x400000, (void *)0x400000, 1);
-  //memset((void*)0x400000, 0,10);
-  execute_user_process("bin/helloworld");
-  execute_user_process2("bin/anotherworld");
-  //execute_user_process("bin/sbush");
-
-  /* Page fault (err_code = 2, read access on non-present page) TODO : Remove */
-  //memset((void *)0x88888, 0, 1);
-
-  /* Page fault (err_code = 2, write access on non-present page) TODO : Remove */
-  //memcpy((void *)0x88888, (void *)0x99999, 1);
-
+  start_init_process();
+  start_sbush_process("bin/sbush");
 
 	doIt();
 
