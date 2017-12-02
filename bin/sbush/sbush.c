@@ -536,9 +536,17 @@ int setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  char c = 'm';
+  char *c = "abc";
+  char *d = "678";
+  //char *e;
+  int ret = 0;
+  //char *ch;
   while(1) {
-    write(1, &c, 1);
+   ret = write(1, d, 3);
+     //write(1, c, 3);
+   //  e = (char*)&ret;
+   if(ret == 88)
+    write(1, c,3 );
   }
 
   m_environ = envp + argc + 1;
