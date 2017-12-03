@@ -103,6 +103,7 @@ int load_binary(task_struct_t *task, char *bin_filename) {
         /* Data Segment */
         mm->data_start = vma->vma_start;
         mm->data_end   = vma->vma_end;
+        memcpy((void *)prog_header->p_vaddr, (void *)((uint64_t)elf_header + prog_header->p_offset), prog_header->p_filesz);
       }
     }
 

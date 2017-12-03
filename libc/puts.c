@@ -1,7 +1,9 @@
-#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 
-int puts(const char *s)
+int puts(char *s)
 {
-  for( ; *s; ++s) if (putchar(*s) != *s) return EOF;
-  return (putchar('\n') == '\n') ? 0 : EOF;
+  return write(1, s, strlen(s));
+//  for( ; *s; ++s) if (putchar(*s) != *s) return EOF;
+ // return (putchar('\n') == '\n') ? 0 : EOF;
 }

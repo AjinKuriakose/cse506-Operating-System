@@ -15,7 +15,7 @@
 #define __NR_write           1
 #define __NR_exit            60 
 
-typedef void (*sys_call_ptr_t) (void);
+typedef int (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
 
 typedef struct sycall_args_t {
@@ -71,17 +71,28 @@ void syscall_handler() {
   /* not sure if doing right..above two operations would happen in userstack */
   __asm__ __volatile__("movq %%rsp, %0"  : "=a"(get_current_running_task()->ursp));
   __asm__ __volatile__("movq %0, %%rsp" :: "a"(get_current_running_task()->rsp));
-
-
-  (*sys_call_table[syscall_args.__NR_syscall])();
+  
+  /* register bound variable to save the return value 
+   * normal variables would be allocated in the stack. And we
+   * are switching stack down the line. so "ret" value won't be
+   * available to return.. so we should use register variables */
+  register int64_t ret __asm__("r14") = 0;
+  ret = (*sys_call_table[syscall_args.__NR_syscall])();
 
   yield();
   
   __asm__ __volatile__("movq %%rsp, %0" : "=a"(get_current_running_task()->rsp));
+
+ /* stack change from rsp to ursp */ 
   __asm__ __volatile__("movq %0, %%rsp" :: "a"(get_current_running_task()->ursp));
+  
   /* restoring rcx register value, rip <-- rcx upon sysretq */
   __asm__ volatile("mov %0, %%rcx" ::"a"(syscall_args.rcx));
   __asm__ volatile("add $0x8, %rsp"); 
+
+  /* return value of syscall*/
+  __asm__ volatile("movq %0, %%rax"::"a"(ret));
+
   __asm__ volatile("sysretq"); 
 
 }
@@ -118,13 +129,12 @@ static inline void enable_syscall_instr() {
  * as of now adding here itself
  *
  */
-void sys_write() {
+int sys_write() {
 
   //uint64_t fd;
   void *ptr;
   uint64_t size;
   char buff[512];
-  static int count = 1;
   ptr = (void*)syscall_args.rsi;
   //fd = syscall_args.rdi;
   size = syscall_args.rdx;
@@ -133,13 +143,13 @@ void sys_write() {
   write_to_terminal(buff, size);  
   
   //kprintf("%d %d Inside sys_write handler\n", fd, size);
-  //kprintf("count = %d\n", count);
-  count++;
-  kprintf("\n");
-  kprintf("\n");
+//  kprintf("\n");
+ // kprintf("\n");
+
+  return 1;
 }
 
-void sys_read() {
+int sys_read() {
   uint64_t fd;
   void *ptr;
   uint64_t size;
@@ -153,11 +163,14 @@ void sys_read() {
   memcpy(buff, ptr, size);
   kprintf("hellon %d %s %d\n", fd, buff, size);
   kprintf("\nsys_read dummy funtion. Ring 0\n");
+
+  return 1;
 }
 
-void sys_exit() {
+int sys_exit() {
   kprintf(" Done from exit() !\n");
   while(1);
+  return 1;
 }
 /*
  * setting up syscall table init 
