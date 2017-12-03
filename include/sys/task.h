@@ -50,7 +50,7 @@ typedef struct mm_struct_t {
  */
 typedef struct task_struct_t {
   uint64_t    rsp;
-  char        kstack[TASK_KSTACK_SIZE];
+  uint64_t    kstack;
   uint64_t    kstack_top;
   struct task_struct_t *next;
   uint64_t    pid;

@@ -152,14 +152,15 @@ void init_tasking() {
 }
  
 void create_task(task_struct_t *task, void (*main)()) {
-    task->rsp = (uint64_t) &(task->kstack[4016]);
+    task->kstack = vmm_alloc_page();
+    task->rsp = (uint64_t) (task->kstack + 4016);
     task->ursp = 0x900000;
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
      * save a 64 bit address in the stack, first creating a
      * uint64_t pointer to kstack. Then saving main's address.
      */
-    uint64_t *tmp_ptr = (uint64_t *)&(task->kstack[4088]);
+    uint64_t *tmp_ptr = (uint64_t *)(task->kstack + 4088);
     *tmp_ptr = (uint64_t) main;
 
      __asm__ volatile("mov %%cr3, %0": "=r"(task->cr3));
@@ -272,14 +273,14 @@ void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
   c_task->rip  = p_task->rip;
   c_task->ursp = p_task->ursp;
   c_task->pid  = allocate_pid();
-  kprintf("pid1 %d\n", c_task->pid);
   c_task->ppid = p_task->pid;
   c_task->mm   = NULL;
   c_task->next = NULL;
 	c_task->cr3  = (uint64_t)pmm_alloc_block();
   c_task->num_children = 0;
   c_task->task_state = TASK_STATE_READY;
-  c_task->rsp = (uint64_t) &(c_task->kstack[4016]);
+  c_task->kstack = vmm_alloc_page();
+  c_task->rsp = (uint64_t)(c_task->kstack + 4016);
   strcpy(c_task->name, p_task->name);
   //memcpy(c_task->kstack, p_task->kstack, TASK_KSTACK_SIZE);
 }
@@ -294,7 +295,6 @@ task_struct_t *copy_parent_task(task_struct_t *p_task) {
 	set_cr3((pml4_t *)c_task->cr3);
 
 	c_task->mm = (mm_struct_t *)vmm_alloc_page();
-  kprintf("pid2 %d\n", c_task->pid);
 	memcpy(c_task->mm, p_task->mm, sizeof(mm_struct_t));
 	c_task->mm->mmap = NULL;
 
@@ -327,17 +327,18 @@ int sys_fork() {
   volatile uint64_t ret_val = 0;
 
   task_struct_t *parent_task = running_task;
+  parent_task->cr3 = (uint64_t)get_cr3();
   task_struct_t *child_task = copy_parent_task(parent_task); 
-  
+#if 0
   task_struct_t *temp = parent_task->next;
   parent_task->next = child_task;
   child_task->next  = temp;
-
+#endif
   set_cr3((pml4_t *)parent_task->cr3);
 
   volatile uint64_t current_stack_loc;
-  uint64_t parent_stack_top = (uint64_t)&(parent_task->kstack[4095]);
-  uint64_t child_stack_top = (uint64_t)&(child_task->kstack[4095]);
+  uint64_t parent_stack_top = (uint64_t)(parent_task->kstack + 4095);
+  uint64_t child_stack_top = (uint64_t)(child_task->kstack + 4095);
 
   __asm__ __volatile__("movq %%rsp, %0"  : "=a"(current_stack_loc));
 
@@ -350,7 +351,7 @@ int sys_fork() {
 
   ret_val = child_task->pid;
   kprintf("ret value %d\n", ret_val);
-  while(1);
+
   return ret_val;
 }
 
