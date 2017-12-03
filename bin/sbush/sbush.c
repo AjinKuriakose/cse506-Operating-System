@@ -9,6 +9,7 @@
 #define CMD_LS           3
 #define CMD_EXIT         4
 
+
 typedef struct piped_commands {
   char *commands[50];
 } piped_commands;
@@ -536,17 +537,18 @@ int setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  char *c = "abc";
-  char *d = "678";
+  //char *d = "678";
   //char *e;
-  int ret = 0;
+  //int ret = 0;
   //char *ch;
   while(1) {
-   ret = write(1, d, 3);
+//    write(1, c,3 );
+    print_prompt();
+   //ret = write(1, d, 3);
      //write(1, c, 3);
    //  e = (char*)&ret;
-   if(ret == 88)
-    write(1, c,3 );
+   //if(ret == 88)
+ //   write(1, d,3 );
   }
 
   m_environ = envp + argc + 1;

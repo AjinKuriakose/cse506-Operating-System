@@ -135,7 +135,6 @@ int sys_write() {
   void *ptr;
   uint64_t size;
   char buff[512];
-  static int count = 1;
   ptr = (void*)syscall_args.rsi;
   //fd = syscall_args.rdi;
   size = syscall_args.rdx;
@@ -144,12 +143,10 @@ int sys_write() {
   write_to_terminal(buff, size);  
   
   //kprintf("%d %d Inside sys_write handler\n", fd, size);
-  //kprintf("count = %d\n", count);
-  count++;
-  kprintf("\n");
-  kprintf("\n");
+//  kprintf("\n");
+ // kprintf("\n");
 
-  return 77;
+  return 1;
 }
 
 int sys_read() {
