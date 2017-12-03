@@ -30,6 +30,7 @@ uint8_t get_is_paging_enabled();
 pml4_t *get_kernel_pml4();
 void init_paging(uint64_t physbase, uint64_t physfree);
 void setup_four_level_paging(uint64_t physbase, uint64_t physfree);
+void create_child_paging(uint64_t child_task_pml4);
 void remap_kernel(pt_t *pt, uint64_t p_base, uint64_t p_free);
 
 uint64_t vmm_alloc_page();

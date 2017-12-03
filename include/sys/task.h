@@ -5,6 +5,7 @@
 
 #define MAX_NUM_PROCESSES   50
 
+#define TASK_KSTACK_SIZE    4096
 #define TASK_STATE_READY    1
 #define TASK_STATE_RUNNING  2
 #define INVALID_PID         0xFF
@@ -48,8 +49,8 @@ typedef struct mm_struct_t {
  * TODO : should add requied parameters like pid etc.
  */
 typedef struct task_struct_t {
-  context     ctx;
-  char        kstack[4096];
+  uint64_t    rsp;
+  char        kstack[TASK_KSTACK_SIZE];
   struct task_struct_t *next;
   uint64_t    pid;
   uint64_t    ppid;
@@ -59,6 +60,7 @@ typedef struct task_struct_t {
   char        name[32];
   mm_struct_t *mm;
   uint8_t     task_state;
+  uint16_t    num_children;
 } task_struct_t;
 
 extern void init_tasking();
@@ -72,4 +74,6 @@ void start_init_process();
 void start_sbush_process(char *bin_filename);
 
 task_struct_t *get_current_running_task();
+int sys_fork();
+
 #endif /* __TASK_H__ */

@@ -107,7 +107,7 @@ void idle_func() {
         kprintf("Idle Func #### %d\n", c);
         c++;
         Sleep();
-        set_tss_rsp((void *)task1.ctx.rsp);
+        set_tss_rsp((void *)task1.rsp);
        // switch_to_user_mode();
 				yield();
     }
@@ -120,7 +120,7 @@ void init_sbush_proc() {
     while(1) {
         kprintf("Init sbush proc ####\n");
         Sleep();
-        set_tss_rsp((void *)task2.ctx.rsp);
+        set_tss_rsp((void *)task2.rsp);
         switch_to_user_mode();
         kprintf("dwInside Dummy....\n");
 				yield();
@@ -152,7 +152,7 @@ void init_tasking() {
 }
  
 void create_task(task_struct_t *task, void (*main)()) {
-    task->ctx.rsp = (uint64_t) &(task->kstack[4016]);;
+    task->rsp = (uint64_t) &(task->kstack[4016]);;
     task->ursp = 0x900000;
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
@@ -239,6 +239,7 @@ void start_init_process() {
   task->task_state = TASK_STATE_RUNNING;
   task->pid  = allocate_pid();
   task->ppid = 0;
+  task->num_children = 0;
   strcpy(task->name, "init");
 }
 
@@ -258,7 +259,62 @@ void start_sbush_process(char *bin_filename) {
   task->task_state = TASK_STATE_RUNNING;
   task->pid  = allocate_pid();
   task->ppid = 0;
+  task->num_children = 0;
   strcpy(task->name, "sbush");
   load_binary(task, bin_filename);
+}
+
+void *copy_parent_task(task_struct_t *p_task) {
+
+  task_struct_t *c_task = (task_struct_t *)vmm_alloc_page();
+  memcpy(c_task->kstack, p_task->kstack, TASK_KSTACK_SIZE);
+  c_task->rsp  = p_task->rsp;
+  c_task->rip  = p_task->rip;
+  c_task->ursp = p_task->ursp;
+  c_task->pid  = allocate_pid();
+  c_task->ppid = p_task->pid;
+  c_task->mm   = NULL;
+  c_task->next = NULL;
+	c_task->cr3  = (uint64_t)pmm_alloc_block();
+  c_task->num_children = 0;
+  c_task->task_state = TASK_STATE_READY;
+  
+  strcpy(c_task->name, p_task->name);
+  (p_task->num_children)++;
+
+	create_child_paging(c_task->cr3);
+
+	set_cr3((pml4_t *)c_task->cr3);
+
+	c_task->mm = (mm_struct_t *)vmm_alloc_page();
+	memcpy(c_task->mm, p_task->mm, sizeof(mm_struct_t));
+	c_task->mm->mmap = NULL;
+
+	vma_struct_t *p_vma = p_task->mm->mmap;
+	vma_struct_t *c_vma = NULL;
+	vma_struct_t *c_prev_vma = NULL;
+
+	while (p_vma) {
+		c_vma = (vma_struct_t *)vmm_alloc_page();
+		memcpy(c_vma, p_vma, sizeof(vma_struct_t));
+    c_vma->vma_next = NULL;
+    c_vma->vma_mm = c_task->mm;
+
+    if (c_prev_vma) {
+      c_prev_vma->vma_next = c_vma;
+    } else {
+			c_task->mm->mmap = c_vma;
+    }
+
+		c_prev_vma = c_vma;
+		p_vma = p_vma->vma_next;
+	}
+	
+	return c_task;
+}
+
+int sys_fork() {
+
+  return 0;
 }
 

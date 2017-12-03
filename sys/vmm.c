@@ -13,7 +13,9 @@
 #define PTE_PRESENT   0x1
 #define PTE_WRITABLE  0x2
 #define PTE_USER      0x4
+#define PTE_COW       0x100
 #define PWU_FLAG      (PTE_PRESENT | PTE_WRITABLE | PTE_USER) /* User Pages */
+#define PUC_FLAG      (PTE_PRESENT | PTE_USER     | PTE_COW)  /* User Pages with COW */
 #define PWS_FLAG      (PTE_PRESENT | PTE_WRITABLE)            /* Supervisor Pages */
 
 #define INVALID_ADDRESS   (~0)
@@ -147,7 +149,6 @@ void virt_phys_map_before_paging(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr)
   uint64_t  pdp_addr; 
   uint64_t  pd_addr; 
   uint64_t  pt_addr; 
-  uint64_t  set_flags_PWU = (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
 
   /* Get pml4 entry using virtual address. If not present, create */
   pdp_addr = pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)];
@@ -155,7 +156,7 @@ void virt_phys_map_before_paging(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr)
     pdp = (pdp_t *)PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr);
   } else {
     pdp = (pdp_t *)pmm_alloc_block();
-    pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
+    pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | PWU_FLAG);
   }
 
   /* Get pdp entry using virtual address. If not present, create */
@@ -164,7 +165,7 @@ void virt_phys_map_before_paging(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr)
     pd = (pd_t *)PAGE_GET_PHYSICAL_ADDRESS(&pd_addr);
   } else {
     pd = (pd_t *)pmm_alloc_block();
-    pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
+    pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | PWU_FLAG);
   }
    
   /* Get pd entry using virtual address. If not present, create */
@@ -173,11 +174,11 @@ void virt_phys_map_before_paging(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr)
     pt = (pt_t *)PAGE_GET_PHYSICAL_ADDRESS(&pt_addr);
   } else {
     pt = (pt_t *)pmm_alloc_block();
-    pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
+    pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | PWU_FLAG);
   }
 
   /* Update pt entry with the provided physical address */
-  pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
+  pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | PWU_FLAG; 
 }
 
 void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
@@ -190,7 +191,6 @@ void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
   uint64_t  pdp_addr; 
   uint64_t  pd_addr; 
   uint64_t  pt_addr; 
-  uint64_t  set_flags_PWU = (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
 
   /* Get pml4 entry using virtual address. If not present, create */
   pdp_addr = pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)];
@@ -198,7 +198,7 @@ void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
     pdp = (pdp_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr));
   } else {
     pdp = (pdp_t *)(pmm_alloc_block());
-    pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
+    pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | PWU_FLAG);
   }
 
   /* Get pdp entry using virtual address. If not present, create */
@@ -208,7 +208,7 @@ void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
     pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr));
   } else {
     pd = (pd_t *)(pmm_alloc_block());
-    pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
+    pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | PWU_FLAG);
   }
    
   /* Get pd entry using virtual address. If not present, create */
@@ -218,12 +218,12 @@ void virt_phys_map(pml4_t *pml4, uint64_t v_addr, uint64_t p_addr) {
     pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr));
   } else {
     pt = (pt_t *)(pmm_alloc_block());
-    pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
+    pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | PWU_FLAG);
   }
 
   /* Update pt entry with the provided physical address */
   pt = (pt_t *)((uint64_t)pt | VIRT_ADDR_BASE);
-  pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | set_flags_PWU; 
+  pt->pt_entries[PAGE_PT_INDEX(v_addr)] = p_addr | PWU_FLAG; 
 }
 
 void create_video_memory_map() {
@@ -259,22 +259,21 @@ void setup_four_level_paging(uint64_t physbase, uint64_t physfree) {
   pt_t    *pt; 
 
   uint64_t  v_addr = (uint64_t)&kernmem;
-  uint64_t  set_flags_PWU = (PTE_PRESENT | PTE_WRITABLE | PTE_USER);
 
   /* Allocate memory for pml4 table */
   pml4 = (pml4_t *)pmm_alloc_block();
 
   /* Allocate and insert pdp table entry in pml4 table */
   pdp = (pdp_t *)pmm_alloc_block();
-  pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | set_flags_PWU);
+  pml4->pml4_entries[PAGE_PML4_INDEX(v_addr)] = ((uint64_t)pdp | PWU_FLAG);
   
   /* Allocate and insert page directory entry in pdp table */
   pd = (pd_t *)pmm_alloc_block();
-  pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | set_flags_PWU);
+  pdp->pdp_entries[PAGE_PDP_INDEX(v_addr)] = ((uint64_t)pd | PWU_FLAG);
 
   /* Allocate and insert page table entry in page directory */
   pt = (pt_t *)pmm_alloc_block();
-  pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | set_flags_PWU);
+  pd->pd_entries[PAGE_PD_INDEX(v_addr)] = ((uint64_t)pt | PWU_FLAG);
 
   remap_kernel(pt, physbase, physfree);
 }
@@ -346,5 +345,82 @@ void identity_mapping() {
 		v_addr += VIRT_PAGE_SIZE;
 		p_addr += PHYS_BLOCK_SIZE;
 	}
+}
+
+/* Function to create page table for child process */
+void create_child_paging(uint64_t child_task_pml4) {
+
+  pml4_t  *child_pml4  = (pml4_t *)((uint64_t)child_task_pml4 | VIRT_ADDR_BASE);
+  pml4_t  *parent_pml4 = (pml4_t *)((uint64_t)get_cr3() | VIRT_ADDR_BASE);
+  pdp_t   *pdp; 
+  pd_t    *pd; 
+  pt_t    *pt; 
+
+  uint64_t  pdp_addr; 
+  uint64_t  pd_addr; 
+  uint64_t  pt_addr; 
+  uint64_t  pt_entry; 
+
+  /* PML4 Level */
+  int pml4_indx = 0;
+  while (pml4_indx < 511) {
+    pdp_addr = parent_pml4->pml4_entries[pml4_indx];
+    if (pdp_addr & PTE_PRESENT) {
+      pdp_t *child_pdp = (pdp_t *)(pmm_alloc_block());
+      child_pml4->pml4_entries[pml4_indx] = ((uint64_t)child_pdp | PWU_FLAG);
+
+      pdp = (pdp_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr));
+      pdp = (pdp_t *)((uint64_t)pdp | VIRT_ADDR_BASE);
+
+      /* PDP Level */
+      int pdp_indx = 0;
+      while (pdp_indx < 512) {
+        pd_addr = pdp->pdp_entries[pdp_indx];
+        if (pd_addr & PTE_PRESENT) {
+          pd_t *child_pd = (pd_t *)(pmm_alloc_block());
+          pdp->pdp_entries[pdp_indx] = ((uint64_t)child_pd | PWU_FLAG);
+
+          pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr));
+          pd = (pd_t *)((uint64_t)pd | VIRT_ADDR_BASE);
+
+          /* PD Level */
+          int pd_indx = 0;
+          while (pd_indx < 512) {
+            pt_addr = pd->pd_entries[pd_indx];
+            if (pt_addr & PTE_PRESENT) {
+              pt_t *child_pt = (pt_t *)(pmm_alloc_block());
+              pd->pd_entries[pd_indx] = ((uint64_t)child_pt | PWU_FLAG);
+
+              pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr));
+              pt = (pt_t *)((uint64_t)pt | VIRT_ADDR_BASE);
+
+              /* PT Level */
+              int pt_indx = 0;
+              while (pt_indx < 512) {
+                pt_entry = pt->pt_entries[pt_indx];
+                if(pt_entry & PTE_PRESENT) {
+
+                  uint64_t pt_page = (PAGE_GET_PHYSICAL_ADDRESS(&pt_entry));
+                  pt_entry = pt_page | PUC_FLAG;	
+
+                  child_pt = (pt_t *)((uint64_t)child_pt | VIRT_ADDR_BASE);              
+                  child_pt->pt_entries[pt_indx] = pt_entry;
+                  pt->pt_entries[pt_indx] = pt_entry;	
+                }	
+
+                pt_indx++;
+              }
+            }
+            pd_indx++;
+          }
+        }
+        pdp_indx++;
+      }
+    }
+    pml4_indx++;
+  }
+
+  ((pml4_t *)((uint64_t)child_pml4))->pml4_entries[511] =
+    ((pml4_t *)((uint64_t)parent_pml4))->pml4_entries[511];
 }
 
