@@ -543,7 +543,9 @@ int main(int argc, char *argv[], char *envp[]) {
   //char *ch;
   while(1) {
 //    write(1, c,3 );
+    fork();
     print_prompt();
+    while(1);
    //ret = write(1, d, 3);
      //write(1, c, 3);
    //  e = (char*)&ret;

@@ -17,7 +17,7 @@ static uint8_t pid[MAX_NUM_PROCESSES] = {0};
 
 /* Allocate an available process id */
 uint32_t allocate_pid() {
-  uint8_t pid_index = 0;
+  uint8_t pid_index = 1;
   while (pid_index < MAX_NUM_PROCESSES) {
     if (pid[pid_index] == 0) {
       pid[pid_index] = 1;
@@ -152,7 +152,7 @@ void init_tasking() {
 }
  
 void create_task(task_struct_t *task, void (*main)()) {
-    task->rsp = (uint64_t) &(task->kstack[4016]);;
+    task->rsp = (uint64_t) &(task->kstack[4016]);
     task->ursp = 0x900000;
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
@@ -161,6 +161,7 @@ void create_task(task_struct_t *task, void (*main)()) {
      */
     uint64_t *tmp_ptr = (uint64_t *)&(task->kstack[4088]);
     *tmp_ptr = (uint64_t) main;
+
      __asm__ volatile("mov %%cr3, %0": "=r"(task->cr3));
 }
 
@@ -174,16 +175,16 @@ void switch_task(task_struct_t *old, task_struct_t *new) {
     "pushq %rbx;"
     "pushq %rbp;"
 
-    "pushq %rax;"
     "pushq %rcx;"
     "pushq %rdx;"
+    "pushq %rax;"
 
     "mov %rsp, (%rdi);"
     "mov (%rsi), %rsp;"
 
+    "popq %rax;"
     "popq %rdx;"
     "popq %rcx;"
-    "popq %rax;"
 
     "popq %rbp;"
     "popq %rbx;"
@@ -198,6 +199,7 @@ void switch_task(task_struct_t *old, task_struct_t *new) {
           "movq %0, %%cr3;"
               ::"r"(new->cr3)
                 );
+
   __asm__ __volatile__ ("ret;");
 
 }
@@ -264,29 +266,35 @@ void start_sbush_process(char *bin_filename) {
   load_binary(task, bin_filename);
 }
 
-void *copy_parent_task(task_struct_t *p_task) {
+void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
 
-  task_struct_t *c_task = (task_struct_t *)vmm_alloc_page();
-  memcpy(c_task->kstack, p_task->kstack, TASK_KSTACK_SIZE);
   c_task->rsp  = p_task->rsp;
   c_task->rip  = p_task->rip;
   c_task->ursp = p_task->ursp;
   c_task->pid  = allocate_pid();
+  kprintf("pid1 %d\n", c_task->pid);
   c_task->ppid = p_task->pid;
   c_task->mm   = NULL;
   c_task->next = NULL;
 	c_task->cr3  = (uint64_t)pmm_alloc_block();
   c_task->num_children = 0;
   c_task->task_state = TASK_STATE_READY;
-  
+  c_task->rsp = (uint64_t) &(c_task->kstack[4016]);
   strcpy(c_task->name, p_task->name);
-  (p_task->num_children)++;
+  //memcpy(c_task->kstack, p_task->kstack, TASK_KSTACK_SIZE);
+}
 
+task_struct_t *copy_parent_task(task_struct_t *p_task) {
+
+  task_struct_t *c_task = (task_struct_t *)vmm_alloc_page();
+
+  set_c_task(c_task, p_task);
 	create_child_paging(c_task->cr3);
 
 	set_cr3((pml4_t *)c_task->cr3);
 
 	c_task->mm = (mm_struct_t *)vmm_alloc_page();
+  kprintf("pid2 %d\n", c_task->pid);
 	memcpy(c_task->mm, p_task->mm, sizeof(mm_struct_t));
 	c_task->mm->mmap = NULL;
 
@@ -309,12 +317,40 @@ void *copy_parent_task(task_struct_t *p_task) {
 		c_prev_vma = c_vma;
 		p_vma = p_vma->vma_next;
 	}
-	
+
+  (p_task->num_children)++;
 	return c_task;
 }
 
 int sys_fork() {
+  
+  volatile uint64_t ret_val = 0;
 
-  return 0;
+  task_struct_t *parent_task = running_task;
+  task_struct_t *child_task = copy_parent_task(parent_task); 
+  
+  task_struct_t *temp = parent_task->next;
+  parent_task->next = child_task;
+  child_task->next  = temp;
+
+  set_cr3((pml4_t *)parent_task->cr3);
+
+  volatile uint64_t current_stack_loc;
+  uint64_t parent_stack_top = (uint64_t)&(parent_task->kstack[4095]);
+  uint64_t child_stack_top = (uint64_t)&(child_task->kstack[4095]);
+
+  __asm__ __volatile__("movq %%rsp, %0"  : "=a"(current_stack_loc));
+
+  memcpy((void *)(child_stack_top - (parent_stack_top - current_stack_loc)), (void *)current_stack_loc, parent_stack_top - current_stack_loc + 1);
+
+  child_task->rsp = (child_stack_top - (parent_stack_top - current_stack_loc));
+
+  /* putting zero in rax register. this is the first value to be popped */
+  *(uint64_t *)(child_task->rsp) = 0;
+
+  ret_val = child_task->pid;
+  kprintf("ret value %d\n", ret_val);
+  while(1);
+  return ret_val;
 }
 

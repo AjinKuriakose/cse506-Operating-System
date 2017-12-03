@@ -10,10 +10,11 @@
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
 
-#define __NR_syscall_max     50 
+#define __NR_syscall_max     100 
 #define __NR_read            0
 #define __NR_write           1
 #define __NR_exit            60 
+#define __NR_fork            57 
 
 typedef int (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
@@ -180,6 +181,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_read] = sys_read;  
   sys_call_table[__NR_write] = sys_write;  
   sys_call_table[__NR_exit] = sys_exit;  
+  sys_call_table[__NR_fork] = sys_fork;  
   /* add remaining syscalls here..*/
 
 }
