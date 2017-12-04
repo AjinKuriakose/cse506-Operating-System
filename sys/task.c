@@ -328,14 +328,16 @@ int sys_fork() {
 
   task_struct_t *parent_task = running_task;
   parent_task->cr3 = (uint64_t)get_cr3();
+ // kprintf("cr3 parent.. %x\n", parent_task->cr3);
   task_struct_t *child_task = copy_parent_task(parent_task); 
-#if 0
+#if 1
   task_struct_t *temp = parent_task->next;
   parent_task->next = child_task;
   child_task->next  = temp;
 #endif
+ // kprintf("get cr3child.. %x\n", get_cr3());
   set_cr3((pml4_t *)parent_task->cr3);
-
+  //kprintf("get cr3parent.. %x\n", get_cr3());
   volatile uint64_t current_stack_loc;
   uint64_t parent_stack_top = (uint64_t)(parent_task->kstack + 4095);
   uint64_t child_stack_top = (uint64_t)(child_task->kstack + 4095);
@@ -344,14 +346,14 @@ int sys_fork() {
 
   memcpy((void *)(child_stack_top - (parent_stack_top - current_stack_loc)), (void *)current_stack_loc, parent_stack_top - current_stack_loc + 1);
 
-  child_task->rsp = (child_stack_top - (parent_stack_top - current_stack_loc));
+  child_task->rsp = (child_stack_top - (parent_stack_top - current_stack_loc) - 72 + 40);
 
   /* putting zero in rax register. this is the first value to be popped */
-  *(uint64_t *)(child_task->rsp) = 0;
+//  *(uint64_t *)(child_task->rsp) = 0;
 
   ret_val = child_task->pid;
-  kprintf("ret value %d\n", ret_val);
-
+//  kprintf("ret value %d\n", ret_val);
+//  while(1);
   return ret_val;
 }
 

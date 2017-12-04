@@ -378,7 +378,7 @@ void create_child_paging(uint64_t child_task_pml4) {
         pd_addr = pdp->pdp_entries[pdp_indx];
         if (pd_addr & PTE_PRESENT) {
           pd_t *child_pd = (pd_t *)(pmm_alloc_block());
-          pdp->pdp_entries[pdp_indx] = ((uint64_t)child_pd | PWU_FLAG);
+          child_pdp->pdp_entries[pdp_indx] = ((uint64_t)child_pd | PWU_FLAG);
 
           pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr));
           pd = (pd_t *)((uint64_t)pd | VIRT_ADDR_BASE);
@@ -389,7 +389,7 @@ void create_child_paging(uint64_t child_task_pml4) {
             pt_addr = pd->pd_entries[pd_indx];
             if (pt_addr & PTE_PRESENT) {
               pt_t *child_pt = (pt_t *)(pmm_alloc_block());
-              pd->pd_entries[pd_indx] = ((uint64_t)child_pt | PWU_FLAG);
+              child_pd->pd_entries[pd_indx] = ((uint64_t)child_pt | PWU_FLAG);
 
               pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr));
               pt = (pt_t *)((uint64_t)pt | VIRT_ADDR_BASE);
@@ -405,6 +405,7 @@ void create_child_paging(uint64_t child_task_pml4) {
 
                   child_pt = (pt_t *)((uint64_t)child_pt | VIRT_ADDR_BASE);              
                   child_pt->pt_entries[pt_indx] = pt_entry;
+                  pt_entry = pt_page | PUC_FLAG;	
                   pt->pt_entries[pt_indx] = pt_entry;	
                 }	
 
@@ -420,7 +421,6 @@ void create_child_paging(uint64_t child_task_pml4) {
     pml4_indx++;
   }
 
-  ((pml4_t *)((uint64_t)child_pml4))->pml4_entries[511] =
-    ((pml4_t *)((uint64_t)parent_pml4))->pml4_entries[511];
+  child_pml4->pml4_entries[511] = parent_pml4->pml4_entries[511];
 }
 

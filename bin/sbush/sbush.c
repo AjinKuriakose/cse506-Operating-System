@@ -537,20 +537,22 @@ int setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  //char *d = "678";
-  //char *e;
-  //int ret = 0;
+  char *d = "678";
+  char *e = "007";
+  int ret = 0;
   //char *ch;
   while(1) {
-//    write(1, c,3 );
-    fork();
-    print_prompt();
+    ret = fork();
+    if (ret == 3){
+      write(1, d,3 );
+    }
+    else if(ret == 0) {
+
+      print_prompt();
+    }
+
+    write(1, e,3 );
     while(1);
-   //ret = write(1, d, 3);
-     //write(1, c, 3);
-   //  e = (char*)&ret;
-   //if(ret == 88)
- //   write(1, d,3 );
   }
 
   m_environ = envp + argc + 1;
