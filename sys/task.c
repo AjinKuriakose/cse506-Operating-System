@@ -349,7 +349,8 @@ int sys_fork() {
   child_task->rsp = (child_stack_top - (parent_stack_top - current_stack_loc) - 72 + 40);
 
   /* putting zero in rax register. this is the first value to be popped */
-//  *(uint64_t *)(child_task->rsp) = 0;
+
+  *((uint64_t *)(child_task->rsp)) = 0;
 
   ret_val = child_task->pid;
 //  kprintf("ret value %d\n", ret_val);
