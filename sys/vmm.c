@@ -1,6 +1,7 @@
 #include <sys/defs.h>
 #include <sys/vmm.h>
 #include <sys/pmm.h>
+#include <sys/utils.h>
 #include <sys/kprintf.h>
 
 #define PAGE_PML4_INDEX(x)            ((x >> 39) & 0x1FF)
@@ -72,23 +73,12 @@ void enable_paging() {
   set_is_paging_enabled();
 }
 
-void page_fault_handler() {
-
-  /* TODO : Enhance the page fault handling and remove print statements */
-  uint64_t error_code;
-  __asm__ volatile("movq 136(%%rsp), %0":"=r"(error_code));
-
-  uint64_t faulting_address = get_cr2();
-  kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
-  /* Create mapping for the faulting address */
-  alloc_segment_mem(faulting_address);
-}
 
 /*
  * Returns the physical address corresponding to the given virtual address
  * Also marks the page as absent if mark_as_absent is set
  */
-static uint64_t get_physical_addr(pml4_t *pml4, uint64_t v_addr, uint8_t mark_as_absent) {
+uint64_t get_physical_addr(pml4_t *pml4, uint64_t v_addr, uint8_t mark_as_absent) {
 
   pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pdp_t   *pdp;
@@ -132,7 +122,8 @@ static uint64_t get_physical_addr(pml4_t *pml4, uint64_t v_addr, uint8_t mark_as
   }
 
   /* Return the stored physical address. Last 3 bits are flags and hence ignored */
-  return pt->pt_entries[PAGE_PT_INDEX(v_addr)] & ~7;
+  //return PAGE_GET_PHYSICAL_ADDRESS(&(pt->pt_entries[PAGE_PT_INDEX(v_addr)]));
+  return (pt->pt_entries[PAGE_PT_INDEX(v_addr)]);
 }
 
 /*
@@ -347,6 +338,45 @@ void identity_mapping() {
 	}
 }
 
+void page_fault_handler() {
+
+  /* TODO : Enhance the page fault handling and remove print statements */
+  uint64_t error_code;
+  uint64_t fault_addr_pte;
+  uint64_t nw_vaddr;
+
+  __asm__ volatile("movq 136(%%rsp), %0":"=r"(error_code));
+
+  uint64_t faulting_address = get_cr2();
+
+  kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
+
+  error_code = error_code& 0xF;
+
+  if(error_code & PTE_PRESENT && error_code & PTE_WRITABLE) {
+
+    fault_addr_pte = get_physical_addr(get_cr3(), faulting_address, 0);
+
+    if(fault_addr_pte & PTE_COW) {
+
+      nw_vaddr = vmm_alloc_page();
+
+      uint64_t phy_addr = get_physical_addr(get_cr3(), PAGE_GET_PHYSICAL_ADDRESS(&nw_vaddr), 0);
+
+      memcpy((void*)nw_vaddr, (void*)(faulting_address & ~0xFFF), VIRT_PAGE_SIZE);
+
+      virt_phys_map(get_cr3(), (faulting_address & ~0xFFF), phy_addr);
+
+      kprintf("Page Fault : addr = %p, phys_addr= %x\n", faulting_address, fault_addr_pte);
+      return;
+
+   // while(1);
+    }
+  }
+  /* Create mapping for the faulting address */
+  alloc_segment_mem(faulting_address);
+}
+
 /* Function to create page table for child process */
 void create_child_paging(uint64_t child_task_pml4) {
 
@@ -401,10 +431,12 @@ void create_child_paging(uint64_t child_task_pml4) {
                 if(pt_entry & PTE_PRESENT) {
 
                   uint64_t pt_page = (PAGE_GET_PHYSICAL_ADDRESS(&pt_entry));
+                  //pt_entry = pt_page | PWU_FLAG;	
                   pt_entry = pt_page | PUC_FLAG;	
 
                   child_pt = (pt_t *)((uint64_t)child_pt | VIRT_ADDR_BASE);              
                   child_pt->pt_entries[pt_indx] = pt_entry;
+                //  pt_entry = pt_page | PWU_FLAG;	
                   pt_entry = pt_page | PUC_FLAG;	
                   pt->pt_entries[pt_indx] = pt_entry;	
                 }	
