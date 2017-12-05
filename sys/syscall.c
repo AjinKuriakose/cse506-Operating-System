@@ -1,3 +1,4 @@
+#include <sys/syscall.h>
 #include <sys/task.h>
 #include <sys/defs.h>
 #include <sys/kprintf.h>
@@ -173,6 +174,28 @@ int sys_exit() {
   while(1);
   return 1;
 }
+
+void sys_ps() {
+  task_struct_t *tmp = running_task;
+  kprintf("\nPID | PPID | NAME | STATE\n");
+  while (tmp && tmp->next != running_task) {
+    kprintf("%d | %d | %s | %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);
+    tmp = tmp->next;
+  }
+
+  if (tmp && tmp != running_task) {
+    kprintf("%d | %d | %s | %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);
+  }
+}
+
+uint64_t sys_getpid() {
+  return running_task->pid;
+}
+
+uint64_t sys_getppid() {
+  return running_task->ppid;
+}
+
 /*
  * setting up syscall table init 
  */

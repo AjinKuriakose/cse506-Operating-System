@@ -7,7 +7,7 @@
 #include <sys/utils.h>
 #include <sys/elf64.h>
 
-static task_struct_t *running_task;
+task_struct_t *running_task;
 static task_struct_t main_task;
 
 static task_struct_t task1;
@@ -15,6 +15,10 @@ static task_struct_t task2;
 
 static uint8_t pid[MAX_NUM_PROCESSES] = {0};
 
+char task_state_str[][32] = {"UNKNOWN",
+                             "READY",
+                             "RUNNING"
+                            };
 /* Allocate an available process id */
 uint32_t allocate_pid() {
   uint8_t pid_index = 1;
@@ -28,6 +32,24 @@ uint32_t allocate_pid() {
   }
 
   return INVALID_PID;
+}
+
+uint16_t get_fd(task_struct_t *task) {
+  uint16_t fd_index = 0;
+  while (fd_index < MAX_NUM_FDS) {
+    if (task->fd_list[fd_index] == 0) {
+      task->fd_list[fd_index] = 1;
+      return fd_index;
+    }
+
+    fd_index++;
+  }
+
+  return INVALID_FD;
+}
+
+void free_fd(task_struct_t *task, uint16_t fd) {
+  task->fd_list[fd] = 1;
 }
 
 /* Returns the current running task reference */
@@ -155,6 +177,7 @@ void create_task(task_struct_t *task, void (*main)()) {
     task->kstack = vmm_alloc_page();
     task->rsp = (uint64_t) (task->kstack + 4016);
     task->ursp = 0x900000;
+    memset(task->fd_list, 0, sizeof(task->fd_list));
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
      * save a 64 bit address in the stack, first creating a
@@ -282,6 +305,7 @@ void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
   c_task->kstack = vmm_alloc_page();
   c_task->rsp = (uint64_t)(c_task->kstack + 4016);
   strcpy(c_task->name, p_task->name);
+  memcpy(c_task->fd_list, p_task->fd_list, sizeof(p_task->fd_list));
   //memcpy(c_task->kstack, p_task->kstack, TASK_KSTACK_SIZE);
 }
 

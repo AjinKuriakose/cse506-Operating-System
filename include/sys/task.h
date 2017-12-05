@@ -4,11 +4,16 @@
 #include <sys/defs.h> 
 
 #define MAX_NUM_PROCESSES   50
+#define MAX_NUM_FDS         50
 
 #define TASK_KSTACK_SIZE    4096
+
+#define TASK_STATE_UNKNOWN  0
 #define TASK_STATE_READY    1
 #define TASK_STATE_RUNNING  2
+
 #define INVALID_PID         0xFF
+#define INVALID_FD          0xFFFF
 
 extern void init_tasking();
 /*
@@ -62,7 +67,11 @@ typedef struct task_struct_t {
   mm_struct_t *mm;
   uint8_t     task_state;
   uint16_t    num_children;
+  uint16_t    fd_list[MAX_NUM_FDS];
 } task_struct_t;
+
+extern task_struct_t *running_task;
+char task_state_str[10][32];
 
 extern void init_tasking();
 extern void create_task(task_struct_t *, void(*)());
@@ -76,5 +85,7 @@ void start_sbush_process(char *bin_filename);
 
 task_struct_t *get_current_running_task();
 int sys_fork();
+uint16_t get_free_fd(task_struct_t *task);
+void free_fd(task_struct_t *task, uint16_t fd);
 
 #endif /* __TASK_H__ */
