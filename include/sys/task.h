@@ -15,6 +15,11 @@
 #define INVALID_PID         0xFF
 #define INVALID_FD          0xFFFF
 
+#define VMA_TYPE_STACK	    4
+#define VMA_TYPE_HEAP	    3
+#define VMA_TYPE_DATA	    2
+#define VMA_TYPE_TEXT	    1
+
 extern void init_tasking();
 /*
  * not using these members except rsp as we are pushing registers.
@@ -36,6 +41,7 @@ typedef struct vma_struct_t {
   struct vma_struct_t *vma_next;
   struct mm_struct_t *vma_mm;
   uint64_t flags;
+  uint64_t vma_type;
 } vma_struct_t;
 
 typedef struct mm_struct_t {
@@ -62,6 +68,7 @@ typedef struct task_struct_t {
   uint64_t    ppid;
   uint64_t    rip;
   uint64_t    cr3;
+  uint64_t    retV;
   uint64_t    ursp; //to save user stack address
   char        name[32];
   mm_struct_t *mm;
@@ -84,7 +91,7 @@ void start_init_process();
 void start_sbush_process(char *bin_filename);
 
 task_struct_t *get_current_running_task();
-int sys_fork();
+void sys_fork();
 uint16_t get_free_fd(task_struct_t *task);
 void free_fd(task_struct_t *task, uint16_t fd);
 

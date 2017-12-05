@@ -120,13 +120,14 @@ void switch_to_user_mode() {
 
   //switchring3(ring3func, cs, ds);
   /* TODO : Replace 0x4000F0 with correct value read from sbush elf */
-  switchring3((void *)0x4000F0, cs, ds, 0x900000);
+ // switchring3((void *)0x4000F0, cs, ds, 0x900000);
+  switchring3((void *)0x4000F0, cs, ds, 0xFAA00000+4016);
 }
 
 void idle_func() {
     static int c = 0;
     while(1) {
-        kprintf("Idle Func #### %d\n", c);
+//        kprintf("Idle Func #### %d\n", c);
         c++;
         Sleep();
         set_tss_rsp((void *)task1.rsp);
@@ -193,7 +194,6 @@ void switch_task(task_struct_t *old, task_struct_t *new) {
 
 	__asm__ volatile(
 		"pushq %r15;"
-    "pushq %r14;"
     "pushq %r13;"
     "pushq %r12;"
     "pushq %rbx;"
@@ -202,10 +202,12 @@ void switch_task(task_struct_t *old, task_struct_t *new) {
     "pushq %rcx;"
     "pushq %rdx;"
     "pushq %rax;"
+    "pushq %r14;"
 
     "mov %rsp, (%rdi);"
     "mov (%rsi), %rsp;"
 
+    "popq %r14;"
     "popq %rax;"
     "popq %rdx;"
     "popq %rcx;"
@@ -214,7 +216,6 @@ void switch_task(task_struct_t *old, task_struct_t *new) {
     "popq %rbx;"
     "popq %r12;"
     "popq %r13;"
-    "popq %r14;"
     "popq %r15;"
 
     );
@@ -256,11 +257,11 @@ void start_init_process() {
   pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-  invlpg((void*)0x400000);
+  //invlpg((void*)0x400000);
   set_cr3(pml4);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
-  alloc_segment_mem(0x8FBF6B);
+  //alloc_segment_mem(0x8FBF6B);
   
   task->task_state = TASK_STATE_RUNNING;
   task->pid  = allocate_pid();
@@ -276,11 +277,11 @@ void start_sbush_process(char *bin_filename) {
   pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-  invlpg((void*)0x400000);
+  //invlpg((void*)0x400000);
   set_cr3(pml4);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
-  alloc_segment_mem(0x8FBF6B);
+  //alloc_segment_mem(0x8FBF6B);
   
   task->task_state = TASK_STATE_RUNNING;
   task->pid  = allocate_pid();
@@ -296,6 +297,7 @@ void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
   c_task->rip  = p_task->rip;
   c_task->ursp = p_task->ursp;
   c_task->pid  = allocate_pid();
+  p_task->retV = c_task->pid;
   c_task->ppid = p_task->pid;
   c_task->mm   = NULL;
   c_task->next = NULL;
@@ -346,22 +348,18 @@ task_struct_t *copy_parent_task(task_struct_t *p_task) {
 	return c_task;
 }
 
-int sys_fork() {
-  
-  volatile uint64_t ret_val = 0;
+void sys_fork() {
 
   task_struct_t *parent_task = running_task;
   parent_task->cr3 = (uint64_t)get_cr3();
- // kprintf("cr3 parent.. %x\n", parent_task->cr3);
+
   task_struct_t *child_task = copy_parent_task(parent_task); 
-#if 1
   task_struct_t *temp = parent_task->next;
   parent_task->next = child_task;
   child_task->next  = temp;
-#endif
- // kprintf("get cr3child.. %x\n", get_cr3());
+
   set_cr3((pml4_t *)parent_task->cr3);
-  //kprintf("get cr3parent.. %x\n", get_cr3());
+
   volatile uint64_t current_stack_loc;
   uint64_t parent_stack_top = (uint64_t)(parent_task->kstack + 4095);
   uint64_t child_stack_top = (uint64_t)(child_task->kstack + 4095);
@@ -372,13 +370,6 @@ int sys_fork() {
 
   child_task->rsp = (child_stack_top - (parent_stack_top - current_stack_loc) - 72 + 40);
 
-  /* putting zero in rax register. this is the first value to be popped */
-
-  *((uint64_t *)(child_task->rsp)) = 0;
-
-  ret_val = child_task->pid;
-//  kprintf("ret value %d\n", ret_val);
-//  while(1);
-  return ret_val;
+  child_task->retV = 0x0;
 }
 
