@@ -10,11 +10,14 @@ typedef struct file_t {
   char      file_name[32];
   uint8_t   file_type;
   uint64_t  file_size;
+  uint64_t  file_begin;
+  uint64_t  file_end;
+  uint64_t  file_cursor;
   uint16_t  num_children;
   struct file_t *parent_node;
   struct file_t *child_node[MAX_CHILDREN];
 } file_t;
 
-file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_size, uint8_t file_type);
+file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_size, uint8_t file_type, uint64_t file_begin, uint64_t file_end);
 
 #endif
