@@ -110,7 +110,7 @@ void browse_tarfs() {
   }
 }
 
-void update_tarfs_tree(char *file_name, uint64_t file_size, uint8_t file_type) {
+void update_tarfs_tree(char *file_name, uint64_t file_size, uint8_t file_type, uint64_t file_begin, uint64_t file_end) {
 
   if (!file_name)
     return;
@@ -134,7 +134,7 @@ void update_tarfs_tree(char *file_name, uint64_t file_size, uint8_t file_type) {
     }
 
     if (i == temp->num_children) {
-      temp->child_node[temp->num_children++] = create_child_node(temp, token, file_size, file_type);
+      temp->child_node[temp->num_children++] = create_child_node(temp, token, file_size, file_type, file_begin, file_end);
       temp = temp->child_node[temp->num_children - 1];
     }
 
@@ -162,7 +162,11 @@ void init_tarfs_tree() {
 
     /* Skipping the entries with empty names. TODO: find out why they are present (Piazza 429) */
     if (strlen(hdr->name)) {
-      update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0]);
+      //kprintf("NAME : %s, TYPE : %x\n", hdr->name, hdr->typeflag[0]);
+      if (hdr->typeflag[0] == FILE_TYPE_DIR)
+        update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0], 0, 2);
+      else if (hdr->typeflag[0] == FILE_TYPE_FILE)
+        update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0], (uint64_t)(hdr + 1), (uint64_t)((void *)hdr + sizeof(*hdr) + file_size));
     }
 
     if (total_size % 512)
@@ -174,12 +178,15 @@ void init_tarfs_tree() {
   }
 }
 
-file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_size, uint8_t file_type) {
+file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_size, uint8_t file_type, uint64_t file_begin, uint64_t file_end) {
 
   file_t *child_node = (file_t *)vmm_alloc_page();
   strcpy(child_node->file_name, file_name);
   child_node->file_type     = file_type;
   child_node->file_size     = file_size;
+  child_node->file_begin    = file_begin;
+  child_node->file_end      = file_end;
+  child_node->file_cursor   = file_begin;
   child_node->parent_node   = parent_node;
   child_node->num_children  = 0;
 
