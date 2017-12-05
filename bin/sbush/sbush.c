@@ -537,25 +537,39 @@ int setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-  char *d = "parent";
-  char *e = "007";
-  char *f = "111";
-  char *g = "222";
+  char *d = "parent\n";
+  char *e = "007\n";
+  char *f = "child\n";
+ // char *g = "222";
   int ret = 0;
   //char *ch;
   while(1) {
     ret = fork();
     if (ret == 3){
-      write(1, d,6 );
+      write(1, d,7 );
+      write(1, d,7 );
+      write(1, d,7 );
     }
-    else if(ret != 0) {
+    else if(ret == 0) {
 
-      write(1, f,3 );
-      print_prompt();
+      write(1, f,6 );
+  //    print_prompt();
+      write(1, f,6 );
+      write(1, f,6 );
+	
+//  	char *x = "manu\n";
+ //     write(1, x,5 );
     }
 
     write(1, e,3 );
-    write(1, g,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+ //   write(1, g,3 );
+
+
+
     while(1);
   }
 

@@ -342,16 +342,18 @@ void page_fault_handler() {
 
   /* TODO : Enhance the page fault handling and remove print statements */
   uint64_t error_code;
+
+  //__asm__ volatile("movq 136(%%rsp), %0":"=r"(error_code));
+  __asm__ volatile("movq 128(%%rsp), %0":"=r"(error_code));
+
   uint64_t fault_addr_pte;
   uint64_t nw_vaddr;
 
-  __asm__ volatile("movq 136(%%rsp), %0":"=r"(error_code));
-
   uint64_t faulting_address = get_cr2();
 
-  kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
+  //kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
 
-  error_code = error_code& 0xF;
+  //error_code = error_code& 0xF;
 
   if(error_code & PTE_PRESENT && error_code & PTE_WRITABLE) {
 
@@ -367,7 +369,7 @@ void page_fault_handler() {
 
       virt_phys_map(get_cr3(), (faulting_address & ~0xFFF), phy_addr);
 
-      kprintf("Page Fault : addr = %p, phys_addr= %x\n", faulting_address, fault_addr_pte);
+    //  kprintf("COW Page Fault : addr = %p, fault_addr_pte = %x, phy_addr = %x error_code = %x\n", faulting_address, fault_addr_pte, phy_addr, error_code);
       return;
 
    // while(1);

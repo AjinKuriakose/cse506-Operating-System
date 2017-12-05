@@ -77,8 +77,8 @@ void syscall_handler() {
    * normal variables would be allocated in the stack. And we
    * are switching stack down the line. so "ret" value won't be
    * available to return.. so we should use register variables */
-  register int64_t ret __asm__("r14") = 0;
-  ret = (*sys_call_table[syscall_args.__NR_syscall])();
+  //register int64_t ret __asm__("r15") = 0;
+  /*ret =*/ (*sys_call_table[syscall_args.__NR_syscall])();
 
   yield();
   
@@ -92,7 +92,8 @@ void syscall_handler() {
   __asm__ volatile("add $0x8, %rsp"); 
 
   /* return value of syscall*/
-  __asm__ volatile("movq %0, %%rax"::"a"(ret));
+  //__asm__ volatile("movq %0, %%rax"::"a"(ret));
+  __asm__ volatile("movq %0, %%rax"::"a"(get_current_running_task()->retV));
 
   __asm__ volatile("sysretq"); 
 
@@ -130,7 +131,7 @@ static inline void enable_syscall_instr() {
  * as of now adding here itself
  *
  */
-int sys_write() {
+void sys_write() {
 
   //uint64_t fd;
   void *ptr;
@@ -143,11 +144,9 @@ int sys_write() {
   memcpy(buff, ptr, size);
   write_to_terminal(buff, size);  
   
-  //kprintf("%d %d Inside sys_write handler\n", fd, size);
-//  kprintf("\n");
- // kprintf("\n");
+  get_current_running_task()->retV = 1;
 
-  return 1;
+  //return 1;
 }
 
 int sys_read() {
