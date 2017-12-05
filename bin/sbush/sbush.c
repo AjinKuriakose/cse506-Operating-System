@@ -546,22 +546,18 @@ int main(int argc, char *argv[], char *envp[]) {
     ret = fork();
     if (ret == 3){
       write(1, d,7 );
-      write(1, d,7 );
-      write(1, d,7 );
     }
     else if(ret == 0) {
 
       write(1, f,6 );
+	execve("bin/helloworld", NULL, NULL);
+//	execve("bin/sbush", NULL, NULL);
   //    print_prompt();
-      write(1, f,6 );
-      write(1, f,6 );
 	
 //  	char *x = "manu\n";
  //     write(1, x,5 );
     }
 
-    write(1, e,3 );
-    write(1, e,3 );
     write(1, e,3 );
     write(1, e,3 );
     write(1, e,3 );

@@ -16,6 +16,7 @@
 #define __NR_write           1
 #define __NR_exit            60 
 #define __NR_fork            57 
+#define __NR_execve          59 
 #define __NR_ps              90
 #define __NR_getpid          91
 #define __NR_getppid         92
@@ -83,8 +84,9 @@ void syscall_handler() {
    * available to return.. so we should use register variables */
   //register int64_t ret __asm__("r15") = 0;
   /*ret =*/ (*sys_call_table[syscall_args.__NR_syscall])();
+  if(syscall_args.__NR_syscall != __NR_execve)
+	 yield();
 
-  yield();
   
   __asm__ __volatile__("movq %%rsp, %0" : "=a"(get_current_running_task()->rsp));
 
@@ -195,6 +197,23 @@ void sys_getppid() {
 
 }
 
+
+void sys_execve() {
+
+  char *filename = (char *)syscall_args.rdi;
+  //char *const argv[]; rsi
+  //char *const envp[]; rdx
+
+  execve_handler(filename);
+	
+
+  syscall_args.rcx = get_current_running_task()->next->rip;
+ // syscall_args.rcx = get_current_running_task()->rip;
+kprintf("return address.. %x ",syscall_args.rcx);
+//while(1);
+
+}
+
 /*
  * setting up syscall table init 
  */
@@ -204,6 +223,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_write]    = sys_write;  
   sys_call_table[__NR_exit]     = sys_exit;  
   sys_call_table[__NR_fork]     = sys_fork;  
+  sys_call_table[__NR_execve]   = sys_execve;  
   sys_call_table[__NR_ps]       = sys_ps;  
   sys_call_table[__NR_getpid]   = sys_getpid;  
   sys_call_table[__NR_getppid]  = sys_getppid;  

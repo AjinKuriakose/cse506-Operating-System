@@ -10,6 +10,7 @@
 
 int load_binary(task_struct_t *task, char *bin_filename) {
 
+  kprintf("received filename %s\n", bin_filename);
   Elf64_Ehdr *elf_header = get_elf_header(bin_filename);
   kprintf("elf header.. %p\n", elf_header);
   kprintf("binar header.. %p\n", &_binary_tarfs_start);
@@ -22,6 +23,7 @@ int load_binary(task_struct_t *task, char *bin_filename) {
   uint16_t e_phnum = elf_header->e_phnum;
   while (e_phnum) {
 
+	kprintf("loop elf\n");
     /* Load => Text or Data or BSS segment */
     if (prog_header->p_type == 1) {
       vma_struct_t *vma = (vma_struct_t *)vmm_alloc_page();
@@ -54,10 +56,10 @@ int load_binary(task_struct_t *task, char *bin_filename) {
 
      // kprintf("AMD : start = %p\n", prog_header->p_vaddr);
       //kprintf("AMD : end   = %p\n", prog_header->p_vaddr + prog_header->p_memsz);
-      //if (prog_header->p_flags == (PF_R | PF_X))
-       // kprintf("AMD : Text\n");
-      //if (prog_header->p_flags == (PF_R | PF_W))
-        //kprintf("AMD : Data\n");
+      if (prog_header->p_flags == (PF_R | PF_X))
+        kprintf("AMD : Text\n");
+      if (prog_header->p_flags == (PF_R | PF_W))
+        kprintf("AMD : Data\n");
 
       if (prog_header->p_flags == (PF_R | PF_X)) {
         /* Text Segment */
@@ -97,6 +99,7 @@ int load_binary(task_struct_t *task, char *bin_filename) {
    task->ursp = stk + 4016; 
 
   task->rip = elf_header->e_entry;
+  kprintf("HW rip %x\n", task->rip);
   return 0;
 
 }

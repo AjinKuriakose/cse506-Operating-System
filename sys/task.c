@@ -354,6 +354,7 @@ void sys_fork() {
   parent_task->cr3 = (uint64_t)get_cr3();
 
   task_struct_t *child_task = copy_parent_task(parent_task); 
+
   task_struct_t *temp = parent_task->next;
   parent_task->next = child_task;
   child_task->next  = temp;
@@ -373,3 +374,37 @@ void sys_fork() {
   child_task->retV = 0x0;
 }
 
+void execve_handler(char *filename) {
+
+  task_struct_t *task     = (task_struct_t *)vmm_alloc_page();
+  task_struct_t *cur_task = get_current_running_task();
+
+  strcpy(task->name, filename);
+  pml4_t *pml4 = (pml4_t *)pmm_alloc_block();
+  pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
+  new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
+
+  set_cr3(pml4);
+  task->mm = (mm_struct_t *)vmm_alloc_page();
+  task->cr3 = (uint64_t) pml4;
+
+  task->task_state = TASK_STATE_RUNNING;
+
+  /* copy required fields from forked process to new exec process */
+  task->pid  = cur_task->pid;
+  task->ppid  = cur_task->ppid;
+
+
+//  set_cr3((pml4_t *)cur_task->cr3);
+
+  load_binary(task, task->name);
+// 	while(1);
+
+  task_struct_t *temp = cur_task->next;
+  cur_task->next = task;
+  task->next  = temp;
+  
+//  running_task = running_task->next;
+
+}

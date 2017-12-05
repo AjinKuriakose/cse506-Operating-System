@@ -95,4 +95,6 @@ void sys_fork();
 uint16_t get_free_fd(task_struct_t *task);
 void free_fd(task_struct_t *task, uint16_t fd);
 
+void execve_handler(char *filename);
+
 #endif /* __TASK_H__ */
