@@ -1,3 +1,4 @@
+#include<unistd.h>
 long syscall(int syscall_number, ...) {
   long ret;
   __asm__(
@@ -16,9 +17,6 @@ long syscall(int syscall_number, ...) {
   return ret;
 }
 
-int write(int fd, const void *c, int size) {
-  return syscall(1, fd, c, size);
-}
 
 int exit() {
   return syscall(60);
@@ -26,21 +24,25 @@ int exit() {
 int main() {
 
   char ch[10] = "helloworld";
-  char ab[7] = "manu999";
-  //int i = 0;  
-  //while(i<5) {
+  char *a = "m";
    write(1, ch, 10);
-	int i, b;
-	i = 7;
-	b =7;
-   write(1, ab, i+b-b);
-//	while(1);
-//    write(1, ch, 10);
- //   exit();
+
+   int ret = fork();
+   if(ret == 0) {
+//	execve("bin/anotherworld", 0,0);	
+    }
+   else {
+   write(1, ch, 10);
+   }
+
+   write(1, a, 1);
+   write(1, a, 1);
+   write(1, a, 1);
+   write(1, a, 1);
+   write(1, a, 1);
+   write(1, a, 1);
     while(1);
 	
-   // i++;
- // }
   //exit();
   return 0;
 }

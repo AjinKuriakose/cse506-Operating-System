@@ -25,17 +25,27 @@ int exit() {
 }
 int main() {
 
-  char ch[7] = "amd_123";
+  char ch[12] = "anotherworld";
+char *a = "a";
+   write(1, &ch, 12);
 //  char ab[7] = "amd_999";
-  int i =0;
-  while(i<5) {
-    write(1, &ch, 7);
+//  int i =0;
+//  while(i<5) {
+ //   write(1, &ch, 7);
 //    while(1);
 //    write(1, &ab, 7);
  //   exit();
     //while(1);
-    i++;
-  }
+  //  i++;
+ // }
+    write(1, a, 1);
+    write(1, a, 1);
+    write(1, a, 1);
+    write(1, a, 1);
+    write(1, a, 1);
+    write(1, a, 1);
+    write(1, a, 1);
+  while(1);
   exit();
   return 0;
 }

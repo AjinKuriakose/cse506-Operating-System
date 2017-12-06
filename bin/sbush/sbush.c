@@ -564,6 +564,12 @@ int main(int argc, char *argv[], char *envp[]) {
     write(1, e,3 );
     write(1, e,3 );
     write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
+    write(1, e,3 );
  //   write(1, g,3 );
 
 
