@@ -129,7 +129,7 @@ void idle_func() {
     while(1) {
         //kprintf("Idle Func #### %d\n", c);
         c++;
-        Sleep();
+        //Sleep();
         set_tss_rsp((void *)task1.rsp);
        // switch_to_user_mode();
 				yield();

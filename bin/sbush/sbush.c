@@ -594,8 +594,11 @@ int main(int argc, char *argv[], char *envp[]) {
 #if 1
   char buff[1024] = {0};
 while(1) {
-  if(read(0, buff, 1024))
+  if(read(0, buff, 1024)) {
+	  //execve(buff, NULL, NULL);
   	write(1, buff, strlen(buff)); 
+    memset(buff, 0, 1024);
+  }
 }
 #endif
 
