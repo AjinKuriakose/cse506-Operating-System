@@ -99,7 +99,7 @@ int load_binary(task_struct_t *task, char *bin_filename) {
    task->ursp = stk + 4016; 
   
   task->rip = elf_header->e_entry;
-  kprintf("HW rip %x\n", task->rip);
+//  kprintf("HW rip %x\n", task->rip);
   return 0;
 
 }

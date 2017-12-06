@@ -207,14 +207,8 @@ void sys_execve() {
   //char *const envp[]; rdx
 
   execve_handler(filename);
-	
 
-  //syscall_args.rcx = get_current_running_task()->rip;
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;
-  kprintf("return address.. %x\n",(get_current_running_task()->syscall_args).rcx);
-
-//while(1);
-
 }
 
 /*

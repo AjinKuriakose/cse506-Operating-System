@@ -30,11 +30,15 @@ int main() {
   //int i = 0;  
   //while(i<5) {
    write(1, ch, 10);
-   write(1, ab, 7);
+	int i, b;
+	i = 7;
+	b =7;
+   write(1, ab, i+b-b);
 //	while(1);
 //    write(1, ch, 10);
  //   exit();
     while(1);
+	
    // i++;
  // }
   //exit();

@@ -127,7 +127,7 @@ void switch_to_user_mode() {
 void idle_func() {
     static int c = 0;
     while(1) {
-        kprintf("Idle Func #### %d\n", c);
+        //kprintf("Idle Func #### %d\n", c);
         c++;
         Sleep();
         set_tss_rsp((void *)task1.rsp);
@@ -137,18 +137,7 @@ void idle_func() {
 }
  
 void init_sbush_proc() {
-    
     switch_to_user_mode();
-    /*
-    while(1) {
-        kprintf("Init sbush proc ####\n");
-        Sleep();
-        set_tss_rsp((void *)task2.rsp);
-        switch_to_user_mode();
-        kprintf("dwInside Dummy....\n");
-				yield();
-    }
-    */
 }
 
 /*
@@ -265,11 +254,10 @@ void start_init_process() {
   pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-  //invlpg((void*)0x400000);
+
   set_cr3(pml4);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
-  //alloc_segment_mem(0x8FBF6B);
   
   task->task_state = TASK_STATE_RUNNING;
   task->pid  = allocate_pid();
@@ -285,11 +273,10 @@ void start_sbush_process(char *bin_filename) {
   pml4_t *new_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
   pml4_t *kern_pml4 = (pml4_t *)((uint64_t)get_kernel_pml4() | VIRT_ADDR_BASE);
   new_pml4->pml4_entries[511] = kern_pml4->pml4_entries[511];
-  //invlpg((void*)0x400000);
+
   set_cr3(pml4);
   task->mm = (mm_struct_t *)vmm_alloc_page();
   task->cr3 = (uint64_t) pml4;
-  //alloc_segment_mem(0x8FBF6B);
   
   task->task_state = TASK_STATE_RUNNING;
   task->pid  = allocate_pid();
@@ -309,14 +296,14 @@ void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
   c_task->ppid = p_task->pid;
   c_task->mm   = NULL;
   c_task->next = NULL;
-	c_task->cr3  = (uint64_t)pmm_alloc_block();
+  c_task->cr3  = (uint64_t)pmm_alloc_block();
   c_task->num_children = 0;
   c_task->task_state = TASK_STATE_RUNNING;
   c_task->kstack = vmm_alloc_page();
   c_task->rsp = (uint64_t)(c_task->kstack + 4016);
   strcpy(c_task->name, p_task->name);
+
   memcpy(c_task->fd_list, p_task->fd_list, sizeof(p_task->fd_list));
-  //memcpy(c_task->kstack, p_task->kstack, TASK_KSTACK_SIZE);
   memcpy(&(c_task->syscall_args), &(p_task->syscall_args), sizeof(p_task->syscall_args));
 }
 
@@ -389,5 +376,4 @@ void execve_handler(char *filename) {
 
   load_binary(cur_task, filename);
   strcpy(cur_task->name, filename);
-  set_cr3((pml4_t *)cur_task->cr3);
 }

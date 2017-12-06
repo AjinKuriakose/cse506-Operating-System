@@ -41,8 +41,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physbase %p\n", (uint64_t)physbase);
   kprintf("tarfs in [%p - %p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
-  /* TODO : Remove this in the end, this is just for POC */
-  browse_tarfs();
 
   init_idt();
   pic_offset_init(0x20,0x28);
