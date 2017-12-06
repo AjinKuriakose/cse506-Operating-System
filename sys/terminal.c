@@ -68,7 +68,31 @@ static void process_terminal_buffer() {
   /* TODO : Send the buffer content to the foreground process. This is just a demo implementation */
   terminal.buffer[terminal.buffer_offset - 1] = '\n';
   terminal.buffer[terminal.buffer_offset] = '\0';
-  write_to_terminal(&terminal.buffer[2], strlen(&terminal.buffer[2]));
+  //write_to_terminal(&terminal.buffer[2], strlen(&terminal.buffer[2]));
+}
+
+int read_from_terminal(char *buffer, int size) {
+
+  //terminal.buffer[terminal.buffer_offset - 1] = '\n';
+  //terminal.buffer[terminal.buffer_offset] = '\0';
+
+  while (terminal.buffer_ready == TERMINAL_BUFFER_NOT_READY);
+
+  terminal.buffer_ready = TERMINAL_BUFFER_NOT_READY;
+  int buff_len = strlen(&terminal.buffer[2]);
+  if (buff_len) {
+    if (buff_len > size) {
+      buff_len = size;
+    }
+    memcpy(buffer, &terminal.buffer[2], buff_len);
+    //kprintf("--\n");
+    //kprintf("[%s]\n", terminal.buffer[2]);
+    //kprintf("==\n");
+    return buff_len;
+  }
+    //kprintf("--\n");
+
+  return -1;
 }
 
 void handle_keyboard_input(unsigned char glyph, int flags) {
@@ -118,6 +142,6 @@ void write_to_terminal(const char *buff, int size) {
     kprintf("%c", buff[i++]);
     size--;
   }
-  Sleep_t();
+  //Sleep_t();
 
 }

@@ -6,7 +6,7 @@
 #include <sys/gdt.h>
 #include <sys/utils.h>
 #include <sys/terminal.h>
-
+#include <sys/dir.h>
  
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
@@ -161,16 +161,19 @@ void sys_read() {
   uint64_t fd;
   void *ptr;
   uint64_t size;
-  char buff[512];
+  int ret = -1;
 
-
-  ptr = (void*)syscall_args.rsi;
+  ptr = (void*)(syscall_args.rsi);
   fd = syscall_args.rdi;
   size = syscall_args.rdx;
 
-  memcpy(buff, ptr, size);
-  kprintf("hellon %d %s %d\n", fd, buff, size);
-  kprintf("\nsys_read dummy funtion. Ring 0\n");
+  while (ret == -1) {
+    if (fd == STDIN) {
+      ret = read_from_terminal(ptr, size);
+    }
+  }
+
+  get_current_running_task()->retV = ret;
 }
 
 void sys_exit() {

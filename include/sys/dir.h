@@ -6,6 +6,10 @@
 
 #define MAX_CHILDREN    256
 
+#define STDIN		0
+#define STDOUT		1
+#define STDERR		2
+
 typedef struct file_t {
   char      file_name[32];
   uint8_t   file_type;

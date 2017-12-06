@@ -536,7 +536,7 @@ int setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
-#if 1
+#if 0
   char *d = "parent\n";
   char *e = "007\n";
   char *f = "child\n";
@@ -591,15 +591,12 @@ int main(int argc, char *argv[], char *envp[]) {
   }
 #endif
 
-#if 0
-  char *s = "amd";
-  char *p = "manu";
-  write(1, s, 3);
-  write(1, s, 3);
-  write(1, s, 3);
-  write(1, s, 3);
-  write(1, p, 4);
-  while(1);
+#if 1
+  char buff[1024] = {0};
+while(1) {
+  if(read(0, buff, 1024))
+  	write(1, buff, strlen(buff)); 
+}
 #endif
 
   return 0;

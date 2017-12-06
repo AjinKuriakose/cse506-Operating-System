@@ -353,7 +353,6 @@ void page_fault_handler() {
 
   kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
 
-  //error_code = error_code& 0xF;
 
   if(error_code & PTE_PRESENT && error_code & PTE_WRITABLE) {
 
@@ -372,7 +371,6 @@ void page_fault_handler() {
     //  kprintf("COW Page Fault : addr = %p, fault_addr_pte = %x, phy_addr = %x error_code = %x\n", faulting_address, fault_addr_pte, phy_addr, error_code);
       return;
 
-   // while(1);
     }
   }
   /* Create mapping for the faulting address */

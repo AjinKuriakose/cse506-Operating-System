@@ -20,6 +20,7 @@ void terminal_display(const char *fmt);
 int read_from_terminal();
 void write_to_terminal(const char *buff, int size);
 //int write_to_terminal(const char *buff);
+int read_from_terminal(char *buffer, int size);
 void handle_keyboard_input(unsigned char glyph, int flags);
 
 #endif
