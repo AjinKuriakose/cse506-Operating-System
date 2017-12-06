@@ -24,21 +24,20 @@
 typedef void (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
 
-typedef struct sycall_args_t {
-
-  uint64_t rdi;
-  uint64_t rsi;
-  uint64_t rdx;
-  uint64_t r10;
-  uint64_t r8;
-  uint64_t r9;
-
-  uint64_t rcx;
-  uint64_t __NR_syscall;
-
-}syscall_args_t;
-
 static syscall_args_t syscall_args;
+
+void copy_syscall_args_to_task_struct(task_struct_t *task) {
+
+  (task->syscall_args).rdi = syscall_args.rdi;
+  (task->syscall_args).rsi = syscall_args.rsi;
+  (task->syscall_args).rdx = syscall_args.rdx;
+  (task->syscall_args).r10 = syscall_args.r10;
+  (task->syscall_args).r8  = syscall_args.r8;
+  (task->syscall_args).r9  = syscall_args.r9;
+  (task->syscall_args).rcx = syscall_args.rcx;
+  (task->syscall_args).__NR_syscall = syscall_args.__NR_syscall;
+
+}
 
 void get_syscall_args() {
 
@@ -74,6 +73,9 @@ void syscall_handler() {
   __asm__ __volatile__("popq %%rax;movq %%rax, %0;":"=a"(syscall_args.__NR_syscall));
   
   get_syscall_args();
+
+  copy_syscall_args_to_task_struct(get_current_running_task());
+
   /* not sure if doing right..above two operations would happen in userstack */
   __asm__ __volatile__("movq %%rsp, %0"  : "=a"(get_current_running_task()->ursp));
   __asm__ __volatile__("movq %0, %%rsp" :: "a"(get_current_running_task()->rsp));
@@ -84,7 +86,7 @@ void syscall_handler() {
    * available to return.. so we should use register variables */
   //register int64_t ret __asm__("r15") = 0;
   /*ret =*/ (*sys_call_table[syscall_args.__NR_syscall])();
-  if(syscall_args.__NR_syscall != __NR_execve)
+//  if(syscall_args.__NR_syscall != __NR_execve)
 	 yield();
 
   
@@ -94,7 +96,7 @@ void syscall_handler() {
   __asm__ __volatile__("movq %0, %%rsp" :: "a"(get_current_running_task()->ursp));
   
   /* restoring rcx register value, rip <-- rcx upon sysretq */
-  __asm__ volatile("mov %0, %%rcx" ::"a"(syscall_args.rcx));
+  __asm__ volatile("mov %0, %%rcx" ::"a"((get_current_running_task()->syscall_args).rcx));
   __asm__ volatile("add $0x8, %rsp"); 
 
   /* return value of syscall*/
@@ -207,9 +209,10 @@ void sys_execve() {
   execve_handler(filename);
 	
 
-  syscall_args.rcx = get_current_running_task()->next->rip;
- // syscall_args.rcx = get_current_running_task()->rip;
-kprintf("return address.. %x ",syscall_args.rcx);
+  //syscall_args.rcx = get_current_running_task()->rip;
+  (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;
+  kprintf("return address.. %x\n",(get_current_running_task()->syscall_args).rcx);
+
 //while(1);
 
 }

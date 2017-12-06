@@ -351,7 +351,7 @@ void page_fault_handler() {
 
   uint64_t faulting_address = get_cr2();
 
-  //kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
+  kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
 
   //error_code = error_code& 0xF;
 

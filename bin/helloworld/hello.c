@@ -26,11 +26,13 @@ int exit() {
 int main() {
 
   char ch[10] = "helloworld";
-//  char ab[7] = "manu999";
+  char ab[7] = "manu999";
   //int i = 0;  
   //while(i<5) {
-    write(1, ch, 10);
-    write(1, ch, 10);
+   write(1, ch, 10);
+   write(1, ab, 7);
+//	while(1);
+//    write(1, ch, 10);
  //   exit();
     while(1);
    // i++;

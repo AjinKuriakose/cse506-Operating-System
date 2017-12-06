@@ -536,6 +536,7 @@ int setenv(char *path_variable, char *value, int overwrite) {
 
 int main(int argc, char *argv[], char *envp[]) {
 
+#if 1
   char *d = "parent\n";
   char *e = "007\n";
   char *f = "child\n";
@@ -546,9 +547,11 @@ int main(int argc, char *argv[], char *envp[]) {
     ret = fork();
     if (ret == 3){
       write(1, d,7 );
+      write(1, d,7 );
     }
     else if(ret == 0) {
 
+//      write(1, f,6 );
       write(1, f,6 );
 	execve("bin/helloworld", NULL, NULL);
 //	execve("bin/sbush", NULL, NULL);
@@ -580,6 +583,18 @@ int main(int argc, char *argv[], char *envp[]) {
     print_prompt();
     read_from_stdin();
   }
+#endif
+
+#if 0
+  char *s = "amd";
+  char *p = "manu";
+  write(1, s, 3);
+  write(1, s, 3);
+  write(1, s, 3);
+  write(1, s, 3);
+  write(1, p, 4);
+  while(1);
+#endif
 
   return 0;
 }

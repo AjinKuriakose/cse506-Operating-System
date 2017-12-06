@@ -11,6 +11,7 @@
 #define TASK_STATE_UNKNOWN  0
 #define TASK_STATE_READY    1
 #define TASK_STATE_RUNNING  2
+#define TASK_STATE_STOPPED  3 
 
 #define INVALID_PID         0xFF
 #define INVALID_FD          0xFFFF
@@ -21,6 +22,20 @@
 #define VMA_TYPE_TEXT	    1
 
 extern void init_tasking();
+
+typedef struct sycall_args_t {
+
+  uint64_t rdi;
+  uint64_t rsi;
+  uint64_t rdx;
+  uint64_t r10;
+  uint64_t r8;
+  uint64_t r9;
+  uint64_t rcx;
+  uint64_t __NR_syscall;
+
+} syscall_args_t;
+
 /*
  * not using these members except rsp as we are pushing registers.
  * TODO: not using these register members now.
@@ -75,6 +90,7 @@ typedef struct task_struct_t {
   uint8_t     task_state;
   uint16_t    num_children;
   uint16_t    fd_list[MAX_NUM_FDS];
+  syscall_args_t syscall_args;
 } task_struct_t;
 
 extern task_struct_t *running_task;
