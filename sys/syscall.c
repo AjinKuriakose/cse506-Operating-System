@@ -17,6 +17,7 @@
 #define __NR_exit            60 
 #define __NR_fork            57 
 #define __NR_execve          59 
+#define __NR_getcwd          79
 #define __NR_ps              90
 #define __NR_getpid          91
 #define __NR_getppid         92
@@ -181,6 +182,22 @@ void sys_exit() {
   while(1);
 }
 
+void sys_getcwd() {
+  void *ptr;
+  uint64_t size;
+
+  ptr = (void *)(syscall_args.rsi);
+  size = syscall_args.rdx;
+
+  if (size >= strlen(get_current_running_task()->cwd)) {
+    strcpy(ptr, get_current_running_task()->cwd);
+    get_current_running_task()->retV = 1;
+
+  } else {
+    get_current_running_task()->retV = 0;
+  }
+}
+
 void sys_ps() {
   task_struct_t *tmp = running_task;
   kprintf("\nPID | PPID | NAME | STATE\n");
@@ -224,6 +241,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_exit]     = sys_exit;  
   sys_call_table[__NR_fork]     = sys_fork;  
   sys_call_table[__NR_execve]   = sys_execve;  
+  sys_call_table[__NR_getcwd]   = sys_getcwd;  
   sys_call_table[__NR_ps]       = sys_ps;  
   sys_call_table[__NR_getpid]   = sys_getpid;  
   sys_call_table[__NR_getppid]  = sys_getppid;  

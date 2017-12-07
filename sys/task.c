@@ -167,6 +167,8 @@ void create_task(task_struct_t *task, void (*main)()) {
     task->kstack = vmm_alloc_page();
     task->rsp = (uint64_t) (task->kstack + 4016);
     task->ursp = 0x900000;
+    strcpy(task->cwd, "/rootfs");
+
     memset(task->fd_list, 0, sizeof(task->fd_list));
     /* placing main's address, func pointer in the stack
      * towards the end. kstack is a char array, in order to 
@@ -302,6 +304,7 @@ void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
   c_task->kstack = vmm_alloc_page();
   c_task->rsp = (uint64_t)(c_task->kstack + 4016);
   strcpy(c_task->name, p_task->name);
+  strcpy(c_task->cwd, p_task->cwd);
 
   memcpy(c_task->fd_list, p_task->fd_list, sizeof(p_task->fd_list));
   memcpy(&(c_task->syscall_args), &(p_task->syscall_args), sizeof(p_task->syscall_args));
@@ -374,6 +377,9 @@ void execve_handler(char *filename) {
 
   task_struct_t *cur_task = get_current_running_task();
 
-  load_binary(cur_task, filename);
+  if (load_binary(cur_task, filename)) {
+    return;
+  }
+
   strcpy(cur_task->name, filename);
 }

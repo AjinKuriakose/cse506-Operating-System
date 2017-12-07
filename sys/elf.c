@@ -12,6 +12,10 @@ int load_binary(task_struct_t *task, char *bin_filename) {
 
  // kprintf("received filename %s\n", bin_filename);
   Elf64_Ehdr *elf_header = get_elf_header(bin_filename);
+  if (elf_header == NULL) {
+    kprintf("%s : command not found\n", bin_filename);
+    return 1;
+  }
  // kprintf("elf header.. %p\n", elf_header);
   //kprintf("binar header.. %p\n", &_binary_tarfs_start);
   Elf64_Phdr *prog_header = (Elf64_Phdr *)((char *)elf_header + elf_header->e_phoff);

@@ -17,9 +17,11 @@
 #define INVALID_FD          0xFFFF
 
 #define VMA_TYPE_STACK	    4
-#define VMA_TYPE_HEAP	    3
-#define VMA_TYPE_DATA	    2
-#define VMA_TYPE_TEXT	    1
+#define VMA_TYPE_HEAP	      3
+#define VMA_TYPE_DATA	      2
+#define VMA_TYPE_TEXT	      1
+
+#define CWD_LEN             64
 
 extern void init_tasking();
 
@@ -91,6 +93,7 @@ typedef struct task_struct_t {
   uint16_t    num_children;
   uint16_t    fd_list[MAX_NUM_FDS];
   syscall_args_t syscall_args;
+  char        cwd[CWD_LEN];
 } task_struct_t;
 
 extern task_struct_t *running_task;
