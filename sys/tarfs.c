@@ -13,6 +13,10 @@
 /* tarfs file structure tree */
 file_t *tarfs_tree;
 
+file_t *get_tarfs_tree() {
+  return tarfs_tree;
+}
+
 /*
  * Dumps the tarfs file structure tree
  * When invoked, the value for 'level' should be 1
@@ -192,3 +196,11 @@ file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_si
 
   return child_node;
 }
+
+file_t *find_node(char *name) {
+
+  file_t *node = NULL;
+
+  return node;
+}
+

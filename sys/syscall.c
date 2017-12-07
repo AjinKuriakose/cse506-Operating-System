@@ -188,8 +188,8 @@ void sys_getcwd() {
   void *ptr;
   uint64_t size;
 
-  ptr = (void *)(syscall_args.rsi);
-  size = syscall_args.rdx;
+  ptr = (void *)(syscall_args.rdi);
+  size = syscall_args.rsi;
 
   if (size >= strlen(get_current_running_task()->cwd)) {
     strcpy(ptr, get_current_running_task()->cwd);
