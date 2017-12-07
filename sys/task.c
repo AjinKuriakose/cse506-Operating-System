@@ -398,7 +398,7 @@ void sys_fork() {
 }
 
 void execve_handler(char *filename) {
-kprintf("%s ..... \n", filename);
+//kprintf("%s ..... \n", filename);
 
   task_struct_t *cur_task = get_current_running_task();
   strcpy(cur_task->name, filename);
