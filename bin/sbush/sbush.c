@@ -616,6 +616,7 @@ int main(int argc, char *argv[], char *envp[]) {
 #if 1
   int ret;
   while(1) {
+    memset(buff, 0, 1024);
     if(read(0, buff, 1024)) {
 //	write(1,buff, strlen(buff));
       ret = fork();

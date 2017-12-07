@@ -7,6 +7,7 @@
 #include <sys/utils.h>
 #include <sys/elf64.h>
 #include <sys/dir.h>
+#include <sys/tarfs.h>
 
 task_struct_t *running_task;
 static task_struct_t main_task;
@@ -58,6 +59,19 @@ void set_task_state(uint8_t state) {
 }
 void free_fd(task_struct_t *task, uint16_t fd) {
   task->fd_list[fd] = 1;
+}
+
+void cleanup_tasks() {
+
+  task_struct_t *curr = get_current_running_task();
+  task_struct_t *tmp = curr;
+
+  while (tmp->next != curr) {
+
+    /* TODO : take reference and clean up tmp->next before next statement */
+    tmp->next = tmp->next->next;
+    tmp = tmp->next;
+  }
 }
 
 /* Returns the current running task reference */
@@ -140,6 +154,7 @@ void idle_func() {
         //Sleep();
         set_tss_rsp((void *)task1.rsp);
        // switch_to_user_mode();
+       // cleanup_tasks(); 
 				yield();
     }
 }
@@ -388,21 +403,15 @@ kprintf("%s ..... \n", filename);
   task_struct_t *cur_task = get_current_running_task();
   strcpy(cur_task->name, filename);
 
+  Elf64_Ehdr *elf_header = get_elf_header(cur_task->name);
+  if (elf_header == NULL) {
+    kprintf("%s : command not found\n", cur_task->name);
+    return;
+  }
+
   if (load_binary(cur_task, cur_task->name)) {
     get_current_running_task()->task_state = TASK_STATE_STOPPED;
   }
 }
 
-void task_cleanup(task_struct_t *task) {
-
-  task_struct_t *tmp = get_current_running_task();
-  while (tmp->next != task) {
-    tmp = tmp->next;
-  }
-
-  tmp->next = task->next;
-
-  /* TODO This function implememntation is incomplete */
-  /* Now free task resources */
-}
 
