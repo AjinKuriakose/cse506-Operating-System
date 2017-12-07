@@ -11,7 +11,8 @@
 #define TASK_STATE_UNKNOWN  0
 #define TASK_STATE_READY    1
 #define TASK_STATE_RUNNING  2
-#define TASK_STATE_STOPPED  3 
+#define TASK_STATE_WAITING  3
+#define TASK_STATE_STOPPED  4 
 
 #define INVALID_PID         0xFF
 #define INVALID_FD          0xFFFF
@@ -81,6 +82,7 @@ typedef struct task_struct_t {
   uint64_t    kstack;
   uint64_t    kstack_top;
   struct task_struct_t *next;
+  struct task_struct_t *parent_task;
   uint64_t    pid;
   uint64_t    ppid;
   uint64_t    rip;
@@ -115,5 +117,8 @@ uint16_t get_free_fd(task_struct_t *task);
 void free_fd(task_struct_t *task, uint16_t fd);
 
 void execve_handler(char *filename);
+void task_cleanup(task_struct_t *task);
+void set_task_state(uint8_t);
+uint8_t get_task_state();
 
 #endif /* __TASK_H__ */

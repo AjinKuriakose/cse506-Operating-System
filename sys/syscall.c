@@ -17,6 +17,7 @@
 #define __NR_exit            60 
 #define __NR_fork            57 
 #define __NR_execve          59 
+#define __NR_wait4           61
 #define __NR_getcwd          79
 #define __NR_ps              90
 #define __NR_getpid          91
@@ -179,7 +180,7 @@ void sys_read() {
 
 void sys_exit() {
   kprintf("Done from exit()!\n");
-  while(1);
+  set_task_state(TASK_STATE_STOPPED);
 }
 
 void sys_getcwd() {
@@ -219,6 +220,9 @@ void sys_getppid() {
 
 }
 
+void sys_wait() {
+  get_current_running_task()->task_state = TASK_STATE_WAITING;
+}
 
 void sys_execve() {
 
@@ -245,6 +249,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_ps]       = sys_ps;  
   sys_call_table[__NR_getpid]   = sys_getpid;  
   sys_call_table[__NR_getppid]  = sys_getppid;  
+  sys_call_table[__NR_wait4]    = sys_wait;  
   /* add remaining syscalls here..*/
 
 }

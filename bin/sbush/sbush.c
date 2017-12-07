@@ -574,7 +574,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
 
 
-    while(1);
+ //   while(1);
   }
 
   m_environ = envp + argc + 1;
@@ -591,15 +591,41 @@ int main(int argc, char *argv[], char *envp[]) {
   }
 #endif
 
+#if 0
+  int ret = 0;
+  char buff[1024] = {0};
+  while(1) {
+    if(read(0, buff, 1024)) {
+      ret = fork();
+      if (ret == 0){
+        execve(buff, NULL, NULL);
+        //write(1, buff, strlen(buff)); 
+      }
+      memset(buff, 0, 1024);
+
+    } else {
+
+    }
+  }
+#endif
+
 #if 1
   char buff[1024] = {0};
-while(1) {
-  if(read(0, buff, 1024)) {
-	  execve(buff, NULL, NULL);
-  	//write(1, buff, strlen(buff)); 
-    memset(buff, 0, 1024);
+  while(1) {
+    if(read(0, buff, 1024)) {
+      int  ret = fork();
+      if(ret ==0) {
+        execve(buff, NULL, NULL);
+        //write(1, buff, strlen(buff)); 
+        memset(buff, 0, 1024);
+      }
+    }
+    
+   // print_prompt();
+    //print_prompt();
+    //print_prompt();
+    //while(1);
   }
-}
 #endif
 
   return 0;

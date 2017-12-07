@@ -18,7 +18,9 @@ static uint8_t pid[MAX_NUM_PROCESSES] = {0};
 
 char task_state_str[][32] = {"UNKNOWN",
                              "READY",
-                             "RUNNING"
+                             "RUNNING",
+                             "WAITING",
+                             "STOPPED"
                             };
 /* Allocate an available process id */
 uint32_t allocate_pid() {
@@ -48,7 +50,12 @@ uint16_t get_fd(task_struct_t *task) {
 
   return INVALID_FD;
 }
-
+uint8_t get_task_state() {
+  return running_task->task_state;
+}
+void set_task_state(uint8_t state) {
+  running_task->task_state = state;
+}
 void free_fd(task_struct_t *task, uint16_t fd) {
   task->fd_list[fd] = 1;
 }
@@ -168,6 +175,7 @@ void create_task(task_struct_t *task, void (*main)()) {
     task->kstack = vmm_alloc_page();
     task->rsp = (uint64_t) (task->kstack + 4016);
     task->ursp = 0x900000;
+    task->parent_task = NULL;
     strcpy(task->cwd, "/rootfs");
 
     memset(task->fd_list, 0, sizeof(task->fd_list));
@@ -225,12 +233,11 @@ void yield() {
     task_struct_t *last = running_task;
 
     task_struct_t *next_task = running_task->next;
-/*
-    while (next_task->task_state == TASK_STATE_STOPPED) {
 
-	next_task = next_task->next;
+    while (next_task->task_state == TASK_STATE_STOPPED || next_task->task_state == TASK_STATE_WAITING) {
+	    next_task = next_task->next;
     }
-  */  
+    
     running_task = next_task;
     switch_task(last, running_task);
 }
@@ -304,6 +311,7 @@ void set_c_task(task_struct_t *c_task, task_struct_t *p_task) {
   c_task->task_state = TASK_STATE_RUNNING;
   c_task->kstack = vmm_alloc_page();
   c_task->rsp = (uint64_t)(c_task->kstack + 4016);
+  c_task->parent_task = p_task;
   strcpy(c_task->name, p_task->name);
   strcpy(c_task->cwd, p_task->cwd);
 
@@ -380,6 +388,20 @@ void execve_handler(char *filename) {
   strcpy(cur_task->name, filename);
 
   if (load_binary(cur_task, filename)) {
-    return;
+    get_current_running_task()->task_state = TASK_STATE_STOPPED;
   }
 }
+
+void task_cleanup(task_struct_t *task) {
+
+  task_struct_t *tmp = get_current_running_task();
+  while (tmp->next != task) {
+    tmp = tmp->next;
+  }
+
+  tmp->next = task->next;
+
+  /* TODO This function implememntation is incomplete */
+  /* Now free task resources */
+}
+
