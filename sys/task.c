@@ -383,11 +383,12 @@ void sys_fork() {
 }
 
 void execve_handler(char *filename) {
+kprintf("%s ..... \n", filename);
 
   task_struct_t *cur_task = get_current_running_task();
   strcpy(cur_task->name, filename);
 
-  if (load_binary(cur_task, filename)) {
+  if (load_binary(cur_task, cur_task->name)) {
     get_current_running_task()->task_state = TASK_STATE_STOPPED;
   }
 }

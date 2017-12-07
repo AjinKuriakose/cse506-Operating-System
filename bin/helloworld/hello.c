@@ -23,10 +23,13 @@ int exit() {
 }
 int main() {
 
+
   char ch[10] = "helloworld";
   char *a = "m";
    write(1, ch, 10);
-   exit(1);
+  exit(1);
+//while(1);
+//   exit(1);
 
    int ret = fork();
    if(ret == 0) {

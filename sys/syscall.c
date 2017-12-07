@@ -180,6 +180,7 @@ void sys_read() {
 
 void sys_exit() {
   kprintf("Done from exit()!\n");
+  get_current_running_task()->parent_task->task_state = TASK_STATE_RUNNING;
   set_task_state(TASK_STATE_STOPPED);
 }
 
@@ -226,10 +227,12 @@ void sys_wait() {
 
 void sys_execve() {
 
-  char *filename = (char *)syscall_args.rdi;
+ // char *filename = (char *)syscall_args.rdi;
+  char *filename = (char *)(get_current_running_task()->syscall_args.rdi);
   //char *const argv[]; rsi
   //char *const envp[]; rdx
 
+  kprintf("filename is.. %s\n", filename);
   execve_handler(filename);
 
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;

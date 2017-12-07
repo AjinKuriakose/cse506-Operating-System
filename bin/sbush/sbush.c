@@ -21,6 +21,7 @@ struct linux_dirent64 {
   char           d_name[]; /* Filename (null-terminated) */
 };
 
+  char buff[1024] = {0};
 
 char **m_environ;
 
@@ -534,6 +535,9 @@ int setenv(char *path_variable, char *value, int overwrite) {
   return 1;
 }
 
+int wait() {
+  return syscall(__NR_wait4);
+}
 int main(int argc, char *argv[], char *envp[]) {
 
 #if 0
@@ -610,16 +614,22 @@ int main(int argc, char *argv[], char *envp[]) {
 #endif
 
 #if 1
-  char buff[1024] = {0};
+  int ret;
   while(1) {
     if(read(0, buff, 1024)) {
-      int  ret = fork();
+//	write(1,buff, strlen(buff));
+      ret = fork();
       if(ret ==0) {
         execve(buff, NULL, NULL);
+  //      execve("bin/ps", NULL, NULL);
         //write(1, buff, strlen(buff)); 
         memset(buff, 0, 1024);
-      }
-    }
+	}
+      else {
+	wait();
+        memset(buff, 0, 1024);
+	}
+   }
     
    // print_prompt();
     //print_prompt();
