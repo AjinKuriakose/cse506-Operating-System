@@ -69,7 +69,7 @@ Elf64_Ehdr *get_elf_header(char *bin_filename) {
 
     total_size = sizeof(*hdr) + file_size + pad_size;
 
-    if (!strncmp(hdr->name, bin_filename, strlen(bin_filename))) {
+    if (!strcmp(hdr->name, bin_filename)) {
       return (Elf64_Ehdr *)(hdr + 1);
     }
 
@@ -125,7 +125,7 @@ void update_tarfs_tree(char *file_name, uint64_t file_size, uint8_t file_type, u
   while (token != NULL) {
     int i = 0;
     while (i < temp->num_children) {
-      if (!strncmp(temp->file_name, token, strlen(token))) {
+      if (!strcmp(temp->file_name, token)) {
 
         temp = temp->child_node[i];
         break;
