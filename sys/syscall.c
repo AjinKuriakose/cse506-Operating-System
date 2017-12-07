@@ -178,7 +178,7 @@ void sys_read() {
 }
 
 void sys_exit() {
-  kprintf(" Done from exit() !\n");
+  kprintf("Done from exit()!\n");
   while(1);
 }
 

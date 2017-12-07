@@ -6,6 +6,7 @@
 #include <sys/gdt.h>
 #include <sys/utils.h>
 #include <sys/elf64.h>
+#include <sys/dir.h>
 
 task_struct_t *running_task;
 static task_struct_t main_task;
@@ -35,7 +36,7 @@ uint32_t allocate_pid() {
 }
 
 uint16_t get_fd(task_struct_t *task) {
-  uint16_t fd_index = 0;
+  uint16_t fd_index = 3;
   while (fd_index < MAX_NUM_FDS) {
     if (task->fd_list[fd_index] == 0) {
       task->fd_list[fd_index] = 1;
@@ -376,10 +377,9 @@ void sys_fork() {
 void execve_handler(char *filename) {
 
   task_struct_t *cur_task = get_current_running_task();
+  strcpy(cur_task->name, filename);
 
   if (load_binary(cur_task, filename)) {
     return;
   }
-
-  strcpy(cur_task->name, filename);
 }

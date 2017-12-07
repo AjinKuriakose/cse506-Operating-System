@@ -32,6 +32,7 @@
 #define __NR_getdents   78
 #define __NR_getcwd     79
 #define __NR_chdir      80
+#define __NR_ps         90
 #define __NR_getdents64 217
 #define __NR_waitid     247
 
@@ -72,4 +73,7 @@ int pipe(int pipefd[2]);
 
 ssize_t write(int fd, const void *buf, size_t count);
 int dup2(int oldfd, int newfd);
+
+int ps();
+
 #endif
