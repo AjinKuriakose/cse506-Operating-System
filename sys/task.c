@@ -65,11 +65,11 @@ void cleanup_tasks() {
 
   task_struct_t *curr = get_current_running_task();
   task_struct_t *tmp = curr;
-
   while (tmp->next != curr) {
-
     /* TODO : take reference and clean up tmp->next before next statement */
-    tmp->next = tmp->next->next;
+    if(tmp->next->task_state == TASK_STATE_STOPPED) {
+    	tmp->next = tmp->next->next;
+    }
     tmp = tmp->next;
   }
 }
@@ -154,7 +154,7 @@ void idle_func() {
         //Sleep();
         set_tss_rsp((void *)task1.rsp);
        // switch_to_user_mode();
-       // cleanup_tasks(); 
+        cleanup_tasks(); 
 				yield();
     }
 }
