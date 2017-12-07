@@ -6,7 +6,7 @@
 #include <sys/gdt.h>
 #include <sys/utils.h>
 #include <sys/elf64.h>
-#include <sys/dir.h>
+#include <sys/dirent.h>
 #include <sys/tarfs.h>
 
 task_struct_t *running_task;

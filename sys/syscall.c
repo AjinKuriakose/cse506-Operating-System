@@ -6,7 +6,7 @@
 #include <sys/gdt.h>
 #include <sys/utils.h>
 #include <sys/terminal.h>
-#include <sys/dir.h>
+#include <sys/dirent.h>
  
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
