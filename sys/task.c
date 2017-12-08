@@ -398,7 +398,6 @@ void sys_fork() {
 }
 
 void execve_handler(char *filename, char *argv[]) {
-//kprintf("%s .....%s \n", filename, argv[0]);
 
   task_struct_t *cur_task = get_current_running_task();
   strcpy(cur_task->name, filename);
@@ -429,26 +428,24 @@ void execve_handler(char *filename, char *argv[]) {
     no_of_args++;
   }
 
-  uint64_t *ursp_ptr = (uint64_t *)cur_task->ursp;
+  //uint64_t *ursp_ptr = (uint64_t *)cur_task->ursp;
+  void *ursp_ptr = (uint64_t *)cur_task->ursp;
   ursp_ptr -= (no_of_args*64);
-  memcpy((void*)ursp_ptr, (void*)args, no_of_args*64);
-  kprintf("---- %s \n", args[0]);
+  memcpy(ursp_ptr, (void*)args, no_of_args*64);
+  //kprintf("---- %s \n", args[0]);
   i = no_of_args;
+  /* push all the argvs to the user stack */
   while(i>0) {
-    *(uint64_t*)(ursp_ptr-(i*8)) = ((uint64_t)ursp_ptr + (no_of_args-i)*64);
+    *(uint64_t*)(ursp_ptr-(i*8)) = ((uint64_t)ursp_ptr + ((no_of_args-i)*64));
+    //kprintf("testing %p %p %s\n", (ursp_ptr-(i*8)), (ursp_ptr+(no_of_args-i)*64), *(uint64_t*)(ursp_ptr-(i*8)));
     i--;
   }
-  kprintf("=========== %s\n", *(uint64_t*)(ursp_ptr-(3*8)));
-  kprintf("=========== %s\n", *(uint64_t*)(ursp_ptr-(2*8)));
-  kprintf("=========== %s\n", *(uint64_t*)(ursp_ptr-(1*8)));
   ursp_ptr -= (no_of_args*8);
+  /* push argc to the stack*/
   *(uint64_t*)(ursp_ptr-8) = no_of_args;
-  kprintf("=========== %d\n", *(uint64_t*)(ursp_ptr-(1*8)));
   ursp_ptr -= 8;
-
   cur_task->ursp = (uint64_t)ursp_ptr;
-
-  kprintf("******* %s\n", *(uint64_t*)(cur_task->ursp));
+  cur_task->ursp -= 8 ;
 
 }
 
