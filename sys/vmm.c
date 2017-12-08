@@ -338,13 +338,13 @@ void identity_mapping() {
 	}
 }
 
-void page_fault_handler() {
+void page_fault_handler(uint64_t error_code) {
 
   /* TODO : Enhance the page fault handling and remove print statements */
-  uint64_t error_code;
+  //uint64_t error_code;
 
   //__asm__ volatile("movq 136(%%rsp), %0":"=r"(error_code));
-  __asm__ volatile("movq 128(%%rsp), %0":"=r"(error_code));
+  //__asm__ volatile("movq 128(%%rsp), %0":"=r"(error_code));
 
   uint64_t fault_addr_pte;
   uint64_t nw_vaddr;
@@ -358,6 +358,7 @@ void page_fault_handler() {
 
     fault_addr_pte = get_physical_addr(get_cr3(), faulting_address, 0);
 
+    /* COW handling*/
     if(fault_addr_pte & PTE_COW) {
 
       nw_vaddr = vmm_alloc_page();
@@ -368,7 +369,7 @@ void page_fault_handler() {
 
       virt_phys_map(get_cr3(), (faulting_address & ~0xFFF), phy_addr);
 
-    //  kprintf("COW Page Fault : addr = %p, fault_addr_pte = %x, phy_addr = %x error_code = %x\n", faulting_address, fault_addr_pte, phy_addr, error_code);
+      //kprintf("COW Page Fault : addr = %p, fault_addr_pte = %x, phy_addr = %x error_code = %x\n", faulting_address, fault_addr_pte, phy_addr, error_code);
       return;
 
     }

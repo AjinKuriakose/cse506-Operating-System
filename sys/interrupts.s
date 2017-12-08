@@ -103,6 +103,7 @@ _isr_sys_def13:
 
 .global _isr_sys_def14
 _isr_sys_def14:
+  cli
   pushq %rax
   pushq %rbx
   pushq %rcx
@@ -118,8 +119,9 @@ _isr_sys_def14:
   pushq %r13
   pushq %r14
   pushq %r15
+  movq 120(%rsp), %rdi
   call page_fault_handler
-  call send_EOI
+#  call send_EOI
   popq %r15
   popq %r14
   popq %r13
@@ -136,6 +138,7 @@ _isr_sys_def14:
   popq %rbx
   popq %rax
   add $8, %rsp
+  sti
   iretq
 
 .global _isr_sys_def15
