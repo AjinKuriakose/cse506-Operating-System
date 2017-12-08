@@ -20,7 +20,7 @@ struct linux_dirent64 {
   char           d_name[]; /* Filename (null-terminated) */
 };
 
-char *arg_v[2] = {"hoy","manu"};
+char *arg_v[3] = {"hoy","manu","amd"};
 char buff[1024] = {0};
 char **m_environ;
 

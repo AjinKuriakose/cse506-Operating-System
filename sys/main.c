@@ -72,8 +72,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   init_syscall();
 
   init_tasking();
-  memset((void*)0x88888, 0,1); 
-  memcpy((void*)0x88888, (void*)0x99999,1); 
+  //memset((void*)0x88888, 0,1); 
+  //memcpy((void*)0x88888, (void*)0x99999,1); 
   start_init_process();
   start_sbush_process("bin/sbush");
 
