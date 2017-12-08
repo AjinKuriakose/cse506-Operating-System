@@ -129,7 +129,7 @@ void update_tarfs_tree(char *file_name, uint64_t file_size, uint8_t file_type, u
   while (token != NULL) {
     int i = 0;
     while (i < temp->num_children) {
-      if (!strcmp(temp->file_name, token)) {
+      if (!strcmp(temp->child_node[i]->file_name, token)) {
 
         temp = temp->child_node[i];
         break;
@@ -204,10 +204,11 @@ file_t *find_node(char *name) {
   char arr[256] = {0};
   strcpy(arr, name);
 
+  if (!strcmp("rootfs", arr) || !strcmp("rootfs/", arr))
+    return tarfs_tree;
+
   file_t *temp = tarfs_tree;
   char *token = strtok_r(arr, sep, &saveptr);
-  if (strcmp("rootfs", token))
-    return NULL;
 
   while (token != NULL) {
     int i = 0;

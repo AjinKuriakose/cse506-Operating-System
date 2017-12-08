@@ -59,6 +59,15 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   /* Initialize terminal */
   init_terminal();
 
+  file_t *f = find_node("rootfs/bin");
+  int i = 0;
+  while (i < f->num_children) {
+    kprintf("AB : %s\n", f->child_node[i]->file_name);
+    i++;
+  }
+
+  browse_tarfs();
+
   /* setting up syscall & related functions */
   init_syscall();
 

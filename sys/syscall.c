@@ -7,7 +7,8 @@
 #include <sys/utils.h>
 #include <sys/terminal.h>
 #include <sys/dirent.h>
- 
+#include <sys/tarfs.h>
+
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
 
@@ -22,6 +23,10 @@
 #define __NR_ps              90
 #define __NR_getpid          91
 #define __NR_getppid         92
+#define __NR_opendir         93
+#define __NR_readdir         94
+#define __NR_closedir        95
+#define __NR_ls              96
 
 typedef void (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
@@ -240,6 +245,102 @@ void sys_execve() {
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;
 }
 
+void sys_opendir() {
+
+  char *name;
+  name = (char *)(syscall_args.rdi);
+
+  /* TODO : Name is not copied in dir for now.. */
+  char pathname[128] = {0};
+  file_t *node  = NULL;
+  DIR *dir      = NULL;
+
+  if (name[0] == '.' && name[1] == '.') {
+    /* TODO : Handling pending */
+
+  } else if (name[0] == '/') {
+
+    node = find_node((char *)&name[1]);
+    if (node) {
+      dir = (DIR *)vmm_alloc_page();
+      dir->node = node;
+      if (node->num_children) {
+        strcpy(dir->curr_dentry.d_name, node->child_node[0]->file_name);
+      }
+    }
+  } else {
+
+    int len = strlen(get_current_running_task()->cwd);
+    if (name[0] == '.' && name[1] == '/') {
+
+      strncpy(pathname, get_current_running_task()->cwd, len);
+      strncpy(pathname + len, (char *)&name[2], strlen((char *)&name[2]));
+      node = find_node(pathname);
+      if (node) {
+        dir = (DIR *)vmm_alloc_page();
+        dir->node = node;
+        if (node->num_children) {
+          strcpy(dir->curr_dentry.d_name, node->child_node[0]->file_name);
+        }
+      }
+    } else {
+
+      strncpy(pathname, get_current_running_task()->cwd, len);
+      strncpy(pathname + len, (char *)name, strlen((char *)name));
+      node = find_node(pathname);
+      if (node) {
+        dir = (DIR *)vmm_alloc_page();
+        dir->node = node;
+        if (node->num_children) {
+          strcpy(dir->curr_dentry.d_name, node->child_node[0]->file_name);
+        }
+      }
+    }
+  }
+
+  get_current_running_task()->retV = (uint64_t)dir;
+}
+
+void sys_readdir() {
+
+  DIR *dirp = (DIR *)(syscall_args.rdi);
+
+  struct dirent *d_ent = NULL;
+  if (dirp && dirp->curr_child < dirp->node->num_children + 2) {
+
+    if (dirp->curr_child == 0) {
+      memset(dirp->curr_dentry.d_name, 0, sizeof(dirp->curr_dentry.d_name));
+      strcpy(dirp->curr_dentry.d_name, ".");
+
+    } else if (dirp->curr_child == 1) {
+      memset(dirp->curr_dentry.d_name, 0, sizeof(dirp->curr_dentry.d_name));
+      strcpy(dirp->curr_dentry.d_name, "..");
+
+    } else {
+      memset(dirp->curr_dentry.d_name, 0, sizeof(dirp->curr_dentry.d_name));
+      strcpy(dirp->curr_dentry.d_name, dirp->node->child_node[dirp->curr_child - 2]->file_name);
+    }
+
+    d_ent = &(dirp->curr_dentry);
+    dirp->curr_child++;
+  }
+
+  get_current_running_task()->retV = (uint64_t)d_ent;
+}
+
+void sys_closedir() {
+
+  DIR *dirp = (DIR *)(syscall_args.rdi);
+
+  if (dirp) {
+    vmm_dealloc_page((uint64_t)dirp);
+    get_current_running_task()->retV = 0;
+
+  } else {
+    get_current_running_task()->retV = 1;
+  }
+}
+
 /*
  * setting up syscall table init 
  */
@@ -250,11 +351,14 @@ void setup_sys_call_table() {
   sys_call_table[__NR_exit]     = sys_exit;  
   sys_call_table[__NR_fork]     = sys_fork;  
   sys_call_table[__NR_execve]   = sys_execve;  
+  sys_call_table[__NR_wait4]    = sys_wait;  
   sys_call_table[__NR_getcwd]   = sys_getcwd;  
   sys_call_table[__NR_ps]       = sys_ps;  
   sys_call_table[__NR_getpid]   = sys_getpid;  
   sys_call_table[__NR_getppid]  = sys_getppid;  
-  sys_call_table[__NR_wait4]    = sys_wait;  
+  sys_call_table[__NR_opendir]  = sys_opendir;  
+  sys_call_table[__NR_readdir]  = sys_readdir;  
+  sys_call_table[__NR_closedir] = sys_closedir;  
   /* add remaining syscalls here..*/
 
 }

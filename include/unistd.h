@@ -33,12 +33,13 @@
 #define __NR_getcwd     79
 #define __NR_chdir      80
 #define __NR_ps         90
+#define __NR_opendir    93
+#define __NR_readdir    94
+#define __NR_closedir   95
+#define __NR_ls         96
 #define __NR_getdents64 217
 #define __NR_waitid     247
 
-
-
-//end constants
 int open(const char *pathname, int flags);
 int close(int fd);
 ssize_t read(int fd, void *buf, size_t count);
