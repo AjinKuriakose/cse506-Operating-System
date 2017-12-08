@@ -127,23 +127,22 @@ void update_tarfs_tree(char *file_name, uint64_t file_size, uint8_t file_type, u
   file_t *temp = tarfs_tree;
   char *token = strtok_r(arr, sep, &saveptr);
   while (token != NULL) {
-    int i = 0;
+    int i = 0; int j = temp->num_children;
     while (i < temp->num_children) {
       if (!strcmp(temp->child_node[i]->file_name, token)) {
-
         temp = temp->child_node[i];
         break;
       }
       i++;
     }
 
-    if (i == temp->num_children) {
+    if (i == j) {
       temp->child_node[temp->num_children++] = create_child_node(temp, token, file_size, file_type, file_begin, file_end);
       temp = temp->child_node[temp->num_children - 1];
     }
 
     token = strtok_r(NULL, sep, &saveptr);
-  }
+  } 
 }
 
 void init_tarfs_tree() {
@@ -166,11 +165,12 @@ void init_tarfs_tree() {
 
     /* Skipping the entries with empty names. TODO: find out why they are present (Piazza 429) */
     if (strlen(hdr->name)) {
-      //kprintf("NAME : %s, TYPE : %x\n", hdr->name, hdr->typeflag[0]);
-      if (hdr->typeflag[0] == FILE_TYPE_DIR)
-        update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0], 0, 2);
-      else if (hdr->typeflag[0] == FILE_TYPE_FILE)
+      /* kprintf("NAME : %s, TYPE : %x\n", hdr->name, hdr->typeflag[0]); */
+      if (hdr->typeflag[0] == FILE_TYPE_DIR) {
+        update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0], 0, 0);
+      } else if (hdr->typeflag[0] == FILE_TYPE_FILE) {
         update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0], (uint64_t)(hdr + 1), (uint64_t)((void *)hdr + sizeof(*hdr) + file_size));
+      }
     }
 
     if (total_size % 512)
