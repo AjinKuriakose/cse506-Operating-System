@@ -22,6 +22,7 @@ int main(int argc, char *argv[], char *envp[]) {
     write(1, "\n", 1);
   }
 
+  write(1, "\n", 1);
   closedir(pDir);
 
   exit(0);
