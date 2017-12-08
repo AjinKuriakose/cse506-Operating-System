@@ -4,6 +4,10 @@
  
 void init_syscall();
 
+void sys_read();
+void sys_write();
+void sys_open();
+void sys_close();
 void sys_ps();
 void sys_getpid();
 void sys_getppid();
