@@ -20,7 +20,7 @@ struct linux_dirent64 {
   char           d_name[]; /* Filename (null-terminated) */
 };
 
-char *arg_v[3] = {"hoy","manu","amd"};
+char *arg_v[1] = {"hoy"};
 char buff[1024] = {0};
 char **m_environ;
 
@@ -45,6 +45,36 @@ void read_from_file(int num_tokens, char *cmd_tokens[]);
 char ps1_variable[256] = "sbush>";
 
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
+
+char glob_cmd[64];
+char glob_arg[10][64];
+
+void update_cmd(char *buff, char *cmd, char arg[][64]) {
+
+  char *sep = " ";
+  int i = 0, j = 0;
+  char *saveptr;
+
+  char arr[255] = {0};
+  strcpy(arr, buff);
+
+  char *token = strtok_r(arr, sep, &saveptr);
+  while (token != NULL && i < 11) {
+
+    //argv[i] = malloc(strlen(token) + 1);
+    //argv[i] = malloc(strlen(token) + 1); 
+    if(i == 0) {
+      strcpy(cmd, token);
+      token = strtok_r(NULL, sep, &saveptr);
+      i++;
+      continue;
+    }
+    strcpy(arg[j], token);
+    token = strtok_r(NULL, sep, &saveptr);
+    i++;
+    j++;
+  }
+}
 
 void print_prompt() {
   puts(ps1_variable);
@@ -619,9 +649,12 @@ int main(int argc, char *argv[], char *envp[]) {
     if(read(0, buff, 1024)) {
 //	write(1,buff, strlen(buff));
       
+      update_cmd(buff, glob_cmd, glob_arg);
       ret = fork();
       if(ret ==0) {
-        execve(buff, arg_v, NULL);
+       // execve(buff, arg_v, NULL);
+	//execve(glob_cmd, (char **)(uint64_t)glob_arg, NULL);
+	execve(glob_cmd, arg_v, NULL);
       //  execve("bin/ps", arg_v, NULL);
         //write(1, buff, strlen(buff)); 
         memset(buff, 0, 1024);
