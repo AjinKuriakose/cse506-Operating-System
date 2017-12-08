@@ -56,24 +56,15 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   /* Parse and construct tree from tarfs contents */
   init_tarfs_tree();
+
   /* Initialize terminal */
   init_terminal();
-
-  file_t *f = find_node("rootfs/bin");
-  int i = 0;
-  while (i < f->num_children) {
-    kprintf("AB : %s\n", f->child_node[i]->file_name);
-    i++;
-  }
-
-  browse_tarfs();
 
   /* setting up syscall & related functions */
   init_syscall();
 
   init_tasking();
-  //memset((void*)0x88888, 0,1); 
-  //memcpy((void*)0x88888, (void*)0x99999,1); 
+
   start_init_process();
   start_sbush_process("bin/sbush");
 

@@ -318,7 +318,12 @@ void sys_readdir() {
 
     } else {
       memset(dirp->curr_dentry.d_name, 0, sizeof(dirp->curr_dentry.d_name));
-      strcpy(dirp->curr_dentry.d_name, dirp->node->child_node[dirp->curr_child - 2]->file_name);
+      if (dirp->node->child_node[dirp->curr_child - 2]->file_type == FILE_TYPE_DIR) {
+        strcpy(dirp->curr_dentry.d_name, dirp->node->child_node[dirp->curr_child - 2]->file_name);
+        strcpy(dirp->curr_dentry.d_name + strlen(dirp->curr_dentry.d_name), "/");
+      } else {
+        strcpy(dirp->curr_dentry.d_name, dirp->node->child_node[dirp->curr_child - 2]->file_name);
+      }
     }
 
     d_ent = &(dirp->curr_dentry);

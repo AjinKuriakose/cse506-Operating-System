@@ -9,14 +9,10 @@ int main(int argc, char *argv[], char *envp[]) {
   struct dirent *pDirent;
   DIR *pDir;
 
-#if 0
-  if (argc < 2) {
-    exit(1);
-  }
-#endif
+  char buff[128] = {0};
+  getcwd(buff, 127);
 
-  //pDir = opendir(argv[1]);
-  pDir = opendir("/");
+  pDir = opendir(buff);
   if (pDir == NULL) {
     exit(1);
   }
