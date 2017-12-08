@@ -22,7 +22,7 @@
 #define VMA_TYPE_DATA	      2
 #define VMA_TYPE_TEXT	      1
 
-#define CWD_LEN             64
+#define CWD_LEN             128
 
 extern void init_tasking();
 
