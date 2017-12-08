@@ -192,7 +192,8 @@ void sys_getcwd() {
   size = syscall_args.rsi;
 
   if (size >= strlen(get_current_running_task()->cwd)) {
-    strcpy(ptr, get_current_running_task()->cwd);
+    strncpy(ptr, "/", 1);
+    strcpy(ptr + 1, get_current_running_task()->cwd);
     get_current_running_task()->retV = 1;
 
   } else {

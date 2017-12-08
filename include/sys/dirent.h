@@ -15,8 +15,8 @@
 #define STDERR		2
 
 typedef struct dirent {
- uint64_t inode_no;
- char d_name[NAME_MAX+1];
+ uint64_t d_in;
+ char     d_name[NAME_MAX+1];
 } dirent;
 
 typedef struct file_t {
@@ -34,8 +34,8 @@ typedef struct file_t {
 typedef struct DIR { 
   //int      fd;
   file_t   *node;
-  //uint64_t current;
-  //dirent_t current_dentry;
+  uint16_t curr_child;
+  dirent   curr_dentry;
   char     name[128];
 } DIR;
 
