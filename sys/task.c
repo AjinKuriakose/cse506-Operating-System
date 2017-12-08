@@ -397,8 +397,8 @@ void sys_fork() {
   child_task->retV = 0x0;
 }
 
-void execve_handler(char *filename) {
-//kprintf("%s ..... \n", filename);
+void execve_handler(char *filename, char *argv[]) {
+//kprintf("%s .....%s \n", filename, argv[0]);
 
   task_struct_t *cur_task = get_current_running_task();
   strcpy(cur_task->name, filename);
@@ -411,7 +411,45 @@ void execve_handler(char *filename) {
 
   if (load_binary(cur_task, cur_task->name)) {
     get_current_running_task()->task_state = TASK_STATE_STOPPED;
+//    if(get_current_running_task()->parent_task->task_state == TASK_STATE_WAITING)
+//	get_current_running_task()->parent_task->task_state = TASK_STATE_RUNNING;
   }
+  /* arg passing code */
+  int i = 0;
+  int j = 0;
+  int no_of_args = 0;
+
+  char args[6][64] = {{0}};
+  strcpy(args[i++], filename);
+  no_of_args++;
+  while (argv[j] && (i < 6)) {
+    strcpy(args[i], argv[j]);
+    i++;
+    j++;
+    no_of_args++;
+  }
+
+  uint64_t *ursp_ptr = (uint64_t *)cur_task->ursp;
+  ursp_ptr -= (no_of_args*64);
+  memcpy((void*)ursp_ptr, (void*)args, no_of_args*64);
+  kprintf("---- %s \n", args[0]);
+  i = no_of_args;
+  while(i>0) {
+    *(uint64_t*)(ursp_ptr-(i*8)) = ((uint64_t)ursp_ptr + (no_of_args-i)*64);
+    i--;
+  }
+  kprintf("=========== %s\n", *(uint64_t*)(ursp_ptr-(3*8)));
+  kprintf("=========== %s\n", *(uint64_t*)(ursp_ptr-(2*8)));
+  kprintf("=========== %s\n", *(uint64_t*)(ursp_ptr-(1*8)));
+  ursp_ptr -= (no_of_args*8);
+  *(uint64_t*)(ursp_ptr-8) = no_of_args;
+  kprintf("=========== %d\n", *(uint64_t*)(ursp_ptr-(1*8)));
+  ursp_ptr -= 8;
+
+  cur_task->ursp = (uint64_t)ursp_ptr;
+
+  kprintf("******* %s\n", *(uint64_t*)(cur_task->ursp));
+
 }
 
 

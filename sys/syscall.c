@@ -229,11 +229,12 @@ void sys_execve() {
 
  // char *filename = (char *)syscall_args.rdi;
   char *filename = (char *)(get_current_running_task()->syscall_args.rdi);
+  char **argv   = (char **)(syscall_args.rsi);
   //char *const argv[]; rsi
   //char *const envp[]; rdx
 
-//  kprintf("filename is.. %s\n", filename);
-  execve_handler(filename);
+  kprintf("filename is.. %s %s %s\n", filename, argv[0], argv[1]);
+  execve_handler(filename, argv);
 
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;
 }

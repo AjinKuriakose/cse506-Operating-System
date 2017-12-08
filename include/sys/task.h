@@ -116,7 +116,9 @@ void sys_fork();
 uint16_t get_free_fd(task_struct_t *task);
 void free_fd(task_struct_t *task, uint16_t fd);
 
-void execve_handler(char *filename);
+//void execve_handler(char *filename);
+void execve_handler(char *filename, char *argv[]);
+
 void task_cleanup(task_struct_t *task);
 void set_task_state(uint8_t);
 uint8_t get_task_state();

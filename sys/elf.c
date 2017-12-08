@@ -100,7 +100,7 @@ int load_binary(task_struct_t *task, char *bin_filename) {
    vma->vma_type = VMA_TYPE_STACK;
    vma->vma_mm = mm;
 
-   //task->ursp = stk + 4016; 
+//   task->ursp = stk + 4016; 
   
   task->rip = elf_header->e_entry;
   //kprintf("HW rip %x\n", task->rip);

@@ -12,7 +12,6 @@
 typedef struct piped_commands {
   char *commands[50];
 } piped_commands;
-
 struct linux_dirent64 {
   unsigned long  d_ino;    /* 64-bit inode number */
   unsigned long  d_off;    /* 64-bit offset to next structure */
@@ -21,8 +20,8 @@ struct linux_dirent64 {
   char           d_name[]; /* Filename (null-terminated) */
 };
 
-  char buff[1024] = {0};
-
+char *arg_v[2] = {"hoy","manu"};
+char buff[1024] = {0};
 char **m_environ;
 
 
@@ -619,10 +618,11 @@ int main(int argc, char *argv[], char *envp[]) {
     memset(buff, 0, 1024);
     if(read(0, buff, 1024)) {
 //	write(1,buff, strlen(buff));
+      
       ret = fork();
       if(ret ==0) {
-        execve(buff, NULL, NULL);
-  //      execve("bin/ps", NULL, NULL);
+        execve(buff, arg_v, NULL);
+      //  execve("bin/ps", arg_v, NULL);
         //write(1, buff, strlen(buff)); 
         memset(buff, 0, 1024);
 	}
