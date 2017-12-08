@@ -191,7 +191,7 @@ void create_task(task_struct_t *task, void (*main)()) {
     task->rsp = (uint64_t) (task->kstack + 4016);
     task->ursp = 0x900000;
     task->parent_task = NULL;
-    strcpy(task->cwd, "/rootfs");
+    strcpy(task->cwd, "rootfs");
 
     memset(task->fd_list, 0, sizeof(task->fd_list));
     /* placing main's address, func pointer in the stack

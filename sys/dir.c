@@ -32,18 +32,49 @@ typedef struct DIR {
   file_t   *node;
   //uint64_t current;
   //dirent_t current_dentry;
-  char     name[32];
+  char     name[128];
 } DIR;
 #endif
 
 DIR *opendir(const char *name) {
 
+  /* TODO : Name is not copied in dir for now.. */
+  char pathname[128] = {0};
   DIR *dir = NULL;
-  if (name[0] == '/') {
+  file_t *node = NULL;
 
+  if (name[0] == '.' && name[1] == '.') {
+    /* TODO : Handling pending */
+
+  } else if (name[0] == '/') {
+    node = find_node((char *)&name[1]);
+    if (node) {
+      dir = (DIR *)vmm_alloc_page();
+      dir->node = node;
+    }
   } else {
 
+    int len = strlen(get_current_running_task()->cwd);
+    if (name[0] == '.' && name[1] == '/') {
 
+      strncpy(pathname, get_current_running_task()->cwd, len);
+      strncpy(pathname + len, (char *)&name[2], strlen((char *)&name[2]));
+      node = find_node(pathname);
+      if (node) {
+        dir = (DIR *)vmm_alloc_page();
+        dir->node = node;
+      }
+    } else {
+
+      strncpy(pathname, get_current_running_task()->cwd, len);
+      strncpy(pathname + len, (char *)name, strlen((char *)name));
+      dir = (DIR *)vmm_alloc_page();
+      node = find_node(pathname);
+      if (node) {
+        dir = (DIR *)vmm_alloc_page();
+        dir->node = node;
+      }
+    }
   }
 
   return dir;

@@ -36,7 +36,7 @@ typedef struct DIR {
   file_t   *node;
   //uint64_t current;
   //dirent_t current_dentry;
-  char     name[32];
+  char     name[128];
 } DIR;
 
 DIR *opendir(const char *name);

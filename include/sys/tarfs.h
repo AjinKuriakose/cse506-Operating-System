@@ -30,6 +30,7 @@ struct posix_header_ustar {
 };
 
 file_t *get_tarfs_tree();
+file_t *find_node(char *name);
 void browse_tarfs();
 void init_tarfs_tree();
 Elf64_Ehdr *get_elf_header(char *bin_filename);

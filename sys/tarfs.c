@@ -199,8 +199,32 @@ file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_si
 
 file_t *find_node(char *name) {
 
-  file_t *node = NULL;
+  char *saveptr;
+  char *sep = "/";
+  char arr[256] = {0};
+  strcpy(arr, name);
 
-  return node;
+  file_t *temp = tarfs_tree;
+  char *token = strtok_r(arr, sep, &saveptr);
+  if (strcmp("rootfs", token))
+    return NULL;
+
+  while (token != NULL) {
+    int i = 0;
+    while (i < temp->num_children) {
+      if (!strcmp(temp->child_node[i]->file_name, token)) {
+        break;
+      }
+      i++;
+    }
+
+    if (i < temp->num_children) {
+      return temp->child_node[i];
+    }
+
+    token = strtok_r(NULL, sep, &saveptr);
+  }
+
+  return NULL;
 }
 
