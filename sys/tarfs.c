@@ -101,7 +101,6 @@ void browse_tarfs() {
 
     total_size = sizeof(*hdr) + file_size + pad_size;
 
-    /* Skipping the entries with empty names. TODO: find out why they are present (Piazza 429) */
     if (strlen(hdr->name))
       kprintf("tarfs content : name = %s, size = %d\n", hdr->name, file_size);
 
@@ -163,9 +162,7 @@ void init_tarfs_tree() {
 
     total_size = sizeof(*hdr) + file_size + pad_size;
 
-    /* Skipping the entries with empty names. TODO: find out why they are present (Piazza 429) */
     if (strlen(hdr->name)) {
-      /* kprintf("NAME : %s, TYPE : %x\n", hdr->name, hdr->typeflag[0]); */
       if (hdr->typeflag[0] == FILE_TYPE_DIR) {
         update_tarfs_tree(hdr->name, file_size, hdr->typeflag[0], 0, 0);
       } else if (hdr->typeflag[0] == FILE_TYPE_FILE) {
@@ -204,27 +201,37 @@ file_t *find_node(char *name) {
   char arr[256] = {0};
   strcpy(arr, name);
 
+  uint8_t found = 0;
+
   if (!strcmp("rootfs", arr) || !strcmp("rootfs/", arr))
     return tarfs_tree;
 
   file_t *temp = tarfs_tree;
   char *token = strtok_r(arr, sep, &saveptr);
+  if (token) {
+    if (strcmp(token, "rootfs"))
+      return NULL;
+    token = strtok_r(NULL, sep, &saveptr);
+  }
 
   while (token != NULL) {
     int i = 0;
     while (i < temp->num_children) {
       if (!strcmp(temp->child_node[i]->file_name, token)) {
+        temp = temp->child_node[i];
+        found = 1;
         break;
       }
-      i++;
-    }
 
-    if (i < temp->num_children) {
-      return temp->child_node[i];
+      found = 1;
+      i++;
     }
 
     token = strtok_r(NULL, sep, &saveptr);
   }
+
+  if (found)
+    return temp;
 
   return NULL;
 }

@@ -2,6 +2,7 @@
 #define __TASK_H__
 
 #include <sys/defs.h> 
+#include <sys/dirent.h>
 
 #define MAX_NUM_PROCESSES   50
 #define MAX_NUM_FDS         50
@@ -73,10 +74,15 @@ typedef struct mm_struct_t {
   vma_struct_t *mmap;
 } mm_struct_t;
 
+typedef struct fd_list_t {
+  int       fd;
+  uint16_t  flags;
+  file_t    *file_node;
+} fd_list_t;
+
 /*
  * Following is the PCB.
- * TODO : should add requied parameters like pid etc.
- */
+ **/
 typedef struct task_struct_t {
   uint64_t    rsp;
   uint64_t    kstack;
@@ -87,13 +93,13 @@ typedef struct task_struct_t {
   uint64_t    ppid;
   uint64_t    rip;
   uint64_t    cr3;
-  uint64_t    retV;
+  int64_t     retV;
   uint64_t    ursp; //to save user stack address
   char        name[32];
   mm_struct_t *mm;
   uint8_t     task_state;
   uint16_t    num_children;
-  uint16_t    fd_list[MAX_NUM_FDS];
+  fd_list_t   fd_list[MAX_NUM_FDS];
   syscall_args_t syscall_args;
   char        cwd[CWD_LEN];
 } task_struct_t;
@@ -113,8 +119,6 @@ void start_sbush_process(char *bin_filename);
 
 task_struct_t *get_current_running_task();
 void sys_fork();
-uint16_t get_free_fd(task_struct_t *task);
-void free_fd(task_struct_t *task, uint16_t fd);
 
 //void execve_handler(char *filename);
 void execve_handler(char *filename, char *argv[]);
