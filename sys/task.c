@@ -382,7 +382,7 @@ void sys_fork() {
   child_task->retV = 0x0;
 }
 
-void execve_handler(char *filename, char *argv[]) {
+void execve_handler(char *filename, char argv[][64]) {
 
   task_struct_t *cur_task = get_current_running_task();
   strcpy(cur_task->name, filename);

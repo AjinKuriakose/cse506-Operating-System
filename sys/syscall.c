@@ -276,7 +276,6 @@ void sys_ps() {
 
 void sys_kill() {
   int pid = syscall_args.rdi;
-  kprintf("pid to kill is %d\n",  pid);
 
   task_struct_t *cur = get_current_running_task();
   task_struct_t *tsk = get_current_running_task()->next;
@@ -294,15 +293,10 @@ void sys_sleep() {
   int sleep = syscall_args.rdi;
   int tot_time = get_time_since_up() + sleep;
   int curr;
-  //kprintf("time to sleep %d\n",curr_time);
-  //while (get_time_since_up() >= (curr_time + sleep)) {
-	//kprintf("current. %d\n", get_time_since_up());
-//  while(1);
   while (1) {
     curr = get_time_since_up();	
     if(curr >= tot_time)
 	{
-	kprintf("breakking. %d %d\n", tot_time, curr);
 	break;
 	}
   }
@@ -322,13 +316,13 @@ void sys_wait() {
 
 void sys_execve() {
 
- // char *filename = (char *)syscall_args.rdi;
-  char *filename = (char *)(get_current_running_task()->syscall_args.rdi);
-  char **argv   = (char **)(syscall_args.rsi);
-  //char *const argv[]; rsi
-  //char *const envp[]; rdx
+  char *filename = (char *)syscall_args.rdi;
 
-  kprintf("filename is.. %s %s %s\n", filename, argv[0], argv[1]);
+  set_cr3(get_cr3());
+
+  char argv[6][64] = {{0}};
+  memcpy(argv, (char *)(syscall_args.rsi), 6 * 64);
+
   execve_handler(filename, argv);
 
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;
@@ -440,7 +434,7 @@ void sys_open() {
 
   char      *name;
   uint16_t  flags;
-
+  uint16_t  fd_index;
   name = (char *)(syscall_args.rdi);
   flags = (uint16_t)(syscall_args.rsi);
 
@@ -456,8 +450,7 @@ void sys_open() {
 
     node = find_node((char *)&name[1]);
     if (node) {
-      kprintf("AMD : %s\n", node->file_name);
-      uint16_t fd_index = get_fd(get_current_running_task());
+      fd_index = get_fd(get_current_running_task());
       get_current_running_task()->fd_list[fd_index].fd = fd_index;
       get_current_running_task()->fd_list[fd_index].flags = flags;
       get_current_running_task()->fd_list[fd_index].file_node = node;
@@ -472,7 +465,7 @@ void sys_open() {
       strncpy(pathname + len, (char *)&name[1], strlen((char *)&name[1]));
       node = find_node(pathname);
       if (node) {
-        uint16_t fd_index = get_fd(get_current_running_task());
+        fd_index = get_fd(get_current_running_task());
         get_current_running_task()->fd_list[fd_index].fd = fd_index;
         get_current_running_task()->fd_list[fd_index].flags = flags;
         get_current_running_task()->fd_list[fd_index].file_node = node;
@@ -485,7 +478,7 @@ void sys_open() {
       strncpy(pathname + len + 1, (char *)name, strlen((char *)name));
       node = find_node(pathname);
       if (node) {
-        uint16_t fd_index = get_fd(get_current_running_task());
+        fd_index = get_fd(get_current_running_task());
         get_current_running_task()->fd_list[fd_index].fd = fd_index;
         get_current_running_task()->fd_list[fd_index].flags = flags;
         get_current_running_task()->fd_list[fd_index].file_node = node;
@@ -499,9 +492,9 @@ void sys_close() {
 
   int fd = (int)(syscall_args.rdi);
 
-  free_fd(get_current_running_task(), fd);
-  get_current_running_task()->fd_list[fd].file_node->file_cursor = 0;
+  get_current_running_task()->fd_list[fd].file_node->file_cursor = get_current_running_task()->fd_list[fd].file_node->file_begin;
   get_current_running_task()->fd_list[fd].file_node = 0;
+  free_fd(get_current_running_task(), fd);
   get_current_running_task()->retV = 0;
 }
 
