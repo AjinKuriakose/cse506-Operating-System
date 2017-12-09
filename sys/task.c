@@ -38,27 +38,12 @@ uint32_t allocate_pid() {
   return INVALID_PID;
 }
 
-uint16_t get_fd(task_struct_t *task) {
-  uint16_t fd_index = 3;
-  while (fd_index < MAX_NUM_FDS) {
-    if (task->fd_list[fd_index] == 0) {
-      task->fd_list[fd_index] = 1;
-      return fd_index;
-    }
-
-    fd_index++;
-  }
-
-  return INVALID_FD;
-}
 uint8_t get_task_state() {
   return running_task->task_state;
 }
+
 void set_task_state(uint8_t state) {
   running_task->task_state = state;
-}
-void free_fd(task_struct_t *task, uint16_t fd) {
-  task->fd_list[fd] = 1;
 }
 
 void cleanup_tasks() {

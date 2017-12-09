@@ -13,6 +13,10 @@
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
 
+#define O_RDONLY        0x0000
+#define O_WRONLY        0x0001
+#define O_RDWR          0x0002
+
 #define __NR_syscall_max     100 
 #define __NR_read            0
 #define __NR_write           1
@@ -128,6 +132,26 @@ uint32_t get_low_dword(uint64_t qword) {
   return (uint32_t)qword;
 }
 
+int get_fd(task_struct_t *task) {
+  int fd_index = 3;
+  while (fd_index < MAX_NUM_FDS) {
+    if (task->fd_list[fd_index].fd == 0) {
+      task->fd_list[fd_index].fd = 1;
+      return fd_index;
+    }
+
+    fd_index++;
+  }
+
+  return INVALID_FD;
+}
+
+void free_fd(task_struct_t *task, int fd_index) {
+  task->fd_list[fd_index].fd = 0;
+  task->fd_list[fd_index].flags = 0;
+  task->fd_list[fd_index].file_node = NULL;
+}
+
 /*
  * has to be saved seperately high & low part.
  * references: 
@@ -154,35 +178,58 @@ static inline void enable_syscall_instr() {
  */
 void sys_write() {
 
-  //uint64_t fd;
   void *ptr;
   uint64_t size;
   char buff[512];
   ptr = (void*)syscall_args.rsi;
-  //fd = syscall_args.rdi;
   size = syscall_args.rdx;
 
   memcpy(buff, ptr, size);
   write_to_terminal(buff, size);  
   
   get_current_running_task()->retV = 1;
-
-  //return 1;
 }
 
 void sys_read() {
+
   uint64_t fd;
   void *ptr;
   uint64_t size;
   int ret = -1;
 
   ptr = (void*)(syscall_args.rsi);
-  fd = syscall_args.rdi;
-  size = syscall_args.rdx;
+  fd = (int)(syscall_args.rdi);
+  size = (uint64_t)(syscall_args.rdx);
 
   while (ret == -1) {
     if (fd == STDIN) {
       ret = read_from_terminal(ptr, size);
+
+    } else {
+
+      if (get_current_running_task()->fd_list[fd].flags == O_WRONLY) {
+        ret = -1;
+        break;
+      } else {
+
+        if (get_current_running_task()->fd_list[fd].file_node->file_type == FILE_TYPE_DIR) {
+          ret = -1;
+          break;
+
+        } else {
+          
+          int tarfs_read_size = (get_current_running_task()->fd_list[fd].file_node->file_end - 
+                                get_current_running_task()->fd_list[fd].file_node->file_cursor);
+          if (tarfs_read_size > size) {
+            tarfs_read_size = size;
+            memcpy(ptr, (void *)((get_current_running_task()->fd_list[fd].file_node)->file_cursor), tarfs_read_size);
+            get_current_running_task()->fd_list[fd].file_node->file_cursor += tarfs_read_size;
+            ret = tarfs_read_size;
+          } else {
+            ret = 0; 
+          }
+        }
+      }
     }
   }
 
@@ -190,7 +237,6 @@ void sys_read() {
 }
 
 void sys_exit() {
-  //kprintf("Done from exit()!\n");
   get_current_running_task()->parent_task->task_state = TASK_STATE_RUNNING;
   set_task_state(TASK_STATE_STOPPED);
 }
@@ -342,7 +388,7 @@ void sys_opendir() {
     }
   }
 
-  get_current_running_task()->retV = (uint64_t)dir;
+  get_current_running_task()->retV = (int64_t)dir;
 }
 
 void sys_readdir() {
@@ -374,7 +420,7 @@ void sys_readdir() {
     dirp->curr_child++;
   }
 
-  get_current_running_task()->retV = (uint64_t)d_ent;
+  get_current_running_task()->retV = (int64_t)d_ent;
 }
 
 void sys_closedir() {
@@ -392,10 +438,71 @@ void sys_closedir() {
 
 void sys_open() {
 
+  char      *name;
+  uint16_t  flags;
+
+  name = (char *)(syscall_args.rdi);
+  flags = (uint16_t)(syscall_args.rsi);
+
+  char pathname[128] = {0};
+  file_t *node  = NULL;
+
+  get_current_running_task()->retV = -1;
+
+  if (name[0] == '.' && name[1] == '.') {
+    /* TODO : Handling pending */
+
+  } else if (name[0] == '/') {
+
+    node = find_node((char *)&name[1]);
+    if (node) {
+      kprintf("AMD : %s\n", node->file_name);
+      uint16_t fd_index = get_fd(get_current_running_task());
+      get_current_running_task()->fd_list[fd_index].fd = fd_index;
+      get_current_running_task()->fd_list[fd_index].flags = flags;
+      get_current_running_task()->fd_list[fd_index].file_node = node;
+      get_current_running_task()->retV = fd_index;
+    }
+  } else {
+
+    int len = strlen(get_current_running_task()->cwd);
+    if (name[0] == '.' && name[1] == '/') {
+
+      strncpy(pathname, get_current_running_task()->cwd, len);
+      strncpy(pathname + len, (char *)&name[1], strlen((char *)&name[1]));
+      node = find_node(pathname);
+      if (node) {
+        uint16_t fd_index = get_fd(get_current_running_task());
+        get_current_running_task()->fd_list[fd_index].fd = fd_index;
+        get_current_running_task()->fd_list[fd_index].flags = flags;
+        get_current_running_task()->fd_list[fd_index].file_node = node;
+        get_current_running_task()->retV = fd_index;
+      }
+    } else {
+
+      strncpy(pathname, get_current_running_task()->cwd, len);
+      strncpy(pathname + len, "/", 1);
+      strncpy(pathname + len + 1, (char *)name, strlen((char *)name));
+      node = find_node(pathname);
+      if (node) {
+        uint16_t fd_index = get_fd(get_current_running_task());
+        get_current_running_task()->fd_list[fd_index].fd = fd_index;
+        get_current_running_task()->fd_list[fd_index].flags = flags;
+        get_current_running_task()->fd_list[fd_index].file_node = node;
+        get_current_running_task()->retV = fd_index;
+      }
+    }
+  }
 }
 
 void sys_close() {
 
+  int fd = (int)(syscall_args.rdi);
+
+  free_fd(get_current_running_task(), fd);
+  get_current_running_task()->fd_list[fd].file_node->file_cursor = 0;
+  get_current_running_task()->fd_list[fd].file_node = 0;
+  get_current_running_task()->retV = 0;
 }
 
 /*
@@ -420,8 +527,6 @@ void setup_sys_call_table() {
   sys_call_table[__NR_opendir]  = sys_opendir;  
   sys_call_table[__NR_readdir]  = sys_readdir;  
   sys_call_table[__NR_closedir] = sys_closedir;  
-  /* add remaining syscalls here..*/
-
 }
 
 /*
