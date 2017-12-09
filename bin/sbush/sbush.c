@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/tarfs.h>
 
 #define CMD_UNKNOWN      0
 #define CMD_CD           1
@@ -9,9 +10,12 @@
 #define CMD_LS           3
 #define CMD_EXIT         4
 
+#define CMD_LEN          1024
+
 typedef struct piped_commands {
   char *commands[50];
 } piped_commands;
+
 struct linux_dirent64 {
   unsigned long  d_ino;    /* 64-bit inode number */
   unsigned long  d_off;    /* 64-bit offset to next structure */
@@ -20,9 +24,8 @@ struct linux_dirent64 {
   char           d_name[]; /* Filename (null-terminated) */
 };
 
-char buff[1024] = {0};
+char buff[CMD_LEN] = {0};
 char **m_environ;
-
 
 int do_execute(char *cmd, char *cmd_path[], char *env[]); 
 
@@ -184,24 +187,24 @@ void handle_cd(char *path) {
 }
 
 void handle_cwd() {
-  char buff[1024] = {0};
+  char buff[CMD_LEN] = {0};
   if (getcwd(buff, sizeof(buff)) != NULL)
     puts(buff);
 }
 
 void handle_ls() {
 
-	char buff[1024] = {0};
+	char buff[CMD_LEN] = {0};
 	if (getcwd(buff, sizeof(buff)) == NULL)
 		return;
 
 	int fd;
 	int ret;
 	int i = 0;
-	char buf[1024];
+	char buf[CMD_LEN];
 	struct linux_dirent64 *d_ent;
 	fd = open(buff, O_RDONLY);
-	ret = getdents64(fd, (struct linux_dirent64 *)buf, 1024);
+	ret = getdents64(fd, (struct linux_dirent64 *)buf, CMD_LEN);
 
 	while (i < ret) {
 		d_ent = (struct linux_dirent64 *) (buf + i);
@@ -292,7 +295,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   pid_t pid;
   int i, status, bg_process = 0;
   char *argv[50] = {0};
-  char path_value[1024] = {0} ; 
+  char path_value[CMD_LEN] = {0} ; 
   
   /* PATH variable set */
   if (check_if_path_cmd(cmd)) {
@@ -379,7 +382,7 @@ void execute_commands(char *cmd, char *cmd_arg) {
 void read_from_file(int num_tokens, char *cmd_tokens[]) {
 
   int file = open(cmd_tokens[1], O_RDONLY);
-  char code[1024] = {0};
+  char code[CMD_LEN] = {0};
   size_t n = 0;
   char c;
 
@@ -437,7 +440,7 @@ void handle_piped_commands(char *arg) {
 void read_from_stdin() {
   int cnt;
   char *str, *saveptr, *token;
-  char buff[1024] = {0};
+  char buff[CMD_LEN] = {0};
   while (read(0, buff, sizeof(buff)) > 0) {
 
     cnt = 1;
@@ -574,6 +577,36 @@ int setenv(char *path_variable, char *value, int overwrite) {
 int wait() {
   return syscall(__NR_wait4);
 }
+
+void process_input_command(char *buff, int size) {
+
+  char cmd[CMD_LEN];
+  char cwd[128] = {0};
+  char *bin_dir = "bin/";
+  getcwd(cwd, 127);
+  int len = strlen(cwd);
+ 
+  if (buff[0] == '.' && buff[1] == '/') {
+    memset(cmd, 0, sizeof(cmd));
+    strcpy(cmd, cwd);
+    strcpy(cmd + len, &buff[1]);
+
+  } else if (buff[0] != '/') {
+
+    memset(cmd, 0, sizeof(cmd));
+    strcpy(cmd, bin_dir);
+    strcpy(cmd + strlen(bin_dir), buff);
+
+  } else {
+    
+    memset(cmd, 0, sizeof(cmd));
+    strcpy(cmd, buff);
+  }
+
+ memset(buff, 0, size);
+ strcpy(buff, cmd);
+}
+
 int main(int argc, char *argv[], char *envp[]) {
 
 #if 0
@@ -633,15 +666,15 @@ int main(int argc, char *argv[], char *envp[]) {
 
 #if 0
   int ret = 0;
-  char buff[1024] = {0};
+  char buff[CMD_LEN] = {0};
   while(1) {
-    if(read(0, buff, 1024)) {
+    if(read(0, buff, CMD_LEN)) {
       ret = fork();
       if (ret == 0){
         execve(buff, NULL, NULL);
         //write(1, buff, strlen(buff)); 
       }
-      memset(buff, 0, 1024);
+      memset(buff, 0, CMD_LEN);
 
     } else {
 
@@ -652,8 +685,11 @@ int main(int argc, char *argv[], char *envp[]) {
 #if 1
   int ret;
   while(1) {
-    memset(buff, 0, 1024);
-    if(read(0, buff, 1024)) {
+    memset(buff, 0, sizeof(buff));
+    if (read(0, buff, CMD_LEN)) {
+
+      process_input_command(buff, CMD_LEN);
+
 //	write(1,buff, strlen(buff));
       memset(glob_cmd, 0, sizeof(glob_cmd));
       memset(glob_arg, 0, sizeof(glob_arg));      
@@ -670,12 +706,12 @@ int main(int argc, char *argv[], char *envp[]) {
 //	execve(glob_cmd, argg, NULL);
       //  execve("bin/ps", arg_v, NULL);
         //write(1, buff, strlen(buff)); 
-        memset(buff, 0, 1024);
+        memset(buff, 0, sizeof(buff));
 	}
       else {
 	if(!bg_proc)
 	wait();
-        memset(buff, 0, 1024);
+        memset(buff, 0, sizeof(buff));
 	}
    }
     
