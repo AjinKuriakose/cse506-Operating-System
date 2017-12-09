@@ -646,6 +646,7 @@ int main(int argc, char *argv[], char *envp[]) {
     memset(buff, 0, 1024);
     if(read(0, buff, 1024)) {
       memset(glob_cmd, 0, sizeof(glob_cmd));
+      memset(arg_vv, 0, sizeof(arg_vv));
       update_cmd(buff, glob_cmd, arg_vv);
       ret = fork();
       if(ret ==0) {

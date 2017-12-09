@@ -276,7 +276,6 @@ void sys_ps() {
 
 void sys_kill() {
   int pid = syscall_args.rdi;
-  kprintf("pid to kill is %d\n",  pid);
 
   task_struct_t *cur = get_current_running_task();
   task_struct_t *tsk = get_current_running_task()->next;
@@ -294,15 +293,10 @@ void sys_sleep() {
   int sleep = syscall_args.rdi;
   int tot_time = get_time_since_up() + sleep;
   int curr;
-  //kprintf("time to sleep %d\n",curr_time);
-  //while (get_time_since_up() >= (curr_time + sleep)) {
-	//kprintf("current. %d\n", get_time_since_up());
-//  while(1);
   while (1) {
     curr = get_time_since_up();	
     if(curr >= tot_time)
 	{
-	kprintf("breakking. %d %d\n", tot_time, curr);
 	break;
 	}
   }
