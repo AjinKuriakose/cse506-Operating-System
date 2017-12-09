@@ -276,13 +276,13 @@ void sys_wait() {
 
 void sys_execve() {
 
- // char *filename = (char *)syscall_args.rdi;
-  char *filename = (char *)(get_current_running_task()->syscall_args.rdi);
-  char **argv   = (char **)(syscall_args.rsi);
-  //char *const argv[]; rsi
-  //char *const envp[]; rdx
+  char *filename = (char *)syscall_args.rdi;
 
-  kprintf("filename is.. %s %s %s\n", filename, argv[0], argv[1]);
+  set_cr3(get_cr3());
+
+  char argv[6][64] = {{0}};
+  memcpy(argv, (char *)(syscall_args.rsi), 6 * 64);
+
   execve_handler(filename, argv);
 
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;

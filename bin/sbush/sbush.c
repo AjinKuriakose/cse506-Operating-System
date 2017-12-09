@@ -47,11 +47,7 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
 int bg_proc;
 char glob_cmd[64];
-//char *arg_v[4] = {"","","",""};
-//char **argg;
-char *arg_vv[4]= {"9", "1"}; 
-char glob_arg[10][64];
-//char temp[64];
+char arg_vv[6][64]= {{0}}; 
 
 void update_cmd(char *buff, char *cmd, char arg[][64]) {
 
@@ -65,22 +61,17 @@ void update_cmd(char *buff, char *cmd, char arg[][64]) {
   char *token = strtok_r(arr, sep, &saveptr);
   while (token != NULL && i < 11) {
 
-    //argv[i] = malloc(strlen(token) + 1);
-    //argv[i] = malloc(strlen(token) + 1); 
     if(i == 0) {
       strcpy(cmd, token);
       token = strtok_r(NULL, sep, &saveptr);
       i++;
       continue;
     }
-    //strcpy(arg_v[j],token);
     strcpy(arg[j], token);
     token = strtok_r(NULL, sep, &saveptr);
     i++;
     j++;
   }
-//  argg = (char **)(uint64_t)glob_arg;
-//strcpy(arg_v[4],"hello");
 }
 
 void print_prompt() {
@@ -654,22 +645,16 @@ int main(int argc, char *argv[], char *envp[]) {
   while(1) {
     memset(buff, 0, 1024);
     if(read(0, buff, 1024)) {
-//	write(1,buff, strlen(buff));
       memset(glob_cmd, 0, sizeof(glob_cmd));
-      memset(glob_arg, 0, sizeof(glob_arg));      
-      update_cmd(buff, glob_cmd, glob_arg);
+      update_cmd(buff, glob_cmd, arg_vv);
       ret = fork();
       if(ret ==0) {
-//       execve(glob_cmd, arg_v, NULL);
 	if(strcmp(glob_cmd, "bin/sleep") == 0)
 	bg_proc = 0;
 	else
 	bg_proc = 0;
+
        execve(glob_cmd, arg_vv, NULL);
-	//execve(glob_cmd, (char **)(uint64_t)glob_arg, NULL);
-//	execve(glob_cmd, argg, NULL);
-      //  execve("bin/ps", arg_v, NULL);
-        //write(1, buff, strlen(buff)); 
         memset(buff, 0, 1024);
 	}
       else {

@@ -53,7 +53,8 @@ char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 //int execvpe(const char *file, char *const argv[], char *const envp[]);
-int execve(const char *file, char *argv[], char *const envp[]);
+//int execve(const char *file, char *argv[], char *const envp[]);
+int execve(const char *file, char (*argv)[64], char *const envp[]);
 //pid_t wait(int *status);
 //int waitpid(int pid, int *status);//:TODO
 //pid_t wait(int *status);
