@@ -6,7 +6,8 @@ _isr_kb:
 
 .global _isr_timer1
 _isr_timer1:
-  call send_EOI
+#  call send_EOI
+  cli
   pushq %rax
   pushq %rcx
   pushq %rdx
@@ -29,6 +30,7 @@ _isr_timer1:
   popq %rdx
   popq %rcx
   popq %rax
+  sti
   iretq
 
 .global _isr_sys_def0

@@ -8,6 +8,7 @@
 #include <sys/terminal.h>
 #include <sys/dirent.h>
 #include <sys/tarfs.h>
+#include <sys/timer.h>
 
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
@@ -19,6 +20,7 @@
 #define __NR_fork            57 
 #define __NR_execve          59 
 #define __NR_wait4           61
+#define __NR_kill            62 
 #define __NR_getcwd          79
 #define __NR_ps              90
 #define __NR_getpid          91
@@ -27,6 +29,8 @@
 #define __NR_readdir         94
 #define __NR_closedir        95
 #define __NR_ls              96
+#define __NR_sleep           97 
+
 
 typedef void (*sys_call_ptr_t) (void);
 sys_call_ptr_t sys_call_table[__NR_syscall_max];
@@ -208,14 +212,51 @@ void sys_getcwd() {
 
 void sys_ps() {
   task_struct_t *tmp = running_task;
-  kprintf("\nPID | PPID | NAME | STATE\n");
+  kprintf("\n------------------------------------");
+  kprintf("\n   PID  |  PPID  |  NAME  |  STATE  \n");
+  kprintf("------------------------------------\n");
   while (tmp && tmp->next != running_task) {
-    kprintf("%d | %d | %s | %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);
+    kprintf(" %d    |   %d  |   %s  |   %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);
     tmp = tmp->next;
   }
 
   if (tmp && tmp != running_task) {
-    kprintf("%d | %d | %s | %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);
+    kprintf(" %d    |   %d  |   %s  |   %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);
+  }
+  kprintf("------------------------------------\n");
+}
+
+void sys_kill() {
+  int pid = syscall_args.rdi;
+  kprintf("pid to kill is %d\n",  pid);
+
+  task_struct_t *cur = get_current_running_task();
+  task_struct_t *tsk = get_current_running_task()->next;
+  while (tsk != cur) {
+    if(tsk->pid == pid) {
+      tsk->task_state = TASK_STATE_STOPPED;
+      break;
+    }
+    tsk = tsk->next;
+  }
+}
+
+void sys_sleep() {
+
+  int sleep = syscall_args.rdi;
+  int tot_time = get_time_since_up() + sleep;
+  int curr;
+  //kprintf("time to sleep %d\n",curr_time);
+  //while (get_time_since_up() >= (curr_time + sleep)) {
+	//kprintf("current. %d\n", get_time_since_up());
+//  while(1);
+  while (1) {
+    curr = get_time_since_up();	
+    if(curr >= tot_time)
+	{
+	kprintf("breakking. %d %d\n", tot_time, curr);
+	break;
+	}
   }
 }
 
@@ -239,7 +280,7 @@ void sys_execve() {
   //char *const argv[]; rsi
   //char *const envp[]; rdx
 
-//  kprintf("filename is.. %s %s %s\n", filename, argv[0], argv[1]);
+  kprintf("filename is.. %s %s %s\n", filename, argv[0], argv[1]);
   execve_handler(filename, argv);
 
   (get_current_running_task()->syscall_args).rcx= get_current_running_task()->rip;
@@ -359,6 +400,8 @@ void setup_sys_call_table() {
   sys_call_table[__NR_wait4]    = sys_wait;  
   sys_call_table[__NR_getcwd]   = sys_getcwd;  
   sys_call_table[__NR_ps]       = sys_ps;  
+  sys_call_table[__NR_kill]     = sys_kill;  
+  sys_call_table[__NR_sleep]    = sys_sleep;  
   sys_call_table[__NR_getpid]   = sys_getpid;  
   sys_call_table[__NR_getppid]  = sys_getppid;  
   sys_call_table[__NR_opendir]  = sys_opendir;  
