@@ -223,7 +223,7 @@ file_t *find_node(char *name) {
         break;
       }
 
-      found = 1;
+      found = 0;
       i++;
     }
 
