@@ -20,6 +20,10 @@ struct linux_dirent64 {
   char           d_name[]; /* Filename (null-terminated) */
 };
 
+char *glob_cmd;
+char *glob_arg;
+char *arg_v[3] = {"hoy","manu","amd"};
+char *argvv[10];
 char buff[1024] = {0};
 char **m_environ;
 
@@ -45,44 +49,9 @@ char ps1_variable[256] = "sbush>";
 
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
-int bg_proc;
-char glob_cmd[64];
-//char *arg_v[4] = {"","","",""};
-//char **argg;
-char *arg_vv[4]= {"9", "1"}; 
-char glob_arg[10][64];
-//char temp[64];
-
-void update_cmd(char *buff, char *cmd, char arg[][64]) {
-
-  char *sep = " ";
-  int i = 0, j = 0;
-  char *saveptr;
-
-  char arr[255] = {0};
-  strcpy(arr, buff);
-
-  char *token = strtok_r(arr, sep, &saveptr);
-  while (token != NULL && i < 11) {
-
-    //argv[i] = malloc(strlen(token) + 1);
-    //argv[i] = malloc(strlen(token) + 1); 
-    if(i == 0) {
-      strcpy(cmd, token);
-      token = strtok_r(NULL, sep, &saveptr);
-      i++;
-      continue;
-    }
-    //strcpy(arg_v[j],token);
-    strcpy(arg[j], token);
-    token = strtok_r(NULL, sep, &saveptr);
-    i++;
-    j++;
-  }
-//  argg = (char **)(uint64_t)glob_arg;
-//strcpy(arg_v[4],"hello");
+int wait() {
+  return syscall(__NR_wait4);
 }
-
 void print_prompt() {
   puts(ps1_variable);
 }
@@ -114,10 +83,18 @@ int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
   }
   /*complete path: eg: /bin/ls */
 
-  //if(execve(cmd, argv, env) < 0) {
-   //return -1;
-  //}
-  return -1;
+  if(execve(cmd, argv, env) < 0) {
+   return -1;
+  }
+  return 1;
+}
+
+int exec_sbunix(char *cmd, char *arg) {
+//  while(1);
+  if(execve(cmd, (char**)arg, 0) < 0) {
+   return -1;
+  }
+ return 1;
 }
 
 int do_execute(char *cmd, char *argv[], char *env[]) {
@@ -138,10 +115,10 @@ int do_execute(char *cmd, char *argv[], char *env[]) {
     strncpy(exe_path + len, "/", 1);
     strcpy(exe_path + len + 1, cmd);
 
-    //if(execve(exe_path, argv, env) < 0) {
+    if(execve(exe_path, argv, env) < 0) {
     //  printf("command to try : %s\n", exe_path);
-     // continue;
-   // }	
+      continue;
+    }	
   }
     if (i == num_paths)
 	ret = -1; 
@@ -155,18 +132,18 @@ int tokenize(char *arg, char *argv[], int max_tokens, char *sep) {
   strcpy(arr, arg);
   char *token = strtok_r(arr, sep, &saveptr);
   while (token != NULL && i < max_tokens - 1) {
-    argv[i] = malloc(strlen(token) + 1);
+    //argv[i] = malloc(strlen(token) + 1);
+    //argv[i] = malloc(strlen(token) + 1);
     strcpy(argv[i], token);
     token = strtok_r(NULL, sep, &saveptr);
     i++;
   }
-
   argv[i] = NULL;
   return i;
 }
 
 void build_argv(char *input, char *arg, char *argv[]) {
-  argv[0] = malloc(strlen(input) + 1);
+  //argv[0] = malloc(strlen(input) + 1);
   strcpy(argv[0], input);
   tokenize(arg, &argv[1], 49, " ");
 }
@@ -290,8 +267,9 @@ int update_if_bg_cmdarg(char *cmd_arg) {
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
   pid_t pid;
-  int i, status, bg_process = 0;
-  char *argv[50] = {0};
+ // int i, status, 
+  int bg_process = 0;
+  //char *argv[50] = {0};
   char path_value[1024] = {0} ; 
   
   /* PATH variable set */
@@ -309,12 +287,13 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
   else if (update_if_bg_cmdarg(cmd_arg)) {
     bg_process = 1;
   }
- 
-  build_argv(cmd, cmd_arg, argv);
-
+  //mnu build_argv(cmd, cmd_arg, argv);
+  glob_cmd = cmd;
+  glob_arg = cmd_arg;
   pid = fork();
   if (pid == 0) {
-     if (find_path_and_exe(cmd, argv, m_environ) < 0) {
+     //mnu if (find_path_and_exe(cmd, argv, m_environ) < 0) {
+     if (exec_sbunix(glob_cmd, glob_arg) < 0) {
       puts_nonewline(cmd);
       puts(": command not found");
       exit(1);
@@ -325,17 +304,20 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
     }
     else {
       if (!bg_process)
-        waitpid(-1, &status, 0);
+        //mnu waitpid(-1, &status, 0);
+        wait();
     }
   }
 
   /* Freeing */
+  #if 0
   i = 0;
   while (argv[i]) {
     free(argv[i]);
     argv[i] = NULL;
     i++;
   }
+ #endif
 }
 
 void execute_command_line(char *cmd) {
@@ -437,7 +419,7 @@ void handle_piped_commands(char *arg) {
 void read_from_stdin() {
   int cnt;
   char *str, *saveptr, *token;
-  char buff[1024] = {0};
+  //char buff[1024] = {0};
   while (read(0, buff, sizeof(buff)) > 0) {
 
     cnt = 1;
@@ -465,7 +447,7 @@ void read_from_stdin() {
       }
     }
 
-    print_prompt();
+   // print_prompt();
 
     memset(buff, 0, sizeof(buff));
   }
@@ -571,9 +553,6 @@ int setenv(char *path_variable, char *value, int overwrite) {
   return 1;
 }
 
-int wait() {
-  return syscall(__NR_wait4);
-}
 int main(int argc, char *argv[], char *envp[]) {
 
 #if 0
@@ -616,7 +595,8 @@ int main(int argc, char *argv[], char *envp[]) {
 
  //   while(1);
   }
-
+#endif
+#if 1
   m_environ = envp + argc + 1;
   if (argc > 1) {
 
@@ -626,7 +606,7 @@ int main(int argc, char *argv[], char *envp[]) {
   } else {
 
     /* Case 2 : Interactive mode */
-    print_prompt();
+    //print_prompt();
     read_from_stdin();
   }
 #endif
@@ -649,31 +629,21 @@ int main(int argc, char *argv[], char *envp[]) {
   }
 #endif
 
-#if 1
+#if 0
   int ret;
   while(1) {
     memset(buff, 0, 1024);
     if(read(0, buff, 1024)) {
 //	write(1,buff, strlen(buff));
-      memset(glob_cmd, 0, sizeof(glob_cmd));
-      memset(glob_arg, 0, sizeof(glob_arg));      
-      update_cmd(buff, glob_cmd, glob_arg);
+      
       ret = fork();
       if(ret ==0) {
-//       execve(glob_cmd, arg_v, NULL);
-	if(strcmp(glob_cmd, "bin/sleep") == 0)
-	bg_proc = 0;
-	else
-	bg_proc = 0;
-       execve(glob_cmd, arg_vv, NULL);
-	//execve(glob_cmd, (char **)(uint64_t)glob_arg, NULL);
-//	execve(glob_cmd, argg, NULL);
+        execve(buff, arg_v, NULL);
       //  execve("bin/ps", arg_v, NULL);
         //write(1, buff, strlen(buff)); 
         memset(buff, 0, 1024);
 	}
       else {
-	if(!bg_proc)
 	wait();
         memset(buff, 0, 1024);
 	}
