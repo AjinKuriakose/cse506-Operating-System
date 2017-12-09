@@ -15,8 +15,12 @@ void handle_cat(int num, char *files[]) {
     size_t n = 0;
     char c;
 
-    if (file == -1)
+    if (file == -1) {
+      puts("cat: ");
+      puts(files[i]);
+      puts(": No such file or directory\n");
       return;
+    }
 
     while (read(file, &c, 1) > 0)
     {

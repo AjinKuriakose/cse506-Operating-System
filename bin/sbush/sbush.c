@@ -44,7 +44,7 @@ void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
 void read_from_file(int num_tokens, char *cmd_tokens[]);
 
-char ps1_variable[256] = "sbush>";
+char ps1_variable[256] = "sbush> ";
 
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
@@ -677,12 +677,18 @@ int main(int argc, char *argv[], char *envp[]) {
   int ret;
   while(1) {
     memset(buff, 0, sizeof(buff));
+    print_prompt();
+
     if (read(0, buff, CMD_LEN)) {
+
+      puts(buff);
+      puts("\n");
 
       process_input_command(buff, CMD_LEN);
 
       memset(glob_cmd, 0, sizeof(glob_cmd));
       memset(arg_vv, 0, sizeof(arg_vv));
+
       update_cmd(buff, glob_cmd, arg_vv);
       ret = fork();
       if(ret ==0) {
@@ -701,7 +707,6 @@ int main(int argc, char *argv[], char *envp[]) {
       }
     }
 
-    //print_prompt();
   }
 #endif
 

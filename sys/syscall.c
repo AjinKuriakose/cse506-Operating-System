@@ -261,7 +261,7 @@ void sys_getcwd() {
 void sys_ps() {
   task_struct_t *tmp = running_task;
   kprintf("\n------------------------------------");
-  kprintf("\n   PID  |  PPID  |  NAME  |  STATE  \n");
+  kprintf("\n PID  |  PPID  |  NAME  |  STATE  \n");
   kprintf("------------------------------------\n");
   while (tmp && tmp->next != running_task) {
     kprintf(" %d    |   %d  |   %s  |   %s\n", tmp->pid, tmp->ppid, tmp->name, task_state_str[tmp->task_state]);

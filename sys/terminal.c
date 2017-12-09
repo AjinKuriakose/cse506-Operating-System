@@ -10,15 +10,10 @@ uint8_t data_buffer_ready = 0;
 
 void init_terminal() {
   memset(&terminal, 0, sizeof(terminal));
-  terminal.buffer[0] = 's';
-  terminal.buffer[1] = 'b';
-  terminal.buffer[2] = 'u';
-  terminal.buffer[3] = 's';
-  terminal.buffer[4] = 'h';
-  terminal.buffer[5] = '>';
-  terminal.buffer[6] = ' ';
-  terminal.buffer[7] = '_';
-  terminal.buffer_offset = 8;
+  terminal.buffer[0] = '>';
+  terminal.buffer[1] = ' ';
+  terminal.buffer[2] = '_';
+  terminal.buffer_offset = 3;
   terminal.buffer_ready = TERMINAL_BUFFER_NOT_READY;
 
   terminal_display(terminal.buffer);
@@ -50,7 +45,6 @@ void terminal_display(const char *fmt) {
   for (c = (char *)fmt; *c; c += 1, temp += CHAR_WIDTH) {
 
     if (row > 23) {
-      kprintf("23...\n");
       memcpy((char *)VIDEO_VIRT_MEM_BEGIN + 160*18, (char *)VIDEO_VIRT_MEM_BEGIN + 160*18 + SCREEN_WIDTH, 800);
       temp -= SCREEN_WIDTH;
       clear_chars(temp, SCREEN_WIDTH);
@@ -77,7 +71,7 @@ static void process_terminal_buffer() {
   terminal.buffer[terminal.buffer_offset] = '\0';
   
   memset(data_buffer, 0, sizeof(data_buffer));
-  memcpy(data_buffer, &(terminal.buffer[7]), strlen(&(terminal.buffer[7])));
+  memcpy(data_buffer, &(terminal.buffer[2]), strlen(&(terminal.buffer[2])));
 
   terminal.buffer[terminal.buffer_offset - 1] = '\n';
 }
@@ -103,7 +97,7 @@ void handle_keyboard_input(unsigned char glyph, int flags) {
 
   if (flags == KEYCODE_BACKSPACE) {
     /* Backspace */
-    if (terminal.buffer_offset > 8) {
+    if (terminal.buffer_offset > 3) {
       terminal.buffer[terminal.buffer_offset - 2] = '_';
       terminal.buffer[terminal.buffer_offset - 1] = ' ';
       terminal.buffer_offset--;

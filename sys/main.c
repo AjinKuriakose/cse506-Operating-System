@@ -37,8 +37,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   init_pmm(modulep, physbase, physfree);
   init_paging(0, (uint64_t)physfree);
 
-//  kprintf("physfree %p\n", (uint64_t)physfree);
- // kprintf("physbase %p\n", (uint64_t)physbase);
+  //kprintf("physfree %p\n", (uint64_t)physfree);
+  //kprintf("physbase %p\n", (uint64_t)physbase);
   //kprintf("tarfs in [%p - %p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
 
@@ -84,6 +84,26 @@ void boot(void)
   }
 
   /* Seperation Indication */ 
+  /*
+  for(temp1=(char *)VIDEO_VIRT_MEM_BEGIN+160*0; temp1 < (char*)VIDEO_VIRT_MEM_BEGIN+160*1; temp1 += 2) {
+	*temp1 ='=';
+  }
+  */
+
+  for(temp1=(char *)VIDEO_VIRT_MEM_BEGIN+160*0; temp1 < (char*)VIDEO_VIRT_MEM_BEGIN+160*1; temp1 += 2) {
+	*temp1 ='=';
+  }
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 68) = ' ';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 70) = '[';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 72) = 'S';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 74) = 'B';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 76) = 'U';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 78) = 'n';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 80) = 'i';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 82) = 'x';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 84) = ']';
+  *(char *)(VIDEO_VIRT_MEM_BEGIN+160*0 + 86) = ' ';
+
   for(temp1=(char *)VIDEO_VIRT_MEM_BEGIN+160*17; temp1 < (char*)VIDEO_VIRT_MEM_BEGIN+160*18; temp1 += 2) {
 	*temp1 ='=';
   }
