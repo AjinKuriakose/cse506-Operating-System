@@ -36,6 +36,7 @@
 #define __NR_closedir        95
 #define __NR_ls              96
 #define __NR_sleep           97 
+#define __NR_cd              98
 
 
 typedef void (*sys_call_ptr_t) (void);
@@ -498,6 +499,70 @@ void sys_close() {
   get_current_running_task()->retV = 0;
 }
 
+void sys_cd() {
+
+  char newpath[1024] = {0};     
+  char *path = (char *)(syscall_args.rdi);
+
+  if(path[strlen(path) - 1] == '/') {
+    path[strlen(path) - 1] = '\0';
+  }
+
+  if (strlen(path)) {
+
+    if (path[0] == '.' && path[1] == '.') {
+
+      memset(newpath, 0, sizeof(newpath));
+      char *saveptr;
+      char *sep = "/";
+      char arr[1024] = {0};
+      strcpy(arr, get_current_running_task()->parent_task->cwd);
+
+      char *token = strtok_r(arr, sep, &saveptr);
+      while (token != NULL) {
+
+        if (!strlen(newpath)) {
+          strcpy(newpath, token);
+
+        } else {
+
+          if (strlen(newpath) + strlen(token) + 1 < strlen(get_current_running_task()->parent_task->cwd)) {
+            strcpy(newpath + strlen(newpath), "/");
+            strcpy(newpath + strlen(newpath), token);
+          }
+        }
+
+        token = strtok_r(NULL, sep, &saveptr);
+      }
+
+      memset(get_current_running_task()->parent_task->cwd, 0, sizeof(get_current_running_task()->parent_task->cwd));
+      strcpy(get_current_running_task()->parent_task->cwd, newpath);
+
+    } else if (path[0] == '/') {
+      memset(get_current_running_task()->parent_task->cwd, 0, sizeof(get_current_running_task()->parent_task->cwd));
+      strcpy(get_current_running_task()->parent_task->cwd, &path[1]);
+
+    } else {
+      memset(newpath, 0, sizeof(newpath));
+      strcpy(newpath, get_current_running_task()->parent_task->cwd);
+      strcpy(newpath + strlen(newpath), "/");
+      strcpy(newpath + strlen(newpath), path);
+
+      file_t *node = find_node(newpath);
+      if (node) {
+        memset(get_current_running_task()->parent_task->cwd, 0, sizeof(get_current_running_task()->parent_task->cwd));
+        strcpy(get_current_running_task()->parent_task->cwd, newpath);
+
+      } else {
+        kprintf("cd: %s: No such file or directory\n", path);
+      }
+    }
+  } else {
+    memset(get_current_running_task()->parent_task->cwd, 0, sizeof(get_current_running_task()->parent_task->cwd));
+    strcpy(get_current_running_task()->parent_task->cwd, "rootfs");
+  }
+}
+
 /*
  * setting up syscall table init 
  */
@@ -520,6 +585,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_opendir]  = sys_opendir;  
   sys_call_table[__NR_readdir]  = sys_readdir;  
   sys_call_table[__NR_closedir] = sys_closedir;  
+  sys_call_table[__NR_cd]       = sys_cd;
 }
 
 /*

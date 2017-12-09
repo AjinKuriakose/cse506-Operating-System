@@ -39,6 +39,7 @@
 #define __NR_closedir   95
 #define __NR_ls         96
 #define __NR_sleep      97
+#define __NR_cd         98
 #define __NR_getdents64 217
 #define __NR_waitid     247
 
@@ -81,5 +82,6 @@ int dup2(int oldfd, int newfd);
 int ps();
 int kill(int);
 int sleep(int);
+int cd(char *pathname);
 
 #endif
