@@ -15,7 +15,7 @@
 #define TASK_STATE_WAITING  3
 #define TASK_STATE_STOPPED  4 
 
-#define INVALID_PID         0xFF
+#define INVALID_PID         0xFFFF
 #define INVALID_FD          0xFFFF
 
 #define VMA_TYPE_STACK	    4

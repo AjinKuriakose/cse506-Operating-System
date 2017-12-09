@@ -25,7 +25,7 @@ char task_state_str[][32] = {"UNKNOWN",
                             };
 /* Allocate an available process id */
 uint32_t allocate_pid() {
-  uint8_t pid_index = 1;
+  uint16_t pid_index = 1;
   while (pid_index < MAX_NUM_PROCESSES) {
     if (pid[pid_index] == 0) {
       pid[pid_index] = 1;
@@ -36,6 +36,12 @@ uint32_t allocate_pid() {
   }
 
   return INVALID_PID;
+}
+
+void release_pid(uint16_t pid_index) {
+  if (pid_index < MAX_NUM_PROCESSES) {
+    pid[pid_index] = 0;
+  }
 }
 
 uint8_t get_task_state() {
@@ -53,6 +59,7 @@ void cleanup_tasks() {
   while (tmp->next != curr) {
     /* TODO : take reference and clean up tmp->next before next statement */
     if(tmp->next->task_state == TASK_STATE_STOPPED) {
+      release_pid(tmp->next->pid);
     	tmp->next = tmp->next->next;
     }
     tmp = tmp->next;
