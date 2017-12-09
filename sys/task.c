@@ -397,6 +397,9 @@ void execve_handler(char *filename, char argv[][64]) {
   Elf64_Ehdr *elf_header = get_elf_header(cur_task->name);
   if (elf_header == NULL) {
     kprintf("%s : command not found\n", cur_task->name);
+    get_current_running_task()->task_state = TASK_STATE_STOPPED;
+    if(get_current_running_task()->parent_task->task_state == TASK_STATE_WAITING)
+	get_current_running_task()->parent_task->task_state = TASK_STATE_RUNNING;
     return;
   }
 

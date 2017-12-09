@@ -601,44 +601,6 @@ void process_input_command(char *buff, int size) {
 int main(int argc, char *argv[], char *envp[]) {
 
 #if 0
-  char *d = "parent\n";
-  char *e = "007\n";
-  char *f = "child\n";
- // char *g = "222";
-  int ret = 0;
-  //char *ch;
-  while(1) {
-    ret = fork();
-    if (ret == 3){
-      write(1, d,7 );
-      write(1, d,7 );
-    }
-    else if(ret == 0) {
-
-//      write(1, f,6 );
-      write(1, f,6 );
-	execve("bin/helloworld", NULL, NULL);
-//	execve("bin/sbush", NULL, NULL);
-  //    print_prompt();
-	
-//  	char *x = "manu\n";
- //     write(1, x,5 );
-    }
-
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
-    write(1, e,3 );
- //   write(1, g,3 );
-
-
-
- //   while(1);
   }
 
   m_environ = envp + argc + 1;
@@ -655,23 +617,6 @@ int main(int argc, char *argv[], char *envp[]) {
   }
 #endif
 
-#if 0
-  int ret = 0;
-  char buff[CMD_LEN] = {0};
-  while(1) {
-    if(read(0, buff, CMD_LEN)) {
-      ret = fork();
-      if (ret == 0){
-        execve(buff, NULL, NULL);
-        //write(1, buff, strlen(buff)); 
-      }
-      memset(buff, 0, CMD_LEN);
-
-    } else {
-
-    }
-  }
-#endif
 
 #if 1
   int ret;
@@ -692,7 +637,7 @@ int main(int argc, char *argv[], char *envp[]) {
       update_cmd(buff, glob_cmd, arg_vv);
       ret = fork();
       if(ret ==0) {
-        if(strcmp(glob_cmd, "bin/sleep") == 0)
+        if(strcmp(glob_cmd, "sleep") == 0)
           bg_proc = 0;
         else
           bg_proc = 0;
@@ -701,8 +646,10 @@ int main(int argc, char *argv[], char *envp[]) {
         memset(buff, 0, sizeof(buff));
       }
       else {
-        if(!bg_proc)
+        if(!bg_proc) {
           wait();
+	  
+	}
         memset(buff, 0, sizeof(buff));
       }
     }
