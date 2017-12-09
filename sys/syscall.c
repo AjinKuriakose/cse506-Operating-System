@@ -456,7 +456,6 @@ void sys_open() {
 
     node = find_node((char *)&name[1]);
     if (node) {
-      kprintf("AMD : %s\n", node->file_name);
       uint16_t fd_index = get_fd(get_current_running_task());
       get_current_running_task()->fd_list[fd_index].fd = fd_index;
       get_current_running_task()->fd_list[fd_index].flags = flags;
