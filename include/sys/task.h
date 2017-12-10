@@ -129,5 +129,6 @@ void execve_handler(char *filename, char argv[][64]);
 void task_cleanup(task_struct_t *task);
 void set_task_state(uint8_t);
 uint8_t get_task_state();
+void release_pid(uint16_t);
 
 #endif /* __TASK_H__ */

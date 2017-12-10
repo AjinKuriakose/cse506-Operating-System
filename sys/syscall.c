@@ -285,10 +285,12 @@ void sys_kill() {
   int pid = syscall_args.rdi;
 
   task_struct_t *cur = get_current_running_task();
-  task_struct_t *tsk = get_current_running_task()->next;
-  while (tsk != cur) {
-    if(tsk->pid == pid) {
-      tsk->task_state = TASK_STATE_STOPPED;
+  task_struct_t *tsk = cur;
+  while (tsk->next != cur) {
+    if(tsk->next->pid == pid) {
+      tsk->next->task_state = TASK_STATE_STOPPED;
+      release_pid(tsk->next->pid);
+      tsk->next = tsk->next->next;
       break;
     }
     tsk = tsk->next;
