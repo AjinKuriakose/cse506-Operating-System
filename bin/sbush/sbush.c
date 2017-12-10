@@ -570,30 +570,7 @@ int wait() {
 }
 
 void process_input_command(char *buff, int size) {
-
-  char cmd[CMD_LEN];
-  char cwd[128] = {0};
-  char *bin_dir = "bin/";
-  getcwd(cwd, 127);
-  //int len = strlen(cwd);
- 
-  if (buff[0] == '.' && buff[1] == '/') {
-    /* TODO : Script execution */
-
-  } else if (buff[0] != '/') {
-
-    memset(cmd, 0, sizeof(cmd));
-    strcpy(cmd, bin_dir);
-    strcpy(cmd + strlen(bin_dir), buff);
-
-  } else {
-    
-    memset(cmd, 0, sizeof(cmd));
-    strcpy(cmd, &buff[8]);
-  }
-
- memset(buff, 0, size);
- strcpy(buff, cmd);
+  
 }
 
 int main(int argc, char *argv[], char *envp[]) {
@@ -615,7 +592,6 @@ int main(int argc, char *argv[], char *envp[]) {
   }
 #endif
 
-
 #if 1
   int ret;
   while(1) {
@@ -626,8 +602,6 @@ int main(int argc, char *argv[], char *envp[]) {
 
       puts(buff);
       puts("\n");
-
-      process_input_command(buff, CMD_LEN);
 
       memset(glob_cmd, 0, sizeof(glob_cmd));
       memset(arg_vv, 0, sizeof(arg_vv));

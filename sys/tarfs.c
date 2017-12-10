@@ -196,6 +196,7 @@ file_t *create_child_node(file_t *parent_node, char *file_name, uint64_t file_si
 
 file_t *find_node(char *name) {
 
+  //kprintf("TARFS = [%s]\n", name);
   char *saveptr;
   char *sep = "/";
   char arr[256] = {0};
@@ -215,7 +216,10 @@ file_t *find_node(char *name) {
   }
 
   while (token != NULL) {
+    //kprintf("TOK = [%s]\n", token);
     int i = 0;
+    found = 0;
+
     while (i < temp->num_children) {
       if (!strcmp(temp->child_node[i]->file_name, token)) {
         temp = temp->child_node[i];
@@ -223,16 +227,17 @@ file_t *find_node(char *name) {
         break;
       }
 
-      found = 0;
       i++;
+    }
+
+    if (!found) {
+      temp = NULL;
+      break;
     }
 
     token = strtok_r(NULL, sep, &saveptr);
   }
 
-  if (found)
-    return temp;
-
-  return NULL;
+  return temp;
 }
 
