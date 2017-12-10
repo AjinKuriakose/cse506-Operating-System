@@ -139,16 +139,17 @@ void switch_to_user_mode() {
 }
 
 void idle_func() {
-    static int c = 0;
-    while(1) {
-        //kprintf("Idle Func #### %d\n", c);
-        c++;
-        //Sleep();
-        set_tss_rsp((void *)task1.rsp);
-       // switch_to_user_mode();
-        cleanup_tasks(); 
-				yield();
-    }
+	static int c = 0;
+	while(1) {
+		//kprintf("Idle Func #### %d\n", c);
+		c++;
+		//Sleep();
+		set_tss_rsp((void *)task1.rsp);
+		// switch_to_user_mode();
+		if(c%15 == 0)
+		  cleanup_tasks(); 
+		yield();
+	}
 }
  
 void init_sbush_proc() {

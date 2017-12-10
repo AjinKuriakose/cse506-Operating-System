@@ -18,10 +18,15 @@
 #define INVALID_PID         0xFFFF
 #define INVALID_FD          0xFFFF
 
-#define VMA_TYPE_STACK	    4
+#define VMA_TYPE_STACK	      4
 #define VMA_TYPE_HEAP	      3
 #define VMA_TYPE_DATA	      2
 #define VMA_TYPE_TEXT	      1
+
+#define HEAP_BEGIN            0x09000000
+#define HEAP_END       	      0x10000000
+#define STACK_TOP             0xFAA00000
+#define MAX_STACK_SIZE        0xFA9F6000
 
 #define CWD_LEN             128
 
