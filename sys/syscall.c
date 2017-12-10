@@ -554,7 +554,11 @@ void sys_cd() {
       memset(newpath, 0, sizeof(newpath));
       strcpy(newpath, get_current_running_task()->parent_task->cwd);
       strcpy(newpath + strlen(newpath), "/");
-      strcpy(newpath + strlen(newpath), path);
+      if (path[0] == '.' && path[1] == '/') {
+        strcpy(newpath + strlen(newpath), &path[2]);
+      } else {
+        strcpy(newpath + strlen(newpath), path);
+      }
 
       file_t *node = find_node(newpath);
       if (node) {

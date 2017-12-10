@@ -575,12 +575,10 @@ void process_input_command(char *buff, int size) {
   char cwd[128] = {0};
   char *bin_dir = "bin/";
   getcwd(cwd, 127);
-  int len = strlen(cwd);
+  //int len = strlen(cwd);
  
   if (buff[0] == '.' && buff[1] == '/') {
-    memset(cmd, 0, sizeof(cmd));
-    strcpy(cmd, cwd);
-    strcpy(cmd + len, &buff[1]);
+    /* TODO : Script execution */
 
   } else if (buff[0] != '/') {
 
@@ -591,7 +589,7 @@ void process_input_command(char *buff, int size) {
   } else {
     
     memset(cmd, 0, sizeof(cmd));
-    strcpy(cmd, buff);
+    strcpy(cmd, &buff[8]);
   }
 
  memset(buff, 0, size);
