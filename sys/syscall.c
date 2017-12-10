@@ -223,7 +223,7 @@ void sys_read() {
           
           int tarfs_read_size = (get_current_running_task()->fd_list[fd].file_node->file_end - 
                                  get_current_running_task()->fd_list[fd].file_node->file_cursor);
-          if (tarfs_read_size > size) {
+          if ((tarfs_read_size > 0) && (tarfs_read_size > size)) {
             tarfs_read_size = size;
             memcpy(ptr, (void *)((get_current_running_task()->fd_list[fd].file_node)->file_cursor), tarfs_read_size);
             get_current_running_task()->fd_list[fd].file_node->file_cursor += tarfs_read_size;

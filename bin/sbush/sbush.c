@@ -43,7 +43,8 @@ void handle_ls();
 void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
-int read_and_exec_from_file(char *filename);
+void read_and_exec_from_file(char *filename);
+void execute_command_sbunix(char *buff);
 
 char ps1_variable[256] = "sbush> ";
 
@@ -105,13 +106,8 @@ int find_path_and_exe(char *cmd, char *argv[], char *env[]) {
   if (slash == 0) {
 
     return do_execute(cmd, argv, env);
-
   }
-  /*complete path: eg: /bin/ls */
 
-  //if(execve(cmd, argv, env) < 0) {
-   //return -1;
-  //}
   return -1;
 }
 
@@ -132,14 +128,10 @@ int do_execute(char *cmd, char *argv[], char *env[]) {
     strncpy(exe_path, paths[i], len);    
     strncpy(exe_path + len, "/", 1);
     strcpy(exe_path + len + 1, cmd);
-
-    //if(execve(exe_path, argv, env) < 0) {
-    //  printf("command to try : %s\n", exe_path);
-     // continue;
-   // }	
   }
-    if (i == num_paths)
-	ret = -1; 
+
+  if (i == num_paths)
+    ret = -1; 
   return ret;
 }
 
@@ -165,7 +157,6 @@ void build_argv(char *input, char *arg, char *argv[]) {
   strcpy(argv[0], input);
   tokenize(arg, &argv[1], 49, " ");
 }
-
 
 void handle_cd(char *path) {
   
@@ -258,7 +249,6 @@ void get_path_string(char *cmd, char *path_value) {
     strcpy(path_value, ptr + 1); 
   }
 }
-
 
 int check_if_path_cmd(char *cmd) {
   return strncmp(cmd, "PATH=", 5) == 0 ? 1 : 0; 
@@ -371,7 +361,7 @@ void execute_commands(char *cmd, char *cmd_arg) {
 }
 
 /* Read from the file one line at a time and execute */
-int read_and_exec_from_file(char *filename) {
+void read_and_exec_from_file(char *filename) {
 
   int file = open(filename, O_RDONLY);
   char code[CMD_LEN] = {0};
@@ -379,8 +369,9 @@ int read_and_exec_from_file(char *filename) {
   char c;
   uint8_t hash_read = 0;
 
-  if (file == -1)
-    return 1;
+  if (file == -1) {
+    return;
+  }
 
   while (read(file, &c, 1) > 0)
   {
@@ -390,27 +381,24 @@ int read_and_exec_from_file(char *filename) {
 
       if (!hash_read) {
         if (!strncmp(code, SBUSH_HASHBANG, strlen(SBUSH_HASHBANG))) {
-          write(1, "HASHBANG\n", 9);
           hash_read = 1;
-        } else {
-          close(file);
-          return 1;
+          n = 0;
         }
       } else {
-        //execute_command_line(code);
-        write(1, code, strlen(code));
+        if (strlen(code)) {
+          execute_command_sbunix(code);
+        }
         n = 0;
       }
     }
   }
 
   code[n] = '\0'; 
-  write(1, code, strlen(code));
-  //execute_command_line(code);
+  if (strlen(code)) {
+	  execute_command_sbunix(code);
+  }
 
   close(file);
-
-  return 0;
 }
 
 void handle_piped_commands(char *arg) {
@@ -555,8 +543,8 @@ char *getenv(const char *arg) {
 
 int setenv(char *path_variable, char *value, int overwrite) {
   
-  //eg: setenv("PATH", path_value, 1); 
-  //overwrite variable is not used now.
+  /* eg: setenv("PATH", path_value, 1); 
+   * overwrite variable is not used now.*/
 
   int i;
   int var_len = strlen(path_variable);
@@ -606,72 +594,55 @@ int process_input_command(char *buff, int size) {
 
     char *token = strtok_r(arr, sep, &saveptr);
     if (token)
-      return read_and_exec_from_file(token);
+      read_and_exec_from_file(token);
+
+    return 1;
   }
 
   return 0;
 }
 
 void execute_command_sbunix(char *buff){
-  	int ret;
 
-      puts(buff);
-      puts("\n");
+  int ret;
+  memset(glob_cmd, 0, sizeof(glob_cmd));
+  memset(arg_vv, 0, sizeof(arg_vv));
 
-      memset(glob_cmd, 0, sizeof(glob_cmd));
-      memset(arg_vv, 0, sizeof(arg_vv));
+  update_cmd(buff, glob_cmd, arg_vv);
+  ret = fork();
+  if(ret ==0) {
+    if(strcmp(glob_cmd, "sleep") == 0)
+      bg_proc = 0;
+    else
+      bg_proc = 0;
 
-      update_cmd(buff, glob_cmd, arg_vv);
-      ret = fork();
-      if(ret ==0) {
-        if(strcmp(glob_cmd, "sleep") == 0)
-          bg_proc = 0;
-        else
-          bg_proc = 0;
+    execve(glob_cmd, arg_vv, NULL);
+    memset(buff, 0, sizeof(buff));
+  }
+  else {
+    if(!bg_proc) {
+      wait();
 
-        execve(glob_cmd, arg_vv, NULL);
-        memset(buff, 0, sizeof(buff));
-      }
-      else {
-        if(!bg_proc) {
-          wait();
-	  
-	}
-        memset(buff, 0, sizeof(buff));
-      }
+    }
+    memset(buff, 0, sizeof(buff));
+  }
 
 }
 
 int main(int argc, char *argv[], char *envp[]) {
 
-#if 0
-  }
-
-  m_environ = envp + argc + 1;
-  if (argc > 1) {
-
-    /* Case 1 : Non-interactive mode */
-    read_from_file(argc, argv);
-
-  } else {
-
-    /* Case 2 : Interactive mode */
-    print_prompt();
-    read_from_stdin();
-  }
-#endif
-
-#if 1
   while(1) {
     memset(buff, 0, sizeof(buff));
     print_prompt();
 
     if (read(0, buff, CMD_LEN)) {
-	execute_command_sbunix(buff);
+      puts(buff);
+      puts("\n");
+      if (!process_input_command(buff, strlen(buff))) {
+        execute_command_sbunix(buff);
+      }
     }
-
   }
-#endif
 
   return 0;
 }
