@@ -3,6 +3,7 @@
 #include <sys/pmm.h>
 #include <sys/utils.h>
 #include <sys/kprintf.h>
+#include <sys/task.h>
 
 #define PAGE_PML4_INDEX(x)            ((x >> 39) & 0x1FF)
 #define PAGE_PDP_INDEX(x)             ((x >> 30) & 0x1FF)
@@ -374,8 +375,27 @@ void page_fault_handler(uint64_t error_code) {
 
     }
   }
-  /* Create mapping for the faulting address */
-  alloc_segment_mem(faulting_address);
+  /* autogrow stack */
+  int stack_grow = 0;
+  vma_struct_t *vma = get_current_running_task()->mm->mmap;
+  while(vma) {
+   if (vma->vma_type == VMA_TYPE_STACK) {
+	  if (faulting_address < vma->vma_end && (vma->vma_end - VIRT_PAGE_SIZE) >= MAX_STACK_SIZE) {
+	    alloc_segment_mem(faulting_address - VIRT_PAGE_SIZE);
+	    //kprintf("*****************8inside autogrow\n");
+	    vma->vma_end = faulting_address - VIRT_PAGE_SIZE;
+	    stack_grow = 1;	
+	    break;
+	  }
+   }
+
+   vma = vma->vma_next;
+  }
+
+  if(!stack_grow) {
+	  alloc_segment_mem(faulting_address);
+  }
+
 }
 
 /* Function to create page table for child process */

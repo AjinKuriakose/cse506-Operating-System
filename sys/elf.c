@@ -5,10 +5,6 @@
 #include <sys/vmm.h>
 #include <sys/utils.h>
 
-#define HEAP_BEGIN      0x09000000
-#define HEAP_END        0x10000000
-#define STACK_TOP	      0xFAA00000
-#define	MAX_STACK_SIZE	0xA000 
 
 int load_binary(task_struct_t *task, char *bin_filename) {
 
