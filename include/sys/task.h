@@ -68,9 +68,7 @@ typedef struct mm_struct_t {
   uint64_t code_end;
   uint64_t data_start;
   uint64_t data_end;
-  uint64_t brk_start;
   uint64_t brk;
-  uint64_t stack_start;
   vma_struct_t *mmap;
 } mm_struct_t;
 

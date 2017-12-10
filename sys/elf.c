@@ -5,7 +5,9 @@
 #include <sys/vmm.h>
 #include <sys/utils.h>
 
-#define STACK_TOP	0xFAA00000
+#define HEAP_BEGIN      0x09000000
+#define HEAP_END        0x10000000
+#define STACK_TOP	      0xFAA00000
 #define	MAX_STACK_SIZE	0xA000 
 
 int load_binary(task_struct_t *task, char *bin_filename) {
@@ -89,7 +91,25 @@ int load_binary(task_struct_t *task, char *bin_filename) {
    vma->vma_mm = mm;
 
    task->ursp = stk + 4016; 
-  
+
+
+   alloc_segment_mem(HEAP_BEGIN);
+   uint64_t heap = HEAP_BEGIN;
+   vma_struct_t *vma_heap = (vma_struct_t *)vmm_alloc_page();
+   vma_heap->vma_next = NULL;
+   if (mm->mmap) {
+     vma_heap->vma_next = mm->mmap;
+     mm->mmap = vma_heap;
+   } else {
+     mm->mmap = vma_heap;
+   }
+
+   vma_heap->vma_start = HEAP_BEGIN;
+   vma_heap->vma_end = HEAP_END;
+   vma_heap->vma_type = VMA_TYPE_HEAP;
+   vma_heap->vma_mm = mm;
+   mm->brk = heap;
+
   task->rip = elf_header->e_entry;
   return 0;
 }

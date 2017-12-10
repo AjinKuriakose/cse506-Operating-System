@@ -22,12 +22,14 @@
 #define __NR_write           1
 #define __NR_open            2
 #define __NR_close           3
+#define __NR_brk             12
 #define __NR_exit            60 
 #define __NR_fork            57 
 #define __NR_execve          59 
 #define __NR_wait4           61
 #define __NR_kill            62 
 #define __NR_getcwd          79
+#define __NR_free            89
 #define __NR_ps              90
 #define __NR_getpid          91
 #define __NR_getppid         92
@@ -220,7 +222,7 @@ void sys_read() {
         } else {
           
           int tarfs_read_size = (get_current_running_task()->fd_list[fd].file_node->file_end - 
-                                get_current_running_task()->fd_list[fd].file_node->file_cursor);
+                                 get_current_running_task()->fd_list[fd].file_node->file_cursor);
           if (tarfs_read_size > size) {
             tarfs_read_size = size;
             memcpy(ptr, (void *)((get_current_running_task()->fd_list[fd].file_node)->file_cursor), tarfs_read_size);
@@ -238,11 +240,13 @@ void sys_read() {
 }
 
 void sys_exit() {
+
   get_current_running_task()->parent_task->task_state = TASK_STATE_RUNNING;
   set_task_state(TASK_STATE_STOPPED);
 }
 
 void sys_getcwd() {
+
   void *ptr;
   uint64_t size;
 
@@ -260,6 +264,7 @@ void sys_getcwd() {
 }
 
 void sys_ps() {
+
   task_struct_t *tmp = running_task;
   kprintf("\n------------------------------------");
   kprintf("\n PID  |  PPID  |  NAME  |  STATE  \n");
@@ -276,6 +281,7 @@ void sys_ps() {
 }
 
 void sys_kill() {
+
   int pid = syscall_args.rdi;
 
   task_struct_t *cur = get_current_running_task();
@@ -305,10 +311,12 @@ void sys_sleep() {
 
 void sys_getpid() {
 
+  get_current_running_task()->retV = get_current_running_task()->pid;
 }
 
 void sys_getppid() {
 
+  get_current_running_task()->retV = get_current_running_task()->ppid;
 }
 
 void sys_wait() {
@@ -563,6 +571,48 @@ void sys_cd() {
   }
 }
 
+void sys_brk() {
+
+  uint64_t size = (uint64_t)(syscall_args.rdi);
+  get_current_running_task()->retV = 0;
+
+  if (size > 0) {
+    vma_struct_t *vma = NULL;
+    mm_struct_t *mm = get_current_running_task()->mm;
+    if (mm) {
+      vma = mm->mmap;
+      while (vma) {
+        if (vma->vma_type == VMA_TYPE_HEAP) {
+          break;
+        }
+        vma = vma->vma_next;
+      }
+
+      if (vma && vma->vma_mm) {
+        if (vma->vma_mm->brk + VIRT_PAGE_SIZE < vma->vma_end) {
+          uint64_t ret = vma->vma_mm->brk;
+          set_cr3(get_cr3());
+          alloc_segment_mem(ret);
+          vma->vma_mm->brk += VIRT_PAGE_SIZE;
+
+          get_current_running_task()->retV = ret;
+        }
+      }
+    }
+  }
+}
+
+void sys_free() {
+
+  uint64_t vaddr = (uint64_t)(syscall_args.rdi);
+  get_current_running_task()->retV = 0;
+
+  if (vaddr) {
+    set_cr3(get_cr3());
+    vmm_dealloc_page(vaddr);
+  }
+}
+
 /*
  * setting up syscall table init 
  */
@@ -586,6 +636,8 @@ void setup_sys_call_table() {
   sys_call_table[__NR_readdir]  = sys_readdir;  
   sys_call_table[__NR_closedir] = sys_closedir;  
   sys_call_table[__NR_cd]       = sys_cd;
+  sys_call_table[__NR_brk]      = sys_brk;
+  sys_call_table[__NR_free]     = sys_free;
 }
 
 /*

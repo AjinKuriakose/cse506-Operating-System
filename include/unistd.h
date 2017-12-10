@@ -23,6 +23,7 @@
 #define __NR_close      3
 #define __NR_mmap       9
 #define __NR_munmap     11
+#define __NR_brk        12
 #define __NR_pipe       22
 #define __NR_dup2       33
 #define __NR_fork       57
@@ -33,6 +34,7 @@
 #define __NR_getdents   78
 #define __NR_getcwd     79
 #define __NR_chdir      80
+#define __NR_free       89
 #define __NR_ps         90
 #define __NR_opendir    93
 #define __NR_readdir    94
