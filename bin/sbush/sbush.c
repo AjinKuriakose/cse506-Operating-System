@@ -612,32 +612,8 @@ int process_input_command(char *buff, int size) {
   return 0;
 }
 
-int main(int argc, char *argv[], char *envp[]) {
-
-#if 0
-  }
-
-  m_environ = envp + argc + 1;
-  if (argc > 1) {
-
-    /* Case 1 : Non-interactive mode */
-    read_from_file(argc, argv);
-
-  } else {
-
-    /* Case 2 : Interactive mode */
-    print_prompt();
-    read_from_stdin();
-  }
-#endif
-
-#if 1
-  int ret;
-  while(1) {
-    memset(buff, 0, sizeof(buff));
-    print_prompt();
-
-    if (read(0, buff, CMD_LEN)) {
+void execute_command_sbunix(char *buff){
+  	int ret;
 
       puts(buff);
       puts("\n");
@@ -663,6 +639,35 @@ int main(int argc, char *argv[], char *envp[]) {
 	}
         memset(buff, 0, sizeof(buff));
       }
+
+}
+
+int main(int argc, char *argv[], char *envp[]) {
+
+#if 0
+  }
+
+  m_environ = envp + argc + 1;
+  if (argc > 1) {
+
+    /* Case 1 : Non-interactive mode */
+    read_from_file(argc, argv);
+
+  } else {
+
+    /* Case 2 : Interactive mode */
+    print_prompt();
+    read_from_stdin();
+  }
+#endif
+
+#if 1
+  while(1) {
+    memset(buff, 0, sizeof(buff));
+    print_prompt();
+
+    if (read(0, buff, CMD_LEN)) {
+	execute_command_sbunix(buff);
     }
 
   }
