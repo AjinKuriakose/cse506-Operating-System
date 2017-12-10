@@ -11,6 +11,7 @@
 #define CMD_EXIT         4
 
 #define CMD_LEN          1024
+#define SBUSH_HASHBANG   "#!/bin/sbush"
 
 typedef struct piped_commands {
   char *commands[50];
@@ -42,7 +43,7 @@ void handle_ls();
 void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
-void read_from_file(int num_tokens, char *cmd_tokens[]);
+int read_and_exec_from_file(char *filename);
 
 char ps1_variable[256] = "sbush> ";
 
@@ -370,28 +371,46 @@ void execute_commands(char *cmd, char *cmd_arg) {
 }
 
 /* Read from the file one line at a time and execute */
-void read_from_file(int num_tokens, char *cmd_tokens[]) {
+int read_and_exec_from_file(char *filename) {
 
-  int file = open(cmd_tokens[1], O_RDONLY);
+  int file = open(filename, O_RDONLY);
   char code[CMD_LEN] = {0};
   size_t n = 0;
   char c;
+  uint8_t hash_read = 0;
 
   if (file == -1)
-    return;
+    return 1;
 
   while (read(file, &c, 1) > 0)
   {
     code[n++] = (char) c;
     if (c == '\n') {
       code[n - 1] = '\0';
-      execute_command_line(code);    
-      n = 0;
+
+      if (!hash_read) {
+        if (!strncmp(code, SBUSH_HASHBANG, strlen(SBUSH_HASHBANG))) {
+          write(1, "HASHBANG\n", 9);
+          hash_read = 1;
+        } else {
+          close(file);
+          return 1;
+        }
+      } else {
+        //execute_command_line(code);
+        write(1, code, strlen(code));
+        n = 0;
+      }
     }
   }
 
   code[n] = '\0'; 
-  execute_command_line(code);    
+  write(1, code, strlen(code));
+  //execute_command_line(code);
+
+  close(file);
+
+  return 0;
 }
 
 void handle_piped_commands(char *arg) {
@@ -569,8 +588,28 @@ int wait() {
   return syscall(__NR_wait4);
 }
 
-void process_input_command(char *buff, int size) {
-  
+int process_input_command(char *buff, int size) {
+  uint8_t script_handling_len = 0;
+
+  if (!strncmp(buff, "sbush ", 6)) {
+    script_handling_len = 6;
+  } else if (buff[0] == '.' && buff[1] == '/') {
+    script_handling_len = 2;
+  } 
+
+  if (script_handling_len) {
+
+    char *sep = " ";
+    char *saveptr;
+    char arr[CMD_LEN] = {0};
+    strcpy(arr, buff + script_handling_len);
+
+    char *token = strtok_r(arr, sep, &saveptr);
+    if (token)
+      return read_and_exec_from_file(token);
+  }
+
+  return 0;
 }
 
 int main(int argc, char *argv[], char *envp[]) {
