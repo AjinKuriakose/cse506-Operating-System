@@ -29,6 +29,7 @@
 #define __NR_wait4           61
 #define __NR_kill            62 
 #define __NR_getcwd          79
+#define __NR_validexe        88
 #define __NR_free            89
 #define __NR_ps              90
 #define __NR_getpid          91
@@ -619,6 +620,17 @@ void sys_free() {
   }
 }
 
+void sys_validexe() {
+
+  char *filename = (char *)(syscall_args.rdi);
+  get_current_running_task()->retV = 0;
+
+  Elf64_Ehdr *elf_header = get_elf_header(filename);
+  if (elf_header && elf_header->e_type == 2) {
+    get_current_running_task()->retV = 1;
+  }
+}
+
 /*
  * setting up syscall table init 
  */
@@ -644,6 +656,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_cd]       = sys_cd;
   sys_call_table[__NR_brk]      = sys_brk;
   sys_call_table[__NR_free]     = sys_free;
+  sys_call_table[__NR_validexe] = sys_validexe;
 }
 
 /*

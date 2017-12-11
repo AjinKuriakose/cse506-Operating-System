@@ -34,6 +34,7 @@
 #define __NR_getdents   78
 #define __NR_getcwd     79
 #define __NR_chdir      80
+#define __NR_validexe   88
 #define __NR_free       89
 #define __NR_ps         90
 #define __NR_opendir    93
@@ -83,6 +84,7 @@ int dup2(int oldfd, int newfd);
 
 int ps();
 int kill(int);
+int validexe(char *);
 int sleep(int);
 int cd(char *pathname);
 

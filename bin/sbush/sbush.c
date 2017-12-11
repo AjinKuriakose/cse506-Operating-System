@@ -43,10 +43,11 @@ void handle_ls();
 void execute_non_builtin(char *cmd, char *cmd_arg);
 void execute_command_line(char *cmd);
 void execute_commands(char *cmd, char *cmd_arg);
-void read_and_exec_from_file(char *filename);
+void read_and_exec_from_file(char *filename, int type);
 void execute_command_sbunix(char *buff);
 
 char ps1_variable[256] = "sbush> ";
+char path_variable[256] = "/rootfs/bin";
 
 int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
@@ -360,8 +361,121 @@ void execute_commands(char *cmd, char *cmd_arg) {
   }
 }
 
+int valid_command(char *buff, int size) {
+
+  char cmd[CMD_LEN] = {0};
+  char cwd[CWD_LEN] = {0};
+  char tmp[CMD_LEN] = {0};
+  char *bin_dir = "bin/";
+
+  memset(cwd, 0, sizeof(cwd));
+  getcwd(cwd, sizeof(cwd));
+  //kprintf("cwd = [%s]\n", cwd);
+
+  //puts("BUFF :");
+  //puts(buff);
+  //puts("\n");
+  if (buff[0] == '.' && buff[1] == '/') {
+    puts("sbush : not a valid sbush script\n");
+    return 0;
+
+  } else if (buff[0] != '/') {
+
+    memset(tmp, 0, sizeof(tmp));
+    strcpy(tmp, &cwd[8]);
+    strcpy(tmp + strlen(tmp), buff);
+
+    //puts("TT2\n");
+    //puts(tmp);
+    //puts("\n");
+    //kprintf("TT = [%s]\n", tmp);
+    char *sep = " ";
+    char *saveptr;
+    char arr[255] = {0};
+    strcpy(arr, tmp);
+    char *token = strtok_r(arr, sep, &saveptr);
+    if (token && !validexe(token)) {
+      memset(tmp, 0, sizeof(tmp));
+      strcpy(tmp, &path_variable[8]);
+      strcpy(tmp + strlen(tmp), "/");
+      strcpy(tmp + strlen(tmp), buff);
+      //puts("TT3\n");
+      //puts(tmp);
+      //puts("\n");
+      char *sep = " ";
+      char *saveptr;
+      char arr[255] = {0};
+      strcpy(arr, tmp);
+      char *token = strtok_r(arr, sep, &saveptr);
+      if (token && validexe(token)) {
+        memset(cmd, 0, sizeof(cmd));
+        strcpy(cmd, tmp);
+        //puts("CMD\n");
+        //puts(cmd);
+        //puts("\n");
+
+      } else {
+
+        memset(cmd, 0, sizeof(cmd));
+        strcpy(cmd, bin_dir);
+        strcpy(cmd + strlen(bin_dir), buff);
+      }
+      //puts("AA\n");
+      //puts(cmd);
+      //puts("\n");
+    } else {
+
+      memset(cmd, 0, sizeof(cmd));
+      strcpy(cmd, tmp);
+      //puts("BB\n");
+      //puts(cmd);
+      //puts("\n");
+    }
+
+  } else {
+
+    memset(cmd, 0, sizeof(cmd));
+    strcpy(cmd, &buff[8]);
+    //puts("CC\n");
+    //puts(cmd);
+    //puts("\n");
+  }
+
+  memset(buff, 0, size);
+  strcpy(buff, cmd);
+
+  char *sep = " ";
+  char *saveptr;
+  char arr[255] = {0};
+  strcpy(arr, cmd);
+  char *token = strtok_r(arr, sep, &saveptr);
+  if (token && validexe(token)) {
+    //puts("VALID FILE\n");
+    return 1;
+  }
+
+ return 0;
+}
+
 /* Read from the file one line at a time and execute */
-void read_and_exec_from_file(char *filename) {
+void read_and_exec_from_file(char *filename, int type) {
+  //puts("hhh\n");
+
+  if ((type == 1 && filename[0] != '/') || (type == 2 && strncmp(filename, "/rootfs", strlen("/rootfs")))) {
+    puts("sbush : give absolute path\n");
+    return;
+  } else {
+    int file = open(filename, O_RDONLY);
+    char code[CMD_LEN] = {0};
+    if (read(file, code, 12) > 0) {
+      if (strncmp(code, "#!/bin/sbush", strlen("#!/bin/sbush"))) {
+        puts("sbush : file not beginning with #!/bin/sbush\n");
+        close(file);
+        return;
+      }
+    }
+    close(file);
+  }
 
   int file = open(filename, O_RDONLY);
   char code[CMD_LEN] = {0};
@@ -386,7 +500,12 @@ void read_and_exec_from_file(char *filename) {
         }
       } else {
         if (strlen(code)) {
-          execute_command_sbunix(code);
+          if (valid_command(code, strlen(code))) {
+            execute_command_sbunix(code);
+          } else {
+            close(file);
+            return;
+          }
         }
         n = 0;
       }
@@ -394,7 +513,7 @@ void read_and_exec_from_file(char *filename) {
   }
 
   code[n] = '\0'; 
-  if (strlen(code)) {
+  if (strlen(code) && valid_command(code, strlen(code))) {
 	  execute_command_sbunix(code);
   }
 
@@ -576,13 +695,22 @@ int wait() {
   return syscall(__NR_wait4);
 }
 
-int process_input_command(char *buff, int size) {
+void set_path_variable(char *newpath) {
+  memset(path_variable, 0, sizeof(path_variable));
+  if (strlen(newpath) >= strlen("/rootfs") && !strncmp(newpath, "/rootfs", strlen("/rootfs"))) {
+    strcpy(path_variable, newpath);
+  } else {
+    puts("sbush : give absolute path\n");
+  }
+}
+
+int process_script(char *buff, int size) {
   uint8_t script_handling_len = 0;
 
   if (!strncmp(buff, "sbush ", 6)) {
     script_handling_len = 6;
   } else if (buff[0] == '.' && buff[1] == '/') {
-    script_handling_len = 2;
+    script_handling_len = 1;
   } 
     
   if (script_handling_len) {
@@ -593,8 +721,12 @@ int process_input_command(char *buff, int size) {
     strcpy(arr, buff + script_handling_len);
 
     char *token = strtok_r(arr, sep, &saveptr);
-    if (token)
-      read_and_exec_from_file(token);
+    if (token) {
+      if (script_handling_len == 6)
+        read_and_exec_from_file(token, 1);
+      else
+        read_and_exec_from_file(token, 2);
+    }
 
     return 1;
   }
@@ -631,6 +763,8 @@ void execute_command_sbunix(char *buff){
 
 int main(int argc, char *argv[], char *envp[]) {
 
+  char path_value[CMD_LEN] = {0} ; 
+
   while(1) {
     memset(buff, 0, sizeof(buff));
     print_prompt();
@@ -641,13 +775,22 @@ int main(int argc, char *argv[], char *envp[]) {
       if (check_if_ps1_cmd(buff)) {
         strcpy(ps1_variable, strstr(buff, "=") + 1);
       }
-       else if(!process_input_command(buff, strlen(buff))) {
-        execute_command_sbunix(buff);
+      else if (check_if_path_cmd(buff)) {
+        memset(path_value, 0, sizeof(path_value));
+        get_path_string(buff, path_value); 
+        set_path_variable(path_value);
       }
-
+      else {
+        if(!process_script(buff, strlen(buff))) {
+          //puts("Not Script\n");
+          if (valid_command(buff, strlen(buff))) {
+            //puts("EXE...\n");
+            execute_command_sbunix(buff);
+          }
+        }
+      }
     }
   }
-
   return 0;
 }
 

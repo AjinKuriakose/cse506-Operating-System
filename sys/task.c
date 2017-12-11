@@ -391,60 +391,11 @@ void sys_fork() {
   child_task->retV = 0x0;
 }
 
-void process_command(char *buff, int size) {
-
-  char cmd[CMD_LEN] = {0};
-  char cwd[CWD_LEN] = {0};
-  char tmp[CMD_LEN] = {0};
-  char *bin_dir = "bin/";
-
-  memset(cwd, 0, sizeof(cwd));
-  strcpy(cwd, get_current_running_task()->cwd);
-  //kprintf("cwd = [%s]\n", cwd);
-
-  if (buff[0] == '.' && buff[1] == '/') {
-    /* TODO : Script execution */
-    return;
-
-  } else if (buff[0] != '/') {
-
-    memset(tmp, 0, sizeof(tmp));
-    strcpy(tmp, cwd);
-    strcpy(tmp + strlen(tmp), "/");
-    strcpy(tmp + strlen(tmp), buff);
-
-    //kprintf("TT = [%s]\n", tmp);
-    file_t *node = find_node(tmp);
-    if (node == NULL) {
-      memset(cmd, 0, sizeof(cmd));
-      strcpy(cmd, bin_dir);
-      strcpy(cmd + strlen(bin_dir), buff);
-      //kprintf("AA = [%s]\n", cmd);
-    } else {
-      
-      //kprintf("NN = [%s]\n", node->file_name);
-      memset(cmd, 0, sizeof(cmd));
-      strcpy(cmd, tmp + 7);
-      //kprintf("BB = [%s]\n", cmd);
-    }
-
-  } else {
-
-    memset(cmd, 0, sizeof(cmd));
-    strcpy(cmd, &buff[8]);
-    //kprintf("CC = [%s]\n", cmd);
-  }
-
- memset(buff, 0, size);
- strcpy(buff, cmd);
-}
-
 void execve_handler(char *file_name, char argv[][64]) {
 
   char filename[CMD_LEN] = {0};
   strcpy(filename, file_name);
 
-  process_command(filename, CMD_LEN);
   //kprintf("EXECVE_HAND filename = [%s]\n", filename);
 
   task_struct_t *cur_task = get_current_running_task();
