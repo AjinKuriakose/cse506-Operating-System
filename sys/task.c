@@ -147,8 +147,10 @@ void idle_func() {
 		//Sleep();
 		set_tss_rsp((void *)task1.rsp);
 		// switch_to_user_mode();
-		if(c%15 == 0)
+		if(c%15 == 0) {
 		  cleanup_tasks(); 
+      c = 0;
+    }
 		yield();
 	}
 }
