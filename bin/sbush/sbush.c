@@ -584,7 +584,7 @@ int process_input_command(char *buff, int size) {
   } else if (buff[0] == '.' && buff[1] == '/') {
     script_handling_len = 2;
   } 
-
+    
   if (script_handling_len) {
 
     char *sep = " ";
@@ -638,9 +638,13 @@ int main(int argc, char *argv[], char *envp[]) {
     if (read(0, buff, CMD_LEN)) {
       puts(buff);
       puts("\n");
-      if (!process_input_command(buff, strlen(buff))) {
+      if (check_if_ps1_cmd(buff)) {
+        strcpy(ps1_variable, strstr(buff, "=") + 1);
+      }
+       else if(!process_input_command(buff, strlen(buff))) {
         execute_command_sbunix(buff);
       }
+
     }
   }
 
