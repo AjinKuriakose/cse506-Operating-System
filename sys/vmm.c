@@ -479,3 +479,66 @@ void create_child_paging(uint64_t child_task_pml4) {
   child_pml4->pml4_entries[511] = parent_pml4->pml4_entries[511];
 }
 
+void cleanup_page_table(pml4_t *pml4) {
+
+  pml4_t  *tmp_pml4 = (pml4_t *)((uint64_t)pml4 | VIRT_ADDR_BASE);
+  pdp_t   *pdp; 
+  pd_t    *pd; 
+  pt_t    *pt; 
+
+  pdp_t   *pdp_phys; 
+  pd_t    *pd_phys; 
+  pt_t    *pt_phys; 
+
+  uint64_t  pdp_addr; 
+  uint64_t  pd_addr; 
+  uint64_t  pt_addr; 
+
+  /* PML4 Level */
+  int pml4_indx = 0;
+  while (pml4_indx < 511) {
+    pdp_addr = tmp_pml4->pml4_entries[pml4_indx];
+    if (pdp_addr & PTE_PRESENT) {
+      pdp = (pdp_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pdp_addr));
+      pdp_phys = pdp;
+      pdp = (pdp_t *)((uint64_t)pdp | VIRT_ADDR_BASE);
+  
+      /* PDP Level */
+      int pdp_indx = 0;
+      while (pdp_indx < 512) {
+        pd_addr = pdp->pdp_entries[pdp_indx];
+        if (pd_addr & PTE_PRESENT) {
+          pd = (pd_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pd_addr));
+          pd_phys = pd;
+          pd = (pd_t *)((uint64_t)pd | VIRT_ADDR_BASE);
+
+          /* PD Level */
+          int pd_indx = 0;
+          while (pd_indx < 512) {
+            pt_addr = pd->pd_entries[pd_indx];
+            if (pt_addr & PTE_PRESENT) {
+              pt = (pt_t *)(PAGE_GET_PHYSICAL_ADDRESS(&pt_addr));
+              pt_phys = pt;
+              pt = (pt_t *)((uint64_t)pt | VIRT_ADDR_BASE);
+
+              pmm_dealloc_block((uint64_t)pt_phys);
+            }
+
+            pd_indx++;
+          }
+
+          pmm_dealloc_block((uint64_t)pd_phys);
+        }
+
+        pdp_indx++;
+      }
+
+      pmm_dealloc_block((uint64_t)pdp_phys);
+    }
+
+    pml4_indx++;
+  }
+
+  pmm_dealloc_block((uint64_t)pml4);
+}
+
