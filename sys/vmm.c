@@ -300,6 +300,7 @@ uint64_t vmm_alloc_page() {
   } else {
     /* No more physical memory available */
     kprintf("No Memory Available !!!\n");
+    while(1);
   }
 
   return v_addr;
@@ -324,6 +325,7 @@ void alloc_segment_mem(uint64_t v_addr) {
   } else {
     /* No more physical memory available */
     kprintf("No Memory Available !!!\n");
+    while(1);
   }
 }
 

@@ -65,6 +65,8 @@ void cleanup_tasks() {
     }
     tmp = tmp->next;
   }
+  kprintf("get_num_free_blocks() %d\n", get_num_free_blocks());
+  kprintf("get_num_used_blocks() %d\n", get_num_used_blocks());
 }
 
 /* Returns the current running task reference */
