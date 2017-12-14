@@ -58,7 +58,7 @@ pid_t fork();
 
 int execvpe(const char *file, char *const argv[], char *const envp[]);
 
-//pid_t wait(int *status);
+pid_t wait(int *status);
 int  waitpid(int pid, int *status);
 
 unsigned int sleep(unsigned int seconds);

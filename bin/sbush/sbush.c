@@ -696,9 +696,6 @@ int setenv(char *path_variable, char *value, int overwrite) {
   return 1;
 }
 
-int wait() {
-  return syscall(__NR_wait4);
-}
 
 void set_path_variable(char *newpath) {
   memset(path_variable, 0, sizeof(path_variable));
@@ -766,7 +763,8 @@ void execute_command_sbunix(char *buff){
   }
   else {
     if(!bg_proc) {
-      wait();
+      int st = 0;
+      wait(&st);
 
     }
     memset(buff, 0, sizeof(buff));
