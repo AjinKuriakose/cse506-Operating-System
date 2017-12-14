@@ -41,5 +41,7 @@ void set_cr3(pml4_t *pml4);
 pml4_t *get_cr3();
 void page_fault_handler();
 uint64_t get_physical_addr(pml4_t *pml4, uint64_t v_addr, uint8_t mark_as_absent);
+void cleanup_page_table(pml4_t *pml4);
+
 #endif
 

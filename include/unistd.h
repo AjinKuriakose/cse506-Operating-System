@@ -42,7 +42,6 @@
 #define __NR_closedir   95
 #define __NR_ls         96
 #define __NR_sleep      97
-#define __NR_cd         98
 #define __NR_getdents64 217
 #define __NR_waitid     247
 
@@ -64,7 +63,9 @@ int execve(const char *file, char (*argv)[64], char *const envp[]);
 //pid_t wait(int *status);
 //int waitpid(int pid, int *status);
 
-//unsigned int sleep(unsigned int seconds);
+int  waitpid(int pid, int *status);
+
+unsigned int sleep(unsigned int seconds);
 
 pid_t getpid(void);
 pid_t getppid(void);
@@ -83,9 +84,9 @@ ssize_t write(int fd, const void *buf, size_t count);
 int dup2(int oldfd, int newfd);
 
 int ps();
-int kill(int);
+//int kill(int);
 int validexe(char *);
-int sleep(int);
+//int sleep(int);
 int cd(char *pathname);
 
 #endif

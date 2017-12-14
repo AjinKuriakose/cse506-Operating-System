@@ -53,6 +53,30 @@ void set_task_state(uint8_t state) {
   running_task->task_state = state;
 }
 
+void free_task_memory(task_struct_t *task) {
+
+  release_pid(task->pid);
+
+  vmm_dealloc_page((uint64_t)(task->kstack));
+
+  pml4_t *curr_cr3 = get_cr3();
+  set_cr3((pml4_t *)(task->cr3));
+
+	mm_struct_t *mm = task->mm;
+  vma_struct_t *vma = task->mm->mmap;
+  while (vma != NULL) {
+    vma_struct_t *del = vma;
+    vma = vma->vma_next;
+    vmm_dealloc_page((uint64_t)del);
+  }
+
+  vmm_dealloc_page((uint64_t)mm);
+
+  set_cr3(curr_cr3);
+
+  cleanup_page_table((pml4_t *)(task->cr3));
+}
+
 void cleanup_tasks() {
 
   task_struct_t *curr = get_current_running_task();
@@ -60,8 +84,17 @@ void cleanup_tasks() {
   while (tmp->next != curr) {
     /* TODO : take reference and clean up tmp->next before next statement */
     if(tmp->next->task_state == TASK_STATE_STOPPED) {
-      release_pid(tmp->next->pid);
+
+      task_struct_t *del = tmp->next;
+      pml4_t *curr_cr3 = get_cr3();
+      pml4_t *parent_cr3 = (pml4_t *)(del->parent_task->cr3);
+      free_task_memory(tmp->next);
+
     	tmp->next = tmp->next->next;
+
+      set_cr3(parent_cr3);
+      vmm_dealloc_page((uint64_t)del); 
+      set_cr3(curr_cr3);
     }
     tmp = tmp->next;
   }

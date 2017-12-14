@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 int main(int argc, char *argv[], char *envp[]) {
 
@@ -21,7 +22,7 @@ int main(int argc, char *argv[], char *envp[]) {
       exit(1);
     }
 
-    kill(pid);
+    kill((pid_t)pid, 9);
     exit(0);
   }
 

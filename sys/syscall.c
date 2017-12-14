@@ -9,6 +9,7 @@
 #include <sys/dirent.h>
 #include <sys/tarfs.h>
 #include <sys/timer.h>
+#include <stdarg.h>
 
 #define MSR_LSTAR   0xc0000082 
 #define MSR_STAR    0xc0000081
@@ -29,6 +30,7 @@
 #define __NR_wait4           61
 #define __NR_kill            62 
 #define __NR_getcwd          79
+#define __NR_chdir           80
 #define __NR_validexe        88
 #define __NR_free            89
 #define __NR_ps              90
@@ -39,7 +41,6 @@
 #define __NR_closedir        95
 #define __NR_ls              96
 #define __NR_sleep           97 
-#define __NR_cd              98
 
 
 typedef void (*sys_call_ptr_t) (void);
@@ -209,7 +210,7 @@ void sys_read() {
     if (fd == STDIN) {
       ret = read_from_terminal(ptr, size);
 
-    } else {
+    } else if (fd > STDERR) {
 
       if (get_current_running_task()->fd_list[fd].flags == O_WRONLY) {
         ret = -1;
@@ -283,14 +284,14 @@ void sys_ps() {
 
 void sys_kill() {
 
-  int pid = syscall_args.rdi;
+  int pid = (int)((pid_t)(syscall_args.rdi));
 
   task_struct_t *cur = get_current_running_task();
   task_struct_t *tsk = cur;
   while (tsk->next != cur) {
     if(tsk->next->pid == pid) {
       tsk->next->task_state = TASK_STATE_STOPPED;
-      release_pid(tsk->next->pid);
+      //release_pid(tsk->next->pid);
       tsk->next = tsk->next->next;
       break;
     }
@@ -653,7 +654,7 @@ void setup_sys_call_table() {
   sys_call_table[__NR_opendir]  = sys_opendir;  
   sys_call_table[__NR_readdir]  = sys_readdir;  
   sys_call_table[__NR_closedir] = sys_closedir;  
-  sys_call_table[__NR_cd]       = sys_cd;
+  sys_call_table[__NR_chdir]    = sys_cd;
   sys_call_table[__NR_brk]      = sys_brk;
   sys_call_table[__NR_free]     = sys_free;
   sys_call_table[__NR_validexe] = sys_validexe;

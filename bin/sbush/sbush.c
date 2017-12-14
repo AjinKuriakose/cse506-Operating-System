@@ -311,7 +311,7 @@ void execute_non_builtin(char *cmd, char *cmd_arg) {
     }
     else {
       if (!bg_process)
-        waitpid(-1, &status, 0);
+        waitpid(-1, &status);
     }
   }
 
@@ -608,7 +608,7 @@ int process_start(int input_fd, int output_fd, piped_commands *cmds) {
     return find_path_and_exe(cmds->commands[0], cmds->commands, m_environ);
 
   } else {
-    waitpid(-1, &status, 0);
+    waitpid(-1, &status);
   }
 
   return pid;
@@ -644,7 +644,7 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds) {
     }
 
   } else {
-    waitpid(-1, &status, 0);
+    waitpid(-1, &status);
   }
 
   return 0;

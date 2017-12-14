@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int sleep(int time) {
-  return syscall(__NR_sleep, time);
+unsigned int sleep(unsigned int seconds) {
+  return syscall(__NR_sleep, seconds);
 }
 
