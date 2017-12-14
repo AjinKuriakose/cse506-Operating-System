@@ -53,9 +53,9 @@ int execute_piped_commands(int num_pipes, piped_commands *cmds);
 
 int bg_proc;
 char glob_cmd[64];
-char arg_vv[6][64]= {{0}}; 
+char *arg_vv[6]; 
 
-void update_cmd(char *buff, char *cmd, char arg[][64]) {
+void update_cmd(char *buff, char *cmd, char *arg[]) {
 
   char *sep = " ";
   int i = 0, j = 0;
@@ -166,7 +166,7 @@ void handle_cd(char *path) {
   if (ret != 0) {
     puts_nonewline("sbush: cd: ");
     puts_nonewline(path); 
-    puts(": No such file or directory"); 
+    puts(": No such file or directory\n"); 
   }
 }
 
@@ -466,6 +466,10 @@ void read_and_exec_from_file(char *filename, int type) {
     return;
   } else {
     int file = open(filename, O_RDONLY);
+    if (file == -1) {
+      puts("sbush : No such file or directory\n"); 
+      return;
+    }
     char code[CMD_LEN] = {0};
     if (read(file, code, 12) > 0) {
       if (strncmp(code, "#!/bin/sbush", strlen("#!/bin/sbush"))) {
@@ -484,6 +488,7 @@ void read_and_exec_from_file(char *filename, int type) {
   uint8_t hash_read = 0;
 
   if (file == -1) {
+    puts("sbush : No such file or directory\n"); 
     return;
   }
 
@@ -740,15 +745,23 @@ void execute_command_sbunix(char *buff){
   memset(glob_cmd, 0, sizeof(glob_cmd));
   memset(arg_vv, 0, sizeof(arg_vv));
 
+  arg_vv[0] = malloc(4096);
+  arg_vv[1] = malloc(4096);
+  arg_vv[2] = malloc(4096);
+  arg_vv[3] = malloc(4096);
+  arg_vv[4] = malloc(4096);
+  arg_vv[5] = malloc(4096);
+
   update_cmd(buff, glob_cmd, arg_vv);
+
   ret = fork();
-  if(ret ==0) {
+  if(ret == 0) {
     if(strcmp(glob_cmd, "sleep") == 0)
       bg_proc = 0;
     else
       bg_proc = 0;
 
-    execve(glob_cmd, arg_vv, NULL);
+    execvpe(glob_cmd, &arg_vv[0], NULL);
     memset(buff, 0, sizeof(buff));
   }
   else {
@@ -757,8 +770,14 @@ void execute_command_sbunix(char *buff){
 
     }
     memset(buff, 0, sizeof(buff));
-  }
 
+    free(arg_vv[0]);
+    free(arg_vv[1]);
+    free(arg_vv[2]);
+    free(arg_vv[3]);
+    free(arg_vv[4]);
+    free(arg_vv[5]);
+  }
 }
 
 int main(int argc, char *argv[], char *envp[]) {

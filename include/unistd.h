@@ -55,14 +55,10 @@ int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
 
 pid_t fork();
-//int execvpe(const char *file, char *const argv[], char *const envp[]);
-//int execve(const char *file, char *argv[], char *const envp[]);
-int execve(const char *file, char (*argv)[64], char *const envp[]);
-//pid_t wait(int *status);
-//int waitpid(int pid, int *status);//:TODO
-//pid_t wait(int *status);
-//int waitpid(int pid, int *status);
 
+int execvpe(const char *file, char *const argv[], char *const envp[]);
+
+//pid_t wait(int *status);
 int  waitpid(int pid, int *status);
 
 unsigned int sleep(unsigned int seconds);
@@ -79,14 +75,9 @@ int pipe(int pipefd[2]);
 
 
 //functions add
-
-ssize_t write(int fd, const void *buf, size_t count);
 int dup2(int oldfd, int newfd);
-
 int ps();
-//int kill(int);
 int validexe(char *);
-//int sleep(int);
 int cd(char *pathname);
 
 #endif

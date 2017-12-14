@@ -333,8 +333,7 @@ void sys_execve() {
 
   set_cr3(get_cr3());
 
-  char argv[6][64] = {{0}};
-  memcpy(argv, (char *)(syscall_args.rsi), 6 * 64);
+  char **argv = (char **)(syscall_args.rsi);
 
   execve_handler(filename, argv);
 

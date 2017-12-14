@@ -98,8 +98,8 @@ void cleanup_tasks() {
     }
     tmp = tmp->next;
   }
-  kprintf("get_num_free_blocks() %d\n", get_num_free_blocks());
-  kprintf("get_num_used_blocks() %d\n", get_num_used_blocks());
+  //kprintf("get_num_free_blocks() %d\n", get_num_free_blocks());
+  //kprintf("get_num_used_blocks() %d\n", get_num_used_blocks());
 }
 
 /* Returns the current running task reference */
@@ -428,7 +428,7 @@ void sys_fork() {
   child_task->retV = 0x0;
 }
 
-void execve_handler(char *file_name, char argv[][64]) {
+void execve_handler(char *file_name, char *argv[]) {
 
   char filename[CMD_LEN] = {0};
   strcpy(filename, file_name);

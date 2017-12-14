@@ -124,7 +124,8 @@ task_struct_t *get_current_running_task();
 void sys_fork();
 
 //void execve_handler(char *filename);
-void execve_handler(char *filename, char argv[][64]);
+//void execve_handler(char *filename, char argv[][64]);
+void execve_handler(char *filename, char *argv[]);
 
 void task_cleanup(task_struct_t *task);
 void set_task_state(uint8_t);
