@@ -26,17 +26,27 @@ char task_state_str[][32] = {"UNKNOWN",
                             };
 /* Allocate an available process id */
 uint32_t allocate_pid() {
-  uint16_t pid_index = 1;
+  static uint16_t pid_index = 3;
+  uint16_t ret_pid = INVALID_PID;
+
   while (pid_index < MAX_NUM_PROCESSES) {
     if (pid[pid_index] == 0) {
       pid[pid_index] = 1;
-      return pid_index;
+      ret_pid = pid_index;
+      pid_index++;
+
+      if ((pid_index % MAX_NUM_PROCESSES) == 0)
+        pid_index = 3;
+
+      break;
     }
 
     pid_index++;
+    if ((pid_index % MAX_NUM_PROCESSES) == 0)
+      pid_index = 3;
   }
 
-  return INVALID_PID;
+  return ret_pid;
 }
 
 void release_pid(uint16_t pid_index) {
@@ -319,7 +329,7 @@ void start_init_process() {
   task->cr3 = (uint64_t) pml4;
   
   task->task_state = TASK_STATE_RUNNING;
-  task->pid  = allocate_pid();
+  task->pid  = 1;
   task->ppid = 0;
   task->num_children = 0;
   strcpy(task->name, "init");
@@ -338,7 +348,7 @@ void start_sbush_process(char *bin_filename) {
   task->cr3 = (uint64_t) pml4;
   
   task->task_state = TASK_STATE_RUNNING;
-  task->pid  = allocate_pid();
+  task->pid  = 2;
   task->ppid = 0;
   task->num_children = 0;
   strcpy(task->name, "sbush");
