@@ -27,6 +27,7 @@ struct linux_dirent64 {
 
 char buff[CMD_LEN] = {0};
 char **m_environ;
+//int is_bg;
 
 int do_execute(char *cmd, char *cmd_path[], char *env[]); 
 
@@ -55,6 +56,20 @@ int bg_proc;
 char glob_cmd[64];
 char *arg_vv[6]; 
 
+/*
+ * if & is found, replace with '\0' and return true
+ */ 
+int update_if_bg_cmdarg(char *cmd_arg) {
+  char *amp;
+  int ret = 0;
+  if ((amp = strstr(cmd_arg, "&")) != NULL) {
+    *amp = '\0'; 
+    ret = 1;
+  }
+
+  return ret; 
+}
+
 void update_cmd(char *buff, char *cmd, char *arg[]) {
 
   char *sep = " ";
@@ -78,6 +93,8 @@ void update_cmd(char *buff, char *cmd, char *arg[]) {
     i++;
     j++;
   }
+ // if (update_if_bg_cmdarg(buff))
+  //  is_bg = 1;
 }
 
 void print_prompt() {
@@ -259,19 +276,6 @@ int check_if_ps1_cmd(char *cmd) {
   return strncmp(cmd, "PS1=", 4) == 0 ? 1 : 0; 
 }
 
-/*
- * if & is found, replace with '\0' and return true
- */ 
-int update_if_bg_cmdarg(char *cmd_arg) {
-  char *amp;
-  int ret = 0;
-  if ((amp = strstr(cmd_arg, "&")) != NULL) {
-    *amp = '\0'; 
-    ret = 1;
-  }
-
-  return ret; 
-}
 
 /* Not shell built-in commands, call exec */
 void execute_non_builtin(char *cmd, char *cmd_arg) {
@@ -753,20 +757,21 @@ void execute_command_sbunix(char *buff){
 
   ret = fork();
   if(ret == 0) {
+#if 0
     if(strcmp(glob_cmd, "sleep") == 0)
       bg_proc = 0;
     else
       bg_proc = 0;
-
+#endif
     execvpe(glob_cmd, &arg_vv[0], NULL);
     memset(buff, 0, sizeof(buff));
   }
   else {
-    if(!bg_proc) {
+   // if(!is_bg) {
       int st = 0;
       wait(&st);
 
-    }
+   // }
     memset(buff, 0, sizeof(buff));
 
     free(arg_vv[0]);

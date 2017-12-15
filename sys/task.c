@@ -98,6 +98,7 @@ void cleanup_tasks() {
     }
     tmp = tmp->next;
   }
+  //kprintf("rsp [%p]\n", get_current_running_task()->rsp);
   //kprintf("get_num_free_blocks() %d\n", get_num_free_blocks());
   //kprintf("get_num_used_blocks() %d\n", get_num_used_blocks());
 }
@@ -220,7 +221,7 @@ void init_tasking() {
 void create_task(task_struct_t *task, void (*main)()) {
     task->kstack = vmm_alloc_page();
     task->rsp = (uint64_t) (task->kstack + 4016);
-    task->ursp = 0x900000;
+    //task->ursp = 0x900000;
     task->parent_task = NULL;
     strcpy(task->cwd, "rootfs");
 

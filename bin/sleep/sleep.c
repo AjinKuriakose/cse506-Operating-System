@@ -15,7 +15,8 @@ int main(int argc, char *argv[], char *envp[]) {
 		time = time*10 + ctime[i] - '0';
 		i++;
 	}
-	sleep(time);
+  if (time != 0)
+	  sleep(time);
 	exit(0);
 
 }
