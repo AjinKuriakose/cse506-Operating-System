@@ -432,9 +432,26 @@ void sys_fork() {
 
 void execve_handler(char *file_name, char *argv[]) {
 
+//  kprintf("EXECVE_HAND filename = [%s]\n", argv[0]);
+//  kprintf("EXECVE_HAND filename = [%s]\n", argv[1]);
   char filename[CMD_LEN] = {0};
   strcpy(filename, file_name);
 
+  /* arg passing code */
+  int i = 0;
+  int j = 0;
+  int no_of_args = 0;
+
+  char args[6][64] = {{0}};
+  strcpy(args[i++], filename);
+  no_of_args++;
+  while (argv[j] && (i < 6)) {
+//    kprintf("EXECVE_HAND = [%s]\n", argv[j]);
+    strcpy(args[i], argv[j]);
+    i++;
+    j++;
+    no_of_args++;
+  }
   //kprintf("EXECVE_HAND filename = [%s]\n", filename);
 
   task_struct_t *cur_task = get_current_running_task();
@@ -449,25 +466,14 @@ void execve_handler(char *file_name, char *argv[]) {
     return;
   }
 
+ // kprintf("EXECVE_HAND filename = [%s]\n", argv[0]);
   if (load_binary(cur_task, cur_task->name)) {
     get_current_running_task()->task_state = TASK_STATE_STOPPED;
+  //  kprintf("failure");
 //    if(get_current_running_task()->parent_task->task_state == TASK_STATE_WAITING)
 //	get_current_running_task()->parent_task->task_state = TASK_STATE_RUNNING;
   }
-  /* arg passing code */
-  int i = 0;
-  int j = 0;
-  int no_of_args = 0;
-
-  char args[6][64] = {{0}};
-  strcpy(args[i++], filename);
-  no_of_args++;
-  while (argv[j] && (i < 6)) {
-    strcpy(args[i], argv[j]);
-    i++;
-    j++;
-    no_of_args++;
-  }
+  //kprintf("EXECVE_HAND filename = [%s]\n", argv[0]);
 
   //uint64_t *ursp_ptr = (uint64_t *)cur_task->ursp;
   void *ursp_ptr = (uint64_t *)cur_task->ursp;
