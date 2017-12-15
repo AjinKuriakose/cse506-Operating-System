@@ -1,51 +1,28 @@
-long syscall(int syscall_number, ...) {
-  long ret;
-  __asm__(
-  "mov    %%rdi,%%rax;"
-  "mov    %%rsi,%%rdi;"
-  "mov    %%rdx,%%rsi;"
-  "mov    %%rcx,%%rdx;"
-  "mov    %%r8,%%r10;"
-  "mov    %%r9,%%r8;"
-  "mov    0x8(%%rsp),%%r9;"
-  "syscall;"
-  "cmp    $0xfffffffffffff001,%%rax;"
-  :"=r"(ret)
-  );
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-  return ret;
+int main(int argc, char *argv[], char *envp[]) {
+
+#if 1
+  char *argvv[] = {0};
+  int ret = fork();
+  if(ret == 0) {
+#endif
+
+    write(1, "CLD", 3);
+#if 1
+    execvpe("bin/ps", &argvv[0], 0);
+  }
+  else {
+    write(1, "PAR1", 4);
+    int st = 0;
+    wait(&st);
+    write(1, "PAR2", 4);
+  }
+#endif
+
+  printf("RET = %d\n", ret);
+  exit(0);
 }
 
-int write(int fd, const void *c, int size) {
-  return syscall(1, fd, c, size);
-}
-
-int exit() {
-  return syscall(60);
-}
-int main() {
-
-  char ch[12] = "anotherworld";
-char *a = "a";
-   write(1, &ch, 12);
-//  char ab[7] = "amd_999";
-//  int i =0;
-//  while(i<5) {
- //   write(1, &ch, 7);
-//    while(1);
-//    write(1, &ab, 7);
- //   exit();
-    //while(1);
-  //  i++;
- // }
-    write(1, a, 1);
-    write(1, a, 1);
-    write(1, a, 1);
-    write(1, a, 1);
-    write(1, a, 1);
-    write(1, a, 1);
-    write(1, a, 1);
-  while(1);
-  exit();
-  return 0;
-}

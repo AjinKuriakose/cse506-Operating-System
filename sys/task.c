@@ -175,17 +175,17 @@ void switch_to_user_mode() {
 }
 
 void idle_func() {
-	static int c = 0;
+	//static int c = 0;
 	while(1) {
 		//kprintf("Idle Func #### %d\n", c);
-		c++;
+		//c++;
 		//Sleep();
 		set_tss_rsp((void *)task1.rsp);
 		// switch_to_user_mode();
-		if(c%20 == 0) {
+		//if(c%20 == 0) {
 		  cleanup_tasks(); 
-      c = 0;
-    }
+     // c = 0;
+    //}
 		yield();
 	}
 }
@@ -283,9 +283,11 @@ void yield() {
     while (next_task->task_state == TASK_STATE_STOPPED || next_task->task_state == TASK_STATE_WAITING) {
 	    next_task = next_task->next;
     }
-    
-    running_task = next_task;
-    switch_task(last, running_task);
+
+    if (running_task != next_task) {
+      running_task = next_task;
+      switch_task(last, running_task);
+    }
 }
 
 /*
