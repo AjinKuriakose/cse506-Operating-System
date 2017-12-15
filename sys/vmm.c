@@ -376,7 +376,7 @@ void page_fault_handler(uint64_t error_code) {
 
     }
   }
-  kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
+  //kprintf("Page Fault : addr = %p, error_code = 0x%x\n", faulting_address, error_code);
   /* autogrow stack */
   int stack_grow = 0;
   vma_struct_t *vma = get_current_running_task()->mm->mmap;
